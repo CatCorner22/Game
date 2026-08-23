@@ -7,7 +7,9 @@ import { CloseCallOverlay } from "./CloseCallOverlay";
 import { useGame } from "@/lib/game/store";
 import { dateLabel, meters } from "@/lib/game/world";
 import { fmtNum } from "@/lib/game/geo";
-import { HudButton, HudChip, HudHeader, HudLabel, HudPanel } from "./ui/Hud";
+import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudPanel } from "./ui/Hud";
+import { SpaceWeatherPanel } from "./SpaceWeatherPanel";
+import { weatherHostile } from "@/lib/game/spaceWeather";
 
 function GlobeSlot({ emphasized }: { emphasized?: boolean }) {
   const world = useGame((s) => s.world);
@@ -41,6 +43,11 @@ function CasualtyTicker({ world }: { world: NonNullable<ReturnType<typeof useGam
       <HudChip active danger={world.defcon <= 2}>
         ALERT {world.defcon}
       </HudChip>
+      {world.spaceWeather && weatherHostile(world.spaceWeather) ? (
+        <HudChip danger>
+          {world.spaceWeather.flare === "carrington" ? "CARRINGTON" : "SPACE WX"}
+        </HudChip>
+      ) : null}
     </div>
   );
 }
@@ -96,6 +103,9 @@ export function WarScreen() {
         <div className="pointer-events-none absolute top-3 right-3 w-[min(100%,360px)]">
           <RadarScreen world={world} pulse={world.defcon <= 2} />
         </div>
+        <div className="pointer-events-none absolute bottom-3 left-3 max-w-[220px]">
+          <EscalationLadder phase={world.phase} defcon={world.defcon} winter={world.winterStage} />
+        </div>
       </div>
       <div className="grid max-h-[42vh] grid-cols-1 border-t border-danger/30 lg:grid-cols-2">
         <div className="overflow-y-auto p-4">
@@ -105,6 +115,7 @@ export function WarScreen() {
           <ActionPanel world={world} />
         </div>
         <div className="overflow-y-auto border-danger/20 p-4 lg:border-l">
+          <SpaceWeatherPanel world={world} />
           <SituationLog world={world} />
           <NuclearTimeline world={world} />
         </div>

@@ -6,6 +6,8 @@ import { makeOfficer, asPlayable } from "./command";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
 import { saveWorldToSlot } from "./slots";
+import { ensureTreaties } from "./treaties";
+import { quietWeather } from "./spaceWeather";
 
 const KEY = "threshold.save.v2";
 const BACKUP = "threshold.save.v2.bak";
@@ -68,6 +70,24 @@ export function migrateWorld(world: World): World {
       note: "Money, ports, colonels.",
     });
   }
+  if (!world.flashpoints.some((f) => f.id === "himalaya")) {
+    world.flashpoints.push({
+      id: "himalaya",
+      name: "Himalaya / LAC",
+      actors: ["IN", "CN"],
+      heat: 18,
+      note: "High-altitude clash. Dual-capable aircraft make a patrol nuclear-adjacent.",
+    });
+  }
+  if (!world.flashpoints.some((f) => f.id === "space")) {
+    world.flashpoints.push({
+      id: "space",
+      name: "Early warning / space",
+      actors: ["US", "RU", "CN"],
+      heat: 12,
+      note: "SBIRS and missile-warning birds. An ASAT shot is a blindfold.",
+    });
+  }
   if (world.brokenArrow === undefined) world.brokenArrow = null;
   if (!world.reactions) world.reactions = [];
   if (!world.pacts) world.pacts = [];
@@ -83,6 +103,9 @@ export function migrateWorld(world: World): World {
   if (world.lastStrike === undefined) world.lastStrike = null;
   if (world.ceasefire === undefined) world.ceasefire = null;
   if (world.c2StanceTurn === undefined) world.c2StanceTurn = 0;
+  if (world.lastRecap === undefined) world.lastRecap = null;
+  ensureTreaties(world);
+  if (!world.spaceWeather) world.spaceWeather = quietWeather();
   for (const a of Object.values(world.actors)) {
     for (const s of a.systems) {
       if (s.rvsPerBus === undefined) {

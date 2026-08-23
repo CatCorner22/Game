@@ -11,7 +11,10 @@ import { ObjectivesPanel } from "./ObjectivesPanel";
 import { HotlinePanel } from "./HotlinePanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { C2Panel } from "./C2Panel";
+import { PatrolPanel } from "./PatrolPanel";
 import { DiplomacyPanel } from "./DiplomacyPanel";
+import { SpaceWeatherPanel } from "./SpaceWeatherPanel";
+import { weatherHostile } from "@/lib/game/spaceWeather";
 import { GLOSSARY } from "@/lib/game/copy";
 import { CloseCallOverlay } from "./CloseCallOverlay";
 import { updateAtmosphere } from "@/lib/game/audio";
@@ -22,7 +25,8 @@ import { cn } from "@/lib/utils";
 import { winterLabel } from "@/lib/game/warning";
 import { COMMAND, asPlayable, stanceLine } from "@/lib/game/command";
 import { fusionName } from "@/lib/game/terminator";
-import { GlassPanel, HudButton, HudChip, HudHeader, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
+import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
+import { ShortcutsOverlay } from "./ShortcutsOverlay";
 
 function Meter({
   label,
@@ -90,6 +94,7 @@ export function PlayScreen() {
   const glossaryOpen = useGame((s) => s.glossaryOpen);
   const toggleGlossary = useGame((s) => s.toggleGlossary);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [muted, setMutedLocal] = useState(() => loadSettings().muted);
 
   useEffect(() => {
@@ -130,6 +135,15 @@ export function PlayScreen() {
             <HudChip danger={m.grid < 40} className="hidden sm:inline-flex">
               GRID {Math.round(m.grid)}
             </HudChip>
+            {world.spaceWeather && weatherHostile(world.spaceWeather) ? (
+              <HudChip danger className="hidden sm:inline-flex">
+                {world.spaceWeather.flare === "carrington"
+                  ? "CARRINGTON"
+                  : world.spaceWeather.cmeInbound
+                    ? "CME INBOUND"
+                    : `${world.spaceWeather.flare}-FLARE`}
+              </HudChip>
+            ) : null}
             {world.brokenArrow && !world.brokenArrow.recovered ? (
               <HudChip danger className="hidden sm:inline-flex">
                 BROKEN ARROW
@@ -146,6 +160,9 @@ export function PlayScreen() {
             </HudButton>
             <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setScreen("briefing")}>
               Brief
+            </HudButton>
+            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setHelpOpen(true)}>
+              Keys
             </HudButton>
             <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => resetToTitle()}>
               Menu
@@ -214,6 +231,8 @@ export function PlayScreen() {
             </p>
           </HudPanel>
           <C2Panel world={world} />
+          <SpaceWeatherPanel world={world} />
+          <PatrolPanel world={world} />
           <DiplomacyPanel world={world} />
           <ObjectivesPanel world={world} />
           <FlashpointBoard world={world} />
@@ -235,8 +254,11 @@ export function PlayScreen() {
           <div className="pointer-events-none absolute top-3 right-3 w-[min(100%,320px)]">
             <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} />
           </div>
-          <div className="pointer-events-none absolute bottom-3 left-3 font-mono text-xs tracking-[0.18em] text-accent/60 uppercase">
-            Drag to orbit · click a marker
+          <div className="pointer-events-none absolute bottom-3 left-3 max-w-[220px]">
+            <EscalationLadder phase={world.phase} defcon={world.defcon} winter={world.winterStage} />
+            <p className="mt-2 font-mono text-[10px] tracking-[0.18em] text-accent/60 uppercase">
+              Drag to orbit · click a marker
+            </p>
           </div>
         </div>
 
@@ -250,6 +272,7 @@ export function PlayScreen() {
         </aside>
       </div>
       {confirm ? <NuclearConfirm /> : null}
+      <ShortcutsOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {glossaryOpen ? (
         <HudModalOverlay>

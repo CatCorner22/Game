@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
@@ -6,8 +6,13 @@ import type { Actor, ActorId, LaunchSite, MissileFx, World } from "@/lib/game/ty
 import { ACTOR_IDS } from "@/lib/game/types";
 import { latLonToVec3 } from "@/lib/game/geo";
 import { actorFlashHeat } from "./FlashpointBoard";
+import { loadSettings } from "@/lib/game/settings";
 
 const R = 1.62;
+const EARTH_SEGMENTS = 48;
+const ATMOS_SEGMENTS = 32;
+const ARC_POINTS = 28;
+const EMISSIVE = new THREE.Color("#7ec8ff");
 
 function useEarthTextures() {
   const [failed, setFailed] = useState(false);
@@ -64,7 +69,7 @@ function EarthFallback() {
   );
   return (
     <mesh>
-      <sphereGeometry args={[R, 64, 64]} />
+      <sphereGeometry args={[R, EARTH_SEGMENTS, EARTH_SEGMENTS]} />
       <primitive object={mat} attach="material" />
     </mesh>
   );
@@ -75,12 +80,12 @@ function Earth() {
   if (failed) return <EarthFallback />;
   return (
     <mesh>
-      <sphereGeometry args={[R, 64, 64]} />
+      <sphereGeometry args={[R, EARTH_SEGMENTS, EARTH_SEGMENTS]} />
       <meshStandardMaterial
         map={dark}
         emissiveMap={night}
-        emissive={new THREE.Color("#c4b8a0")}
-        emissiveIntensity={0.42}
+        emissive={EMISSIVE}
+        emissiveIntensity={0.38}
         roughness={0.92}
         metalness={0.05}
       />
@@ -103,7 +108,7 @@ function Atmosphere() {
           varying vec3 vNormal;
           void main() {
             float i = pow(0.62 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.2);
-            gl_FragColor = vec4(0.55, 0.62, 0.78, 1.0) * i;
+            gl_FragColor = vec4(0.0, 0.78, 0.92, 1.0) * i;
           }
         `,
         blending: THREE.AdditiveBlending,
@@ -115,20 +120,20 @@ function Atmosphere() {
   );
   return (
     <mesh scale={1.12}>
-      <sphereGeometry args={[R, 48, 48]} />
+      <sphereGeometry args={[R, ATMOS_SEGMENTS, ATMOS_SEGMENTS]} />
       <primitive object={mat} attach="material" />
     </mesh>
   );
 }
 
 function markerColor(actor: Actor, selected: boolean, flashHeat: number): string {
-  if (selected) return "#f2f0ea";
-  if (flashHeat >= 70) return "#b42318";
-  if (flashHeat >= 45) return "#c4a35a";
-  if (actor.id === "US") return "#c4a35a";
-  if (actor.hostility.US >= 70) return "#b42318";
-  if (actor.hostility.US <= 28) return "#6b7f5a";
-  return "#8a8680";
+  if (selected) return "#e8f4ff";
+  if (flashHeat >= 70) return "#ff3366";
+  if (flashHeat >= 45) return "#00e5ff";
+  if (actor.id === "US") return "#00e5ff";
+  if (actor.hostility.US >= 70) return "#ff3366";
+  if (actor.hostility.US <= 28) return "#34d399";
+  return "#8ba3bc";
 }
 
 function SiteMarks({ sites, selected }: { sites: LaunchSite[]; selected: ActorId }) {
@@ -140,7 +145,7 @@ function SiteMarks({ sites, selected }: { sites: LaunchSite[]; selected: ActorId
           const [x, y, z] = latLonToVec3(s.lat, s.lon, R + 0.028);
           const ours = Boolean(s.ourSpy && !s.ourSpy.burned);
           const watched = Boolean(s.hostile && !s.hostile.burned && s.hostile.known);
-          const color = ours ? "#c4a35a" : watched ? "#b42318" : "#5c5955";
+          const color = ours ? "#00e5ff" : watched ? "#ff3366" : "#4a6278";
           return (
             <mesh key={s.id} position={[x, y, z]} scale={0.55}>
               <boxGeometry args={[0.04, 0.04, 0.04]} />
@@ -160,7 +165,7 @@ function HeatRing({ lat, lon, heat }: { lat: number; lon: number; heat: number }
   return (
     <mesh position={[x, y, z]} scale={scale}>
       <ringGeometry args={[0.6, 1, 24]} />
-      <meshBasicMaterial color={heat >= 70 ? "#b42318" : "#c4a35a"} transparent opacity={opacity} side={THREE.DoubleSide} />
+      <meshBasicMaterial color={heat >= 70 ? "#ff3366" : "#00e5ff"} transparent opacity={opacity} side={THREE.DoubleSide} />
     </mesh>
   );
 }
@@ -209,7 +214,7 @@ function ArcPrimitive({ points, emphasized }: { points: THREE.Vector3[]; emphasi
   const obj = useMemo(() => {
     const geo = new THREE.BufferGeometry().setFromPoints(points);
     const mat = new THREE.LineBasicMaterial({
-      color: emphasized ? 0xff4444 : 0xb42318,
+      color: emphasized ? 0xff3366 : 0x00e5ff,
       transparent: true,
       opacity: emphasized ? 1 : 0.85,
       linewidth: emphasized ? 2 : 1,
@@ -236,7 +241,7 @@ function Arcs({
       const b = new THREE.Vector3(...latLonToVec3(to.lat, to.lon, R + 0.02));
       const mid = a.clone().add(b).multiplyScalar(0.5).normalize().multiplyScalar(R + (emphasized ? 0.75 : 0.55));
       const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
-      return { id: m.id, pts: curve.getPoints(48), toPos: b };
+      return { id: m.id, pts: curve.getPoints(ARC_POINTS), toPos: b };
     });
   }, [missiles, actors, emphasized]);
 
@@ -274,11 +279,11 @@ function Scene({
 }) {
   return (
     <>
-      <color attach="background" args={["#0a0a0a"]} />
+      <color attach="background" args={["#020617"]} />
       <ambientLight intensity={0.18} />
-      <directionalLight position={[6, 2.4, 3.2]} intensity={1.35} color="#fff4e0" />
-      <directionalLight position={[-4, -1, -2]} intensity={0.25} color="#6a7a9a" />
-      <Stars radius={40} depth={20} count={1200} factor={2.2} fade speed={0.3} />
+      <directionalLight position={[6, 2.4, 3.2]} intensity={1.2} color="#e8f4ff" />
+      <directionalLight position={[-4, -1, -2]} intensity={0.28} color="#00e5ff" />
+      <Stars radius={40} depth={18} count={520} factor={2} fade speed={0.2} />
       <Earth />
       <Atmosphere />
       <Markers actors={actors} selected={selected} onSelect={onSelect} flashHeat={flashHeat} />
@@ -286,7 +291,7 @@ function Scene({
       <Arcs missiles={missiles} actors={actors} emphasized={emphasizedArcs} />
       <OrbitControls
         enablePan={false}
-        autoRotate={!emphasizedArcs}
+        autoRotate={!emphasizedArcs && !loadSettings().reducedMotion}
         autoRotateSpeed={0.28}
         minDistance={2.35}
         maxDistance={5.4}
@@ -307,22 +312,24 @@ export type GlobeCanvasProps = {
   emphasizedArcs?: boolean;
 };
 
-export function GlobeCanvas({ world, emphasizedArcs, ...props }: GlobeCanvasProps) {
+export const GlobeCanvas = memo(function GlobeCanvas({ world, emphasizedArcs, ...props }: GlobeCanvasProps) {
+  const reduced = loadSettings().reducedMotion;
   const flashHeat = useMemo(() => {
     if (!world) return {} as Record<ActorId, number>;
     const out = {} as Record<ActorId, number>;
     for (const id of ACTOR_IDS) out[id] = actorFlashHeat(world, id);
     return out;
-  }, [world]);
+  }, [world?.turn, world?.flashpoints, world?.defcon]);
 
   return (
     <Canvas
-      dpr={[1, 1.75]}
-      gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+      dpr={[1, 1.35]}
+      frameloop={reduced ? "demand" : "always"}
+      gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
       camera={{ position: [-0.4, 1.1, 3.35], fov: 38 }}
       style={{ width: "100%", height: "100%", touchAction: "none" }}
     >
       <Scene {...props} flashHeat={flashHeat} emphasizedArcs={emphasizedArcs} />
     </Canvas>
   );
-}
+});

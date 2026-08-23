@@ -13,6 +13,7 @@ import { TutorialOverlay, useKeyboardShortcuts } from "./TutorialOverlay";
 import { GameErrorBoundary } from "./GameErrorBoundary";
 import { ErrorBanner } from "./ErrorBanner";
 import { FuturisticShell } from "./ui/Hud";
+import { HelpLayer } from "./ShortcutsOverlay";
 
 export function GameApp() {
   const screen = useGame((s) => s.screen);
@@ -36,7 +37,11 @@ export function GameApp() {
   }, []);
 
   const shellVariant =
-    screen === "war" ? "war" : screen === "play" || screen === "end" || screen === "briefing" || screen === "stats" ? "default" : "minimal";
+    screen === "war"
+      ? "war"
+      : screen === "title" || screen === "play" || screen === "end" || screen === "briefing" || screen === "stats" || screen === "multiplayer"
+        ? "default"
+        : "minimal";
 
   return (
     <GameErrorBoundary>
@@ -50,6 +55,7 @@ export function GameApp() {
         {screen === "stats" ? <StatsScreen /> : null}
         {screen === "multiplayer" ? <MultiplayerScreen /> : null}
         <TutorialOverlay />
+        <HelpLayer />
       </FuturisticShell>
     </GameErrorBoundary>
   );

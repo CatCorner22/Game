@@ -15,6 +15,7 @@ export const BRIEFING_PAGES = [
       "Each turn is one month. The world presents one event. You take one action. Other capitals act too. Then the log explains the causal chain.",
       "Select a country on the globe (or in the file list). That country is the target of your action. The event's actor is pre-selected so you do not have to hunt.",
       "HOLD is a real action. If the event is a satellite track, holding waits for radar corroboration. If it was a false alarm, that is how the species survived 1983. If it was real, you eat the first strike.",
+      "The sun is a second phenomenology. A Carrington-class CME (1859) fries transformers and warning birds and looks like EMP. Speculated orbital weapons — FOBS, rods-from-God, nuclear ASATs — live in the same file. INTEL the magnetometers. Do not generate into a storm.",
     ],
   },
   {
@@ -141,5 +142,41 @@ export const GLOSSARY = [
   {
     term: "Disclosure labels",
     def: "Acknowledged = official. Reported = credible public reporting, not official. Suspected = intelligence assessment. Unacknowledged = exists in the file, denied or never spoken.",
+  },
+  {
+    term: "ASAT",
+    def: "Anti-satellite weapon. A shot against a missile-warning bird thins coverage and raises false-track rates. Close calls look worse after you are blindfolded.",
+  },
+  {
+    term: "CASD",
+    def: "Continuous At-Sea Deterrence. The UK keeps at least one SSBN on patrol. A missed comms window is designed. It is also how you discover a casualty.",
+  },
+  {
+    term: "Force de frappe",
+    def: "France's independent deterrent. Sharing targeting with NATO is how a third center ceases to be independent.",
+  },
+  {
+    term: "Staff split",
+    def: "Second officer, warning desk, and political desk recommend different moves. They load a draft. They do not execute. Sole authority stays with you.",
+  },
+  {
+    term: "Carrington Event (1859)",
+    def: "The largest recorded solar storm. Richard Carrington watched a white-light flare on 1 September 1859. The CME hit Earth in ~17 hours. Telegraph lines sparked and caught fire. Aurora reached the tropics. A repeat today takes extra-high-voltage transformers, HF radio, and missile-warning birds. Desks may write EMP or first strike. Island the grid. Do not generate.",
+  },
+  {
+    term: "FOBS",
+    def: "Fractional Orbital Bombardment System. A bus circularizes like a satellite, then deorbits. Radar sees a bird until it does not. The south polar gap is why BMEWS can miss it. The USSR flew this in the 1960s. A modern Russian reload is assessed, not confirmed. China's 2021 fractional-orbit HGV test is in the same file. Speculated — not a mature acknowledged force.",
+  },
+  {
+    term: "Orbital kinetic / Prompt strike",
+    def: "Rods from God: tungsten from orbit, no fissile, still looks like a lofted bus until impact. Conventional Prompt Strike and Brilliant Pebbles are the US briefing slides. Neither is a fielded nuclear force. Adversaries still write the file. Unacknowledged.",
+  },
+  {
+    term: "Nuclear ASAT / Starfish Prime",
+    def: "A nuclear detonation in or near GEO. Starfish Prime (1962) killed satellites and lit Honolulu streetlights from 1,400 km. Outer Space Treaty bans WMDs in orbit. A reactor or pumped killer near a warning slot is the gray. One pulse is a hemisphere of electronics.",
+  },
+  {
+    term: "Space weather / Kp",
+    def: "Kp is the planetary geomagnetic index (0–9). M-class flares noise up HF. X-class can push a CME. Carrington is off the usual chart. Grid stress and sat stress are how the storm hits transformers and warning birds. Halloween 2003 and the 1989 Quebec blackout are the modern comparison files. Miyake (774/993 AD) may have been ten Carringtons.",
   },
 ];

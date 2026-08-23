@@ -1,6 +1,7 @@
 import { createWorld } from "./world";
 import { resolveTurn, forecast } from "./sim";
 import { applyScenario, SCENARIOS } from "./scenarios";
+import { makeActors } from "./actors";
 import { seatObjectives } from "./objectives";
 import { encodeReplay, decodeReplay, recordTurn } from "./replay";
 import { PLAYABLE_IDS } from "./types";
@@ -10,6 +11,7 @@ import { replayFromCode } from "./replayRun";
 import { proposePact } from "./pacts";
 import { proposeCeasefire } from "./ceasefire";
 import { applyC2Stance } from "./c2";
+import { majorityKind, staffAdvice } from "./staff";
 
 export interface IntegrityResult {
   ok: boolean;
@@ -185,6 +187,86 @@ export function runIntegrityChecks(): IntegrityResult {
     applyNuclearUse(w, "US", "RU", "tactical", "test", false, 20, "single");
     if (!proposeCeasefire(w, "US", "RU") || !w.ceasefire?.accepted) throw new Error("no ceasefire");
     return `until ${w.ceasefire.untilTurn}`;
+  });
+
+  check("new-flashpoints", () => {
+    const w = createWorld("standard", 1, "US", "blue");
+    for (const id of ["himalaya", "space"] as const) {
+      if (!w.flashpoints.some((f) => f.id === id)) throw new Error(`missing ${id}`);
+    }
+    return "himalaya+space";
+  });
+
+  check("new-scenario-seats", () => {
+    const expect: Record<string, string> = {
+      "taiwan-prc-2027": "CN",
+      "trident-casd": "UK",
+      "frappe-independence": "FR",
+      "nasr-flushed": "PK",
+      "asat-blind-2028": "US",
+      "lac-clash-2027": "IN",
+    };
+    for (const [id, seat] of Object.entries(expect)) {
+      const def = SCENARIOS.find((s) => s.id === id);
+      if (!def || def.playerId !== seat) throw new Error(`${id} seat`);
+    }
+    return Object.keys(expect).join(",");
+  });
+
+  check("staff-advice", () => {
+    const w = createWorld("standard", 1, "US", "blue");
+    const advice = staffAdvice(w);
+    if (advice.length !== 3) throw new Error(`expected 3 desks, got ${advice.length}`);
+    majorityKind(advice);
+    return advice.map((a) => a.kind).join(",");
+  });
+
+  check("treaties-seeded", () => {
+    const w = createWorld("standard", 1, "US", "blue");
+    if (!w.treaties?.some((t) => t.id === "new-start" && t.status === "dead")) throw new Error("New START not dead");
+    if (!w.treaties.some((t) => t.id === "ost")) throw new Error("no OST");
+    return `${w.treaties.length} treaties`;
+  });
+
+  check("turn-recap", () => {
+    const next = resolveTurn(structuredClone(createWorld("standard", 3, "US", "blue")), hold());
+    if (!next.lastRecap) throw new Error("no recap");
+    if (!next.lastRecap.nextTitle) throw new Error("no next title");
+    return `${next.lastRecap.actionLabel} · ${next.lastRecap.deltas.length} deltas`;
+  });
+
+  check("orbital-systems", () => {
+    const actors = makeActors();
+    const kinetic = actors.US.systems.find((s) => s.id === "us-orbital-kinetic");
+    if (!kinetic || kinetic.disclosure !== "unacknowledged" || kinetic.kind !== "orbital") {
+      throw new Error("US orbital kinetic missing");
+    }
+    const fobs = actors.RU.systems.find((s) => s.id === "ru-fobs");
+    if (!fobs || fobs.kind !== "fobs") throw new Error("RU FOBS missing");
+    const cnFobs = actors.CN.systems.find((s) => s.id === "cn-fobs");
+    if (!cnFobs || cnFobs.kind !== "fobs") throw new Error("CN FOBS missing");
+    const hunter = actors.CN.systems.find((s) => s.id === "cn-hunter");
+    if (!hunter || hunter.kind !== "orbital") throw new Error("CN hunter missing");
+    return "US kinetic + RU/CN FOBS + hunter";
+  });
+
+  check("carrington-scenario", () => {
+    const w = applyScenario(createWorld("extreme", 9, "US", "blue"), "carrington-2027");
+    if (!w.spaceWeather?.cmeInbound) throw new Error("no CME inbound");
+    if (w.spaceWeather.flare !== "X") throw new Error(`flare ${w.spaceWeather.flare}`);
+    if (w.event.id !== "carrington-scenario") throw new Error(w.event.id);
+    const advice = staffAdvice(w);
+    if (!advice.some((a) => a.kind === "hold" || a.kind === "kill" || a.kind === "intelligence")) {
+      throw new Error("staff ignored the sun");
+    }
+    return `CME ${w.spaceWeather.hoursToArrival}h · staff ${advice.map((a) => a.kind).join(",")}`;
+  });
+
+  check("fobs-scenario", () => {
+    const w = applyScenario(createWorld("hard", 9, "US", "blue"), "fobs-ambiguity");
+    if (w.closeCall?.track.kind !== "test") throw new Error(`track ${w.closeCall?.track.kind}`);
+    if (w.event.id !== "fobs-scenario") throw new Error(w.event.id);
+    return `kind ${w.closeCall.track.kind} conf ${w.closeCall.track.confidence}`;
   });
 
   check("mirv-seeded", () => {

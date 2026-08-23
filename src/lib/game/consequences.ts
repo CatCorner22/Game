@@ -60,6 +60,64 @@ export function followUpEvent(world: World, action: PlayerAction): GameEvent | n
     }
   }
 
+  if (
+    prev.id === "carrington-watch" ||
+    prev.id === "carrington-scenario" ||
+    prev.id === "carrington-hit" ||
+    prev.id === "halloween-storm" ||
+    prev.id === "quebec-blackout" ||
+    prev.id === "miyake-class"
+  ) {
+    if (action.kind === "kill" && action.target === world.playerId) {
+      return {
+        id: followId(world, "islanded"),
+        title: "Islanded grid holds",
+        body: `You cut your own interconnect before the worst of the storm. Transformers may live. Warning birds are still thin. ${them} saw the lights go and may write EMP anyway. INTEL the magnetometers. POSTURE confirms their story.`,
+        actor: target,
+        heat: "high",
+        ignoreLine: "The island holds. Coverage does not.",
+        tags: ["space", "follow", "cyber"],
+        because,
+      };
+    }
+    if (action.kind === "posture") {
+      return {
+        id: followId(world, "emp-read"),
+        title: `${them} files EMP`,
+        body: `You generated into a geomagnetic storm. ${them} is briefing a pulse, not the sun. A notice now looks like a cover story. INTEL is the magnetometer file. HOLD is how their first draft hardens.`,
+        actor: target,
+        heat: "critical",
+        ignoreLine: "The EMP story stands. Space heat climbs.",
+        tags: ["space", "follow", "posture"],
+        because,
+      };
+    }
+    if (action.kind === "intelligence") {
+      return {
+        id: followId(world, "magnetometer"),
+        title: "Magnetometers agree",
+        body: `Last month's take says SWPC and the ground stations match. This is the sun — Carrington 1859, Halloween 2003, or worse. ${them} may not accept that product. File it on the line. Do not generate.`,
+        actor: target,
+        heat: "high",
+        ignoreLine: "The product sits. Their hawks still want a generate.",
+        tags: ["space", "follow", "intel"],
+        because,
+      };
+    }
+    if (action.kind === "hold") {
+      return {
+        id: followId(world, "storm-held"),
+        title: "Storm unanswered",
+        body: `You held through the solar file. Cascades look like a pulse to someone else's desk. ${them} may generate. INTEL the magnetometers now, or island what is left of the grid.`,
+        actor: target,
+        heat: "critical",
+        ignoreLine: "The EMP story writes itself.",
+        tags: ["space", "follow", "silence"],
+        because,
+      };
+    }
+  }
+
   if (action.kind === "hold") {
     return {
       id: followId(world, "held"),
@@ -222,6 +280,22 @@ export function scoreCandidate(world: World, ev: GameEvent, lastAction: PlayerAc
   if (lastAction?.kind === "hold" && ev.heat === "low") s -= 2;
   if (lastAction?.kind === "diplomacy" && ev.tags.includes("talks")) s += 4;
   if (lastAction?.kind === "posture" && (ev.tags.includes("nato-ru") || ev.tags.includes("warning"))) s += 3;
+  if (ev.tags.includes("space")) {
+    s += (world.flashpoints.find((f) => f.id === "space")?.heat ?? 0) / 15;
+    if (world.spaceWeather?.cmeInbound || world.spaceWeather?.flare === "carrington" || world.spaceWeather?.flare === "X") {
+      if (
+        ev.id === "carrington-watch" ||
+        ev.id === "carrington-hit" ||
+        ev.id === "halloween-storm" ||
+        ev.id === "quebec-blackout" ||
+        ev.id === "miyake-class" ||
+        ev.id === "fobs-track" ||
+        ev.id === "nukesat-rumor"
+      ) {
+        s += 10;
+      }
+    }
+  }
   return s;
 }
 

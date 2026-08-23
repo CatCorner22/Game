@@ -87,6 +87,36 @@ function blueObjectives(world: World): Objective[] {
       detail: `Takeover at ${Math.round(world.aiTakeover)}.`,
     });
   }
+  const sid = world.scenarioId;
+  if (sid === "asat-blind-2028") {
+    const space = world.flashpoints.find((f) => f.id === "space")?.heat ?? 0;
+    out.push({
+      id: "restore-warning",
+      label: "Keep warning usable",
+      progress: clampPct(world.actors.US.warning),
+      met: world.actors.US.warning >= 50 && space < 70,
+      detail: `Warning ${Math.round(world.actors.US.warning)} · space heat ${Math.round(space)}.`,
+    });
+  }
+  if (sid === "trident-casd" || sid === "frappe-independence") {
+    out.push({
+      id: "casd-hold",
+      label: "Keep independent deterrent credible",
+      progress: clampPct(m.alliances),
+      met: world.nuclearUses.length === 0 && m.alliances >= 50,
+      detail: "No nuclear use. Partners still on the line.",
+    });
+  }
+  if (sid === "lac-clash-2027") {
+    const him = world.flashpoints.find((f) => f.id === "himalaya")?.heat ?? 0;
+    out.push({
+      id: "lac-cool",
+      label: "Cool the ridge",
+      progress: clampPct(100 - him),
+      met: him < 40 && world.nuclearUses.length === 0,
+      detail: `Himalaya heat ${Math.round(him)}.`,
+    });
+  }
   return out;
 }
 
@@ -108,6 +138,27 @@ function redObjectives(world: World): Objective[] {
       detail: seatRedDetail(p, world),
     },
   ];
+  const sid = world.scenarioId;
+  if (sid === "taiwan-prc-2027") {
+    const tw = world.flashpoints.find((f) => f.id === "taiwan")?.heat ?? 0;
+    out.push({
+      id: "quarantine-hold",
+      label: "Hold the inspection zone",
+      progress: clampPct(tw),
+      met: tw >= 60 && world.nuclearUses.length === 0 && world.actors[p].c2Intact,
+      detail: `Taiwan heat ${Math.round(tw)}. A spasm still loses the island.`,
+    });
+  }
+  if (sid === "nasr-flushed") {
+    const k = world.flashpoints.find((f) => f.id === "kashmir")?.heat ?? 0;
+    out.push({
+      id: "nasr-coerce",
+      label: "Coerce without Nasr use",
+      progress: world.nuclearUses.length === 0 ? clampPct(100 - k / 2) : 0,
+      met: world.nuclearUses.length === 0 && k < 50,
+      detail: `Kashmir heat ${Math.round(k)}. First use is the loss condition.`,
+    });
+  }
   return out;
 }
 

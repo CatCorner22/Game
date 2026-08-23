@@ -12,7 +12,9 @@ import { pinnedLogEntry } from "./SituationLog";
 import { doctrineOptions } from "@/lib/game/doctrine";
 import { loadSettings } from "@/lib/game/settings";
 import { pactHint } from "./DiplomacyPanel";
-import { HudButton, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
+import { StaffPanel } from "./StaffPanel";
+import { majorityKind, staffAdvice } from "@/lib/game/staff";
+import { HudButton, HudChip, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
 
 export function ActionPanel({ world }: { world: World }) {
   const kind = useGame((s) => s.actionKind);
@@ -53,6 +55,7 @@ export function ActionPanel({ world }: { world: World }) {
   const pinned = pinnedLogEntry(world);
   const forecastSummary = loadSettings().forecastDetail === "summary";
   const doctrineChoices = world.doctrinePending ? doctrineOptions(world) : [];
+  const recommended = majorityKind(staffAdvice(world));
 
   if (world.doctrinePending && doctrineChoices.length) {
     return (
@@ -76,6 +79,26 @@ export function ActionPanel({ world }: { world: World }) {
 
   return (
     <section className="flex flex-col gap-4">
+      {world.lastRecap && world.turn > 1 ? (
+        <HudPanel glow="accent">
+          <HudLabel>Last month · recap</HudLabel>
+          <p className="mt-1 font-mono text-[11px] text-accent uppercase">{world.lastRecap.actionLabel}</p>
+          {world.lastRecap.because ? <p className="mt-1 text-xs text-muted">{world.lastRecap.because}</p> : null}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {world.lastRecap.deltas.length ? (
+              world.lastRecap.deltas.map((d) => (
+                <HudChip key={d.label} danger={d.label === "Risk" && d.delta > 0}>
+                  {d.label} {d.delta > 0 ? "+" : ""}
+                  {d.delta}
+                </HudChip>
+              ))
+            ) : (
+              <HudChip>Meters held</HudChip>
+            )}
+          </div>
+          <p className="mt-2 text-[11px] text-subtle">Now: {world.lastRecap.nextTitle}</p>
+        </HudPanel>
+      ) : null}
       {pinned && (pinned.kind === "critical" || pinned.kind === "you") ? (
         <HudPanel glow="danger">
           <HudLabel className="text-danger">Priority</HudLabel>
@@ -145,15 +168,20 @@ export function ActionPanel({ world }: { world: World }) {
             <HudButton
               key={a.kind}
               variant={a.kind === kind ? "active" : "default"}
-              className="min-h-11 px-3 text-left text-sm"
+              className={cn("min-h-11 px-3 text-left text-sm", a.kind === recommended && a.kind !== kind && "neon-border-accent")}
               onClick={() => setKind(a.kind)}
             >
               {a.label}
+              {a.kind === recommended && a.kind !== kind ? (
+                <span className="mt-0.5 block font-mono text-[8px] tracking-wider text-accent uppercase">Staff lean</span>
+              ) : null}
             </HudButton>
           ))}
         </div>
         <p className="mt-3 text-sm text-muted">{def.blurb}</p>
       </div>
+
+      <StaffPanel world={world} />
 
       {kind !== "hold" ? (
         <div>

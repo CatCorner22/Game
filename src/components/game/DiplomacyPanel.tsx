@@ -1,10 +1,11 @@
 import type { World } from "@/lib/game/types";
 import { hasPact } from "@/lib/game/pacts";
 import { hasCeasefire } from "@/lib/game/ceasefire";
-import { HudLabel, HudPanel } from "./ui/Hud";
+import { HudChip, HudLabel, HudPanel } from "./ui/Hud";
 
 export function DiplomacyPanel({ world }: { world: World }) {
   const pacts = (world.pacts ?? []).filter((p) => !p.broken && p.untilTurn >= world.turn);
+  const treaties = world.treaties ?? [];
   const cf =
     world.ceasefire && !world.ceasefire.broken && world.ceasefire.accepted && world.ceasefire.untilTurn >= world.turn
       ? world.ceasefire
@@ -34,6 +35,20 @@ export function DiplomacyPanel({ world }: { world: World }) {
       ) : (
         <p className="mt-1 text-[10px] text-subtle">No active non-attack pacts.</p>
       )}
+      <HudLabel className="mt-3">Treaties</HudLabel>
+      <ul className="mt-2 space-y-1.5">
+        {treaties.map((t) => (
+          <li key={t.id}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[10px] text-fg">{t.name}</span>
+              <HudChip danger={t.status === "dead" || t.status === "strained"} active={t.status === "in-force"}>
+                {t.status}
+              </HudChip>
+            </div>
+            <p className="text-[10px] leading-snug text-subtle">{t.note}</p>
+          </li>
+        ))}
+      </ul>
     </HudPanel>
   );
 }

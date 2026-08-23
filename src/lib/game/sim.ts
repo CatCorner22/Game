@@ -7,6 +7,8 @@ import { followUpEvent, rememberDecision, sameFollowBeat, shouldFollowUp } from 
 import { redObjectivesMet } from "./objectives";
 import { breakPactIfAggressive, proposePact, tickPacts } from "./pacts";
 import { breakCeasefire, ceasefirePeaceReady, hasCeasefire, proposeCeasefire, tickCeasefire } from "./ceasefire";
+import { tickTreaties } from "./treaties";
+import { applyWeatherIgnore, armSpaceFromEvent, stormHitEvent, tickSpaceWeather } from "./spaceWeather";
 import { markDoctrinePending } from "./doctrine";
 import {
   applyNuclearUse,
@@ -98,6 +100,8 @@ function applyIgnore(world: World, action: PlayerAction) {
     }
     return;
   }
+
+  applyWeatherIgnore(world, action);
 
   if (ev.id === "term-wake" || ev.id === "term-airgap") {
     if (action.kind === "hold" && world.terminator) {
@@ -593,6 +597,7 @@ function tickCasual(world: World) {
 }
 
 export function resolveTurn(world: World, action: PlayerAction): World {
+  const prevMeters = meters(world);
   const prevEvent = world.event;
   rememberDecision(world, action);
   applyIgnore(world, action);
@@ -631,6 +636,8 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   tickTerminator(world, action);
   tickPacts(world);
   tickCeasefire(world);
+  tickTreaties(world, action);
+  const stormArrived = tickSpaceWeather(world);
   const expanded = machineExpandsOrder(world, action);
   if (expanded) {
     log(
@@ -684,6 +691,11 @@ export function resolveTurn(world: World, action: PlayerAction): World {
       if (cc) {
         world.closeCall = cc;
         world.event = closeCallEvent(world, cc);
+      } else if (stormArrived) {
+        world.event = stormHitEvent(world.playerId);
+        world.usedEventIds.push(world.event.id);
+        if (world.usedEventIds.length > 40) world.usedEventIds.shift();
+        armSpaceFromEvent(world);
       } else {
         const follow = shouldFollowUp(world, action) ? followUpEvent(world, action) : null;
         if (follow && !sameFollowBeat(prevEvent, follow)) {
@@ -694,6 +706,10 @@ export function resolveTurn(world: World, action: PlayerAction): World {
           world.event = drawEvent(world);
         }
         armTrickFromEvent(world, world.event.id);
+        armSpaceFromEvent(world);
+        if (world.event.tags.includes("space")) {
+          bumpFlash(world, "space", world.event.heat === "critical" ? 6 : 3);
+        }
         if (world.event.id === "broken-arrow") {
           world.event = { ...world.event, actor: world.playerId };
           seedBrokenArrow(world, world.playerId, "crash");
@@ -718,16 +734,33 @@ export function resolveTurn(world: World, action: PlayerAction): World {
     if (m.progress >= 1) m.kind = "detonation";
   }
   world.missiles = world.missiles.slice(-6);
+  const after = meters(world);
+  const def = actionDef(action.kind);
+  world.lastRecap = {
+    turn: world.turn,
+    actionLabel: `${def.label} · ${action.kind === "hold" ? "hold" : def.intensities[action.intensity - 1]}`,
+    because: world.event.because,
+    nextTitle: world.event.title,
+    deltas: [
+      { label: "Alert", delta: round(after.defcon - prevMeters.defcon) },
+      { label: "Risk", delta: round(after.risk - prevMeters.risk) },
+      { label: "Stability", delta: round(after.stability - prevMeters.stability) },
+      { label: "Partners", delta: round(after.alliances - prevMeters.alliances) },
+      { label: "Winter", delta: round(after.winter - prevMeters.winter) },
+    ].filter((d) => d.delta !== 0),
+  };
   return world;
 }
 
-export function cloneWorld(world: World): World {
-  return structuredClone(world);
+export function cloneWorld(world: World, slim = false): World {
+  const w = structuredClone(world);
+  if (slim && w.log.length > 12) w.log = w.log.slice(0, 12);
+  return w;
 }
 
 export function forecast(world: World, action: PlayerAction): Forecast {
   const run = (fixed: number) => {
-    const w = cloneWorld(world);
+    const w = cloneWorld(world, true);
     w.rngMode = "fixed";
     w.rngFixed = fixed;
     resolveTurn(w, action);

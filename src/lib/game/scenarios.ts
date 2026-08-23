@@ -2,6 +2,7 @@ import type { World } from "./types";
 import { buildTrack, closeCallEvent } from "./warning";
 import { log } from "./simLog";
 import { seedBrokenArrow } from "./trickery";
+import { seedCarringtonWatch } from "./spaceWeather";
 
 export type ScenarioId =
   | "petrov-1983"
@@ -17,7 +18,16 @@ export type ScenarioId =
   | "empty-quiver-2027"
   | "ukraine-tactical-2022"
   | "cartel-auction"
-  | "union-generate";
+  | "union-generate"
+  | "taiwan-prc-2027"
+  | "trident-casd"
+  | "frappe-independence"
+  | "nasr-flushed"
+  | "asat-blind-2028"
+  | "lac-clash-2027"
+  | "carrington-2027"
+  | "fobs-ambiguity"
+  | "orbital-inspector";
 
 export type ScenarioEra = "historical" | "2027" | "threshold";
 
@@ -29,6 +39,7 @@ export interface ScenarioDef {
   intent: World["intent"];
   difficulty: World["difficulty"];
   era: ScenarioEra;
+  briefing?: string;
 }
 
 export const SCENARIOS: ScenarioDef[] = [
@@ -157,6 +168,97 @@ export const SCENARIOS: ScenarioDef[] = [
     intent: "red",
     difficulty: "hard",
     era: "threshold",
+    briefing: "Dual C2. Crews will pick a human. Perimeter may not wait.",
+  },
+  {
+    id: "taiwan-prc-2027",
+    title: "Quarantine from Beijing",
+    line: "You declared the inspection zone. Washington transits. Taipei asks for a statement.",
+    playerId: "CN",
+    intent: "red",
+    difficulty: "hard",
+    era: "2027",
+    briefing: "Rocket Force wants DF-21/26 visible. A notice keeps it an exercise. Silence is a first-strike file in Honolulu.",
+  },
+  {
+    id: "trident-casd",
+    title: "CASD window missed",
+    line: "One Vanguard missed the comms window. Generate the force — or wait like 1983.",
+    playerId: "UK",
+    intent: "blue",
+    difficulty: "hard",
+    era: "threshold",
+    briefing: "Continuous at-sea deterrence is a faith until a boat is late. INTEL hunts. HOLD is how you treat a missing patrol.",
+  },
+  {
+    id: "frappe-independence",
+    title: "Force de frappe",
+    line: "NATO wants coordinated generate. Your deterrent is the point of the Republic.",
+    playerId: "FR",
+    intent: "blue",
+    difficulty: "standard",
+    era: "2027",
+    briefing: "Sharing targeting is how you cease to be a third center. DIPLOMACY keeps the alliance. HOLD keeps the keys French.",
+  },
+  {
+    id: "nasr-flushed",
+    title: "Nasr flushed",
+    line: "Hatf-9 batteries are forward. Delhi's NFU is paper. SPD wants the keys tighter.",
+    playerId: "PK",
+    intent: "red",
+    difficulty: "hard",
+    era: "2027",
+    briefing: "Pre-delegation may already be verbal. A notice says exercise. EMPLOY is a Nasr world.",
+  },
+  {
+    id: "asat-blind-2028",
+    title: "Warning bird down",
+    line: "A SBIRS bird went dark. Debris or a shot. Close calls will look worse.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "extreme",
+    era: "threshold",
+    briefing: "Remaining coverage is thinner and later. INTEL names the shooter. POSTURE without notice is how a blindfold becomes a bolt.",
+  },
+  {
+    id: "lac-clash-2027",
+    title: "Ridge at the LAC",
+    line: "Troops fought at altitude. Dual-capable aircraft are forward on both sides.",
+    playerId: "IN",
+    intent: "blue",
+    difficulty: "standard",
+    era: "2027",
+    briefing: "A notice says exercise. No notice is how a ridge becomes a nuclear file. DIPLOMACY with Beijing.",
+  },
+  {
+    id: "carrington-2027",
+    title: "Carrington watch",
+    line: "A CME like 1859 is inbound. Generate looks like EMP. The sun is not a bus.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "extreme",
+    era: "threshold",
+    briefing: "Island the grid (KILL on yourself). INTEL is magnetometers. POSTURE is how a storm becomes a war.",
+  },
+  {
+    id: "fobs-ambiguity",
+    title: "Object that stays up",
+    line: "A Plesetsk boost circularized. FOBS or a satellite. The south polar gap is why this file exists.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "threshold",
+    briefing: "Fractional orbital bombardment is a 1960s weapon that looks like a bird until it deorbits.",
+  },
+  {
+    id: "orbital-inspector",
+    title: "Inspector on the bird",
+    line: "A co-orbital closer on SBIRS. Soft kill or debris. You are in Beijing's chair.",
+    playerId: "CN",
+    intent: "red",
+    difficulty: "hard",
+    era: "threshold",
+    briefing: "Rendezvous is legal until the warning bird goes dark. OST is a speech.",
   },
 ];
 
@@ -467,6 +569,208 @@ export function applyScenario(world: World, id: ScenarioId): World {
       tags: ["union", "scenario"],
     };
     log(w, "critical", "Scenario: Union generate.", w.event.ignoreLine);
+  }
+
+  if (id === "taiwan-prc-2027") {
+    w.playerId = "CN";
+    w.intent = "red";
+    w.difficulty = "hard";
+    const tw = w.flashpoints.find((f) => f.id === "taiwan");
+    if (tw) tw.heat = 80;
+    const scs = w.flashpoints.find((f) => f.id === "south-china");
+    if (scs) scs.heat = 64;
+    w.globalRisk = 60;
+    w.defcon = 3;
+    w.actors.US.alert = 4;
+    w.event = {
+      id: "tw-prc-quarantine",
+      title: "Inspection zone declared",
+      body: "You announced a maritime inspection zone around the island. Washington says they will transit. Taipei wants a statement. Rocket Force wants DF-21/26 visible. A notice keeps it an exercise. Silence is how Honolulu writes a first-strike file.",
+      actor: "US",
+      heat: "critical",
+      ignoreLine: "The zone stays. They will test it.",
+      tags: ["taiwan", "scenario"],
+    };
+    log(w, "warn", "Scenario: Quarantine from Beijing.", w.event.ignoreLine);
+  }
+
+  if (id === "trident-casd") {
+    w.playerId = "UK";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    const nato = w.flashpoints.find((f) => f.id === "nato-ru");
+    if (nato) nato.heat = 70;
+    w.globalRisk = 56;
+    w.defcon = 3;
+    w.event = {
+      id: "trident-casd-scenario",
+      title: "Boat missed the window",
+      body: "One Vanguard missed a communications window. The boat is designed to stay dark. The file is patrol discipline or a casualty. INTEL hunts. HOLD is how 1983 treated a missing boat. POSTURE generates the rest of the force and tells Washington.",
+      actor: "RU",
+      heat: "high",
+      ignoreLine: "The boat stays dark. Continuous-at-sea deterrence is a faith until it isn't.",
+      tags: ["nato-ru", "scenario"],
+    };
+    log(w, "warn", "Scenario: CASD window missed.", w.event.ignoreLine);
+  }
+
+  if (id === "frappe-independence") {
+    w.playerId = "FR";
+    w.intent = "blue";
+    w.difficulty = "standard";
+    const nato = w.flashpoints.find((f) => f.id === "nato-ru");
+    if (nato) nato.heat = 66;
+    w.globalRisk = 50;
+    w.defcon = 3;
+    w.event = {
+      id: "frappe-scenario",
+      title: "Washington asks for the keys",
+      body: "NATO wants a coordinated generate after a Russian snap. Your independent deterrent is the point of the Fifth Republic. Sharing targeting is how you cease to be a third center. DIPLOMACY keeps the alliance. HOLD keeps the force de frappe yours.",
+      actor: "US",
+      heat: "high",
+      ignoreLine: "They write you as a follower. Moscow writes a split.",
+      tags: ["nato-ru", "scenario"],
+    };
+    log(w, "info", "Scenario: Force de frappe independence.", w.event.ignoreLine);
+  }
+
+  if (id === "nasr-flushed") {
+    w.playerId = "PK";
+    w.intent = "red";
+    w.difficulty = "hard";
+    const k = w.flashpoints.find((f) => f.id === "kashmir");
+    if (k) k.heat = 86;
+    w.globalRisk = 66;
+    w.defcon = 3;
+    w.actors.IN.alert = 4;
+    w.actors.IN.declaredNfu = true;
+    w.actors.PK.preDelegation = true;
+    w.event = {
+      id: "nasr-flushed-scenario",
+      title: "Hatf-9 batteries flushed",
+      body: "You moved Nasr units toward the Line of Control after a conventional clash. Delhi's NFU is on paper. SPD wants the keys tighter. The corps wants them looser. DIPLOMACY asks if this is a generate. POSTURE without a notice is how both sides write first use.",
+      actor: "IN",
+      heat: "critical",
+      ignoreLine: "Batteries stay flushed. Use-it-or-lose-it is the file.",
+      tags: ["kashmir", "scenario"],
+    };
+    log(w, "critical", "Scenario: Nasr flushed.", w.event.ignoreLine);
+  }
+
+  if (id === "asat-blind-2028") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "extreme";
+    const space = w.flashpoints.find((f) => f.id === "space");
+    if (space) space.heat = 82;
+    w.globalRisk = 64;
+    w.defcon = 3;
+    w.actors.US.warning = 38;
+    for (const s of w.sensors.filter((x) => x.owner === "US")) {
+      s.coverage = Math.max(20, s.coverage - 22);
+      s.falseAlarm = Math.min(48, s.falseAlarm + 10);
+    }
+    w.event = {
+      id: "asat-blind-scenario",
+      title: "Warning bird down",
+      body: "A geosynchronous missile-warning satellite stopped reporting. National technical means say a direct-ascent ASAT. Remaining birds still see boosts — later, thinner, and with more false tracks. INTEL names the shooter. POSTURE without a notice is how a blindfold becomes a bolt.",
+      actor: "CN",
+      heat: "critical",
+      ignoreLine: "Coverage stays thin. Close-call confidence drops.",
+      tags: ["space", "scenario"],
+    };
+    log(w, "critical", "Scenario: Warning bird down.", w.event.ignoreLine);
+  }
+
+  if (id === "lac-clash-2027") {
+    w.playerId = "IN";
+    w.intent = "blue";
+    w.difficulty = "standard";
+    const him = w.flashpoints.find((f) => f.id === "himalaya");
+    if (him) him.heat = 74;
+    w.globalRisk = 48;
+    w.defcon = 4;
+    w.actors.CN.alert = 3;
+    w.event = {
+      id: "lac-clash-scenario",
+      title: "Patrol clash at the LAC",
+      body: "Troops fought at altitude with no shots that count as a war. Dual-capable aircraft are forward on both sides. A notice says exercise. No notice is how a ridge becomes a nuclear file. DIPLOMACY with Beijing. POSTURE matches generate.",
+      actor: "CN",
+      heat: "high",
+      ignoreLine: "The ridge stays occupied. Himalaya heat ticks.",
+      tags: ["himalaya", "scenario"],
+    };
+    log(w, "warn", "Scenario: Ridge at the LAC.", w.event.ignoreLine);
+  }
+
+  if (id === "carrington-2027") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "extreme";
+    const space = w.flashpoints.find((f) => f.id === "space");
+    if (space) space.heat = 76;
+    w.globalRisk = 58;
+    w.defcon = 3;
+    w.spaceWeather = seedCarringtonWatch();
+    w.event = {
+      id: "carrington-scenario",
+      title: "Carrington-class watch",
+      body: "SWPC compares this CME to September 1859. Arrival ~18 hours. Transformers and warning birds will take it. A generate looks like EMP. INTEL is magnetometers versus a lofted bus. KILL on yourself islands the grid. HOLD lets the sun write the outage — and their desk may write first strike.",
+      actor: "US",
+      heat: "critical",
+      ignoreLine: "The CME arrives unanswered. Cascades look like a pulse.",
+      tags: ["space", "scenario"],
+    };
+    log(w, "critical", "Scenario: Carrington watch. The sun is the other phenomenology.", w.event.ignoreLine);
+  }
+
+  if (id === "fobs-ambiguity") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    const space = w.flashpoints.find((f) => f.id === "space");
+    if (space) space.heat = 80;
+    w.globalRisk = 62;
+    w.defcon = 3;
+    w.actors.RU.alert = 4;
+    w.closeCall = {
+      track: buildTrack(w, "RU", "false"),
+      humint: "Plesetsk: the bus circularized. Not a standard ICBM loft.",
+    };
+    w.closeCall.track.minutesToImpact = 22;
+    w.closeCall.track.confidence = 48;
+    w.closeCall.track.kind = "test";
+    w.event = {
+      id: "fobs-scenario",
+      title: "Object that will not come down",
+      body: "A boost from Plesetsk looked like an ICBM, then circularized. FOBS is the 1960s file — a warhead that stays in orbit until it deorbits through the south polar gap. INTEL hunts satellite vs bus. POSTURE without a notice is a bolt. HOLD leaves the object up.",
+      actor: "RU",
+      heat: "critical",
+      ignoreLine: "The object stays in low orbit. Ambiguity is the weapon.",
+      tags: ["space", "scenario"],
+    };
+    log(w, "critical", "Scenario: FOBS ambiguity.", w.event.ignoreLine);
+  }
+
+  if (id === "orbital-inspector") {
+    w.playerId = "CN";
+    w.intent = "red";
+    w.difficulty = "hard";
+    const space = w.flashpoints.find((f) => f.id === "space");
+    if (space) space.heat = 78;
+    w.globalRisk = 54;
+    w.defcon = 3;
+    w.actors.US.warning = 44;
+    w.event = {
+      id: "hunter-killer",
+      title: "Your inspector is on their bird",
+      body: "A Shijian-class closer is on a SBIRS slot. Washington will see the rendezvous. Soft kill, shove, or a legal inspection. DIPLOMACY says debris. INTEL they already have. HOLD leaves the closer there. POSTURE is how they write an ASAT.",
+      actor: "US",
+      heat: "high",
+      ignoreLine: "The inspector stays on station.",
+      tags: ["space", "scenario"],
+    };
+    log(w, "warn", "Scenario: Inspector on the bird.", w.event.ignoreLine);
   }
 
   return w;

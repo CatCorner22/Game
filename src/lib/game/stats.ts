@@ -41,6 +41,12 @@ const ACHIEVEMENTS: AchievementDef[] = [
   { id: "machine-loss", title: "Judgment Day", detail: "Machine started the war.", check: (w) => w.ending?.kind === "machine" },
   { id: "two-year", title: "Two Years", detail: "Reach 24-month peace evaluation.", check: (w) => w.ended && ["peace", "red-win", "stalemate"].includes(w.ending?.kind ?? "") },
   { id: "broken-recover", title: "Empty Quiver Averted", detail: "Recover a broken arrow.", check: (w) => w.brokenArrow?.recovered === true || w.log.some((l) => l.text.toLowerCase().includes("recovered")) },
+  { id: "asat-held", title: "Eyes Still Open", detail: "Finish the ASAT watch without nuclear use.", check: (w) => w.scenarioId === "asat-blind-2028" && w.ended && w.nuclearUses.length === 0 },
+  { id: "casd-faith", title: "Boat Came Home", detail: "UK CASD watch, no nuclear use.", check: (w) => w.scenarioId === "trident-casd" && w.ended && w.nuclearUses.length === 0 },
+  { id: "third-center", title: "Third Center", detail: "French independence watch, no first use.", check: (w) => w.scenarioId === "frappe-independence" && w.ended && w.firstUse !== w.playerId },
+  { id: "ridge-held", title: "Ridge Held", detail: "LAC clash ends without nuclear use.", check: (w) => w.scenarioId === "lac-clash-2027" && w.ended && w.nuclearUses.length === 0 },
+  { id: "quarantine-no-spasm", title: "Inspection, Not War", detail: "PRC Taiwan watch without spasm.", check: (w) => w.scenarioId === "taiwan-prc-2027" && w.ended && w.ending?.kind !== "pyrrhic" && w.playerCasualties < 1_000_000 },
+  { id: "nasr-holstered", title: "Nasr Holstered", detail: "Pakistan Nasr watch, no nuclear use.", check: (w) => w.scenarioId === "nasr-flushed" && w.ended && w.nuclearUses.length === 0 },
 ];
 
 function loadStats(): CareerStats {

@@ -15,6 +15,8 @@ import { defaultHotlines, defaultSensors, warningQuality } from "./warning";
 import { seedTerminator } from "./terminator";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
+import { seedTreaties } from "./treaties";
+import { quietWeather } from "./spaceWeather";
 
 export const MONTHS = [
   "JAN",
@@ -154,6 +156,20 @@ export function createWorld(
       heat: 24,
       note: "Money, ports, and colonels. A warhead is inventory if someone sells one.",
     },
+    {
+      id: "himalaya",
+      name: "Himalaya / LAC",
+      actors: ["IN", "CN"],
+      heat: 20,
+      note: "High-altitude clash. Dual-capable aircraft make a patrol nuclear-adjacent.",
+    },
+    {
+      id: "space",
+      name: "Early warning / space",
+      actors: ["US", "RU", "CN"],
+      heat: 14,
+      note: "SBIRS and missile-warning birds. An ASAT shot is a blindfold.",
+    },
   ];
 
   const opening = openingFor(playerId);
@@ -217,6 +233,9 @@ export function createWorld(
     threadTag: null,
     aiLast: {},
     lastStrike: null,
+    treaties: [],
+    lastRecap: null,
+    spaceWeather: quietWeather(),
     ceasefire: null,
     c2StanceTurn: 0,
     log: [
@@ -241,6 +260,7 @@ export function createWorld(
   world.authCode = nextAuthCode(world);
   world.actors[playerId].warning = warningQuality(world, playerId);
   seedSpies(world);
+  world.treaties = seedTreaties(world);
   if (terminator) seedTerminator(world);
   recompute(world);
   return world;
@@ -392,6 +412,8 @@ export const KIND_LABEL: Record<string, string> = {
   gravity: "Gravity bomb",
   novel: "Novel / exotic",
   covert: "Covert delivery",
+  orbital: "Orbital / space-based",
+  fobs: "Fractional orbital (FOBS)",
 };
 
 export const DISCLOSURE_LABEL: Record<string, string> = {
