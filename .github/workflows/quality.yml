@@ -59,6 +59,23 @@ jobs:
           done
           node scripts/mobile-game-smoke.mjs http://127.0.0.1:4173/
 
+      - name: Standalone initialization and Execute-resolution smoke
+        run: |
+          python3 -m http.server 4174 --bind 127.0.0.1 > /tmp/threshold-standalone.log 2>&1 &
+          STANDALONE_PID=$!
+          trap 'kill "$STANDALONE_PID" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:4174/play/standalone/ > /dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              cat /tmp/threshold-standalone.log
+              exit 1
+            fi
+            sleep 1
+          done
+          node scripts/standalone-playable-smoke.mjs http://127.0.0.1:4174/play/standalone/
+
       - name: Upload mobile smoke artifacts
         if: always()
         uses: actions/upload-artifact@v4
