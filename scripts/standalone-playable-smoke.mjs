@@ -11,6 +11,12 @@ function invariant(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+async function waitVisible(locator, label) {
+  await locator.waitFor({ state: "visible", timeout: 15_000 }).catch((error) => {
+    throw new Error(`${label} did not become visible: ${error.message}`);
+  });
+}
+
 const browser = await chromium.launch({
   headless: true,
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
@@ -34,29 +40,39 @@ try {
     const response = await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
     invariant(response && response.status() < 400, `${spec.name}: HTTP ${response?.status() ?? 0}`);
 
-    const begin = page.getByRole("button", { name: "Begin watch", exact: true });
-    await begin.waitFor({ state: "visible", timeout: 15_000 });
+    const begin = page.locator("#start");
+    await waitVisible(begin, `${spec.name}: Begin watch`);
     await begin.click();
 
-    const reviewOptions = page.getByRole("button", { name: /Review decision options/i });
-    await reviewOptions.waitFor({ state: "visible", timeout: 15_000 });
+    const reviewOptions = page.locator("#goDecision");
+    await waitVisible(reviewOptions, `${spec.name}: Review decision options`);
     await reviewOptions.click();
 
-    const verify = page.getByRole("button", { name: /Verify Evidence/i }).first();
-    await verify.waitFor({ state: "visible", timeout: 15_000 });
+    const verify = page.locator('[data-action="verify"]');
+    await waitVisible(verify, `${spec.name}: Verify Evidence`);
     await verify.click();
 
-    const execute = page.getByRole("button", { name: /Execute Verify Evidence/i });
-    await execute.waitFor({ state: "visible", timeout: 15_000 });
+    const execute = page.locator("#execute");
+    await waitVisible(execute, `${spec.name}: Execute decision`);
+    invariant(!(await execute.isDisabled()), `${spec.name}: Execute stayed disabled after selection`);
     await execute.click();
 
-    const resultTitle = page.getByRole("heading", { name: "Turn 1 complete", exact: true });
-    await resultTitle.waitFor({ state: "visible", timeout: 15_000 });
-    invariant(await page.getByText(/Next decision · turn 2/i).isVisible(), `${spec.name}: next-turn preview missing`);
+    const resultDialog = page.locator("#resultDialog");
+    await waitVisible(resultDialog, `${spec.name}: Turn resolution dialog`);
+    const resultTitle = page.locator("#resultTitle");
+    invariant(
+      (await resultTitle.textContent())?.trim() === "Turn 1 complete",
+      `${spec.name}: expected Turn 1 complete result`,
+    );
+    invariant(
+      /next decision\s*·\s*turn 2/i.test((await page.locator(".next-preview").textContent()) ?? ""),
+      `${spec.name}: next-turn preview missing`,
+    );
 
-    const continueButton = page.getByRole("button", { name: /Continue to turn 2/i });
+    const continueButton = page.locator("#continueResolution");
+    await waitVisible(continueButton, `${spec.name}: Continue to turn 2`);
     await continueButton.click();
-    await page.getByText(/Turn 2\//i).first().waitFor({ state: "visible", timeout: 15_000 });
+    await page.waitForFunction(() => /Turn 2\//i.test(document.querySelector(".brand span")?.textContent ?? ""));
 
     invariant(pageErrors.length === 0, `${spec.name}: page errors: ${pageErrors.join(" | ")}`);
     const severe = consoleErrors.filter((message) => !/favicon|failed to load resource/i.test(message));
