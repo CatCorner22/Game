@@ -9,6 +9,10 @@ const viewports = [
   { name: "iphone", width: 390, height: 844 },
   { name: "narrow-android", width: 360, height: 800 },
 ];
+const scenarioTitles = {
+  "deadhand-dilemma": "Deadhand Dilemma",
+  "signal-window": "The Nine-Minute Window",
+};
 
 await mkdir(outputDir, { recursive: true });
 
@@ -43,8 +47,13 @@ async function screenshot(page, name) {
 async function chooseScenario(page, scenarioId) {
   const scenarioSelect = page.locator("select").nth(1);
   await waitVisible(scenarioSelect, "scenario selector");
+  // The title screen is server-rendered. Wait for React hydration before
+  // exercising controls, then prove the change reached application state.
+  await page.waitForTimeout(1_000);
   await scenarioSelect.selectOption(scenarioId);
-  await page.waitForTimeout(100);
+  const title = scenarioTitles[scenarioId];
+  invariant(title, `missing expected title for scenario ${scenarioId}`);
+  await waitVisible(page.getByText(title, { exact: true }), `${title} scenario details`);
 }
 
 async function beginWatch(page) {
