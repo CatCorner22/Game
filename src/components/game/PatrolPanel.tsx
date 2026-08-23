@@ -14,7 +14,7 @@ export function PatrolPanel({ world }: { world: World }) {
         </HudChip>
         <HudChip danger={p.warning < 45}>WARN {Math.round(p.warning)}</HudChip>
       </div>
-      <p className="mt-2 text-[11px] leading-snug text-subtle">{p.casdLine}</p>
+      <p className="mt-2 text-micro leading-snug text-subtle">{p.casdLine}</p>
     </HudPanel>
   );
 }

@@ -103,7 +103,7 @@ export function MultiplayerScreen() {
             <HudButton
               key={m}
               variant={mode === m ? "active" : "default"}
-              className="min-h-10 flex-1 text-xs uppercase"
+              className="min-h-11 flex-1 text-xs uppercase"
               onClick={() => setMode(m)}
             >
               {m}

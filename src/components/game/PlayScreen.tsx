@@ -72,6 +72,7 @@ export function PlayScreen() {
   const [commandOpen, setCommandOpen] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
   const [muted, setMutedLocal] = useState(() => loadSettings().muted);
+  const [quitArmed, setQuitArmed] = useState(false);
 
   useEffect(() => {
     if (!world) return;
@@ -101,6 +102,17 @@ export function PlayScreen() {
   function returnToMenu() {
     setCommandOpen(false);
     resetToTitle();
+  }
+
+  // Desktop only. `Menu` sat in a row of six identical ghost pills next to Mute
+  // and Glossary and abandoned the run on a single click with no warning.
+  function quitFromDesktop() {
+    if (!quitArmed) {
+      setQuitArmed(true);
+      return;
+    }
+    setQuitArmed(false);
+    returnToMenu();
   }
 
   // `lg:h-dvh` bounds this flex container so the three columns can finally scroll
@@ -144,23 +156,29 @@ export function PlayScreen() {
                 BROKEN ARROW
               </HudChip>
             ) : null}
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
               {muted ? "Unmute" : "Mute"}
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={openSettings}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={openSettings}>
               Settings
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={toggleGlossary}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={toggleGlossary}>
               Glossary
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={() => setScreen("briefing")}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={() => setScreen("briefing")}>
               Brief
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={() => setHelpOpen(true)}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={() => setHelpOpen(true)}>
               Keys
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={returnToMenu}>
-              Menu
+            <HudButton
+              variant={quitArmed ? "danger" : "ghost"}
+              className="hidden px-2 py-1 text-micro lg:inline-flex"
+              onClick={quitFromDesktop}
+              onBlur={() => setQuitArmed(false)}
+              aria-label={quitArmed ? "Confirm quit run" : "Quit run"}
+            >
+              {quitArmed ? "Confirm?" : "Quit run"}
             </HudButton>
             <HudButton
               variant="ghost"
@@ -270,7 +288,7 @@ export function PlayScreen() {
           <div className="lg:hidden">
             {!radarOpen && world.closeCall ? (
               <div className="absolute inset-x-3 top-3 z-20 rounded-lg border border-danger bg-bg/92 p-4 shadow-[0_0_30px_rgb(180_35_24/0.25)] backdrop-blur-sm">
-                <p className="font-mono text-[10px] tracking-[0.18em] text-danger">Close call · unverified track</p>
+                <p className="font-mono text-micro tracking-[0.18em] text-danger">Close call · unverified track</p>
                 <p className="mt-1 font-display text-3xl tabular text-fg">{world.closeCall.track.minutesToImpact} min</p>
                 <p className="mt-2 text-xs leading-relaxed text-muted">
                   Treat confidence and corroboration as separate variables. Open radar for the full evidence view.
@@ -284,7 +302,7 @@ export function PlayScreen() {
                 aria-label="Radar evidence view"
               >
                 <div className="mb-2 flex items-center justify-between gap-3 px-1">
-                  <p className="font-mono text-[10px] tracking-wider text-accent">Radar evidence view</p>
+                  <p className="font-mono text-micro tracking-wider text-accent">Radar evidence view</p>
                   <button
                     type="button"
                     aria-label="Close"
@@ -308,7 +326,7 @@ export function PlayScreen() {
           </div>
           <div className="pointer-events-none absolute bottom-3 left-3 hidden max-w-[220px] lg:block">
             <EscalationLadder phase={world.phase} defcon={world.defcon} winter={world.winterStage} />
-            <p className="mt-2 font-mono text-[10px] tracking-[0.18em] text-accent/60 uppercase">
+            <p className="mt-2 font-mono text-micro tracking-[0.18em] text-accent/60 uppercase">
               Drag to orbit · click a marker
             </p>
           </div>
@@ -316,7 +334,9 @@ export function PlayScreen() {
 
         <aside
           className={cn(
-            "overflow-y-auto border-accent/10 p-4 lg:block lg:border-l",
+            // `lg:pb-20` keeps the last panel scrollable clear of the pinned
+            // Execute footer, which otherwise sits on top of it.
+            "overflow-y-auto border-border p-4 lg:block lg:border-l lg:pb-20",
             tab === "act" ? "block" : "hidden",
           )}
         >

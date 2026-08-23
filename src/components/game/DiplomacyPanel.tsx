@@ -27,25 +27,25 @@ export function DiplomacyPanel({ world }: { world: World }) {
       {pacts.length ? (
         <ul className="mt-2 space-y-1">
           {pacts.map((p) => (
-            <li key={`${p.a}-${p.b}-${p.untilTurn}`} className="font-mono text-[10px] text-fg">
+            <li key={`${p.a}-${p.b}-${p.untilTurn}`} className="font-mono text-micro text-fg">
               Pact {world.actors[p.a].shortName}–{world.actors[p.b].shortName} · to T{p.untilTurn}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-1 text-[10px] text-subtle">No active non-attack pacts.</p>
+        <p className="mt-1 text-micro text-subtle">No active non-attack pacts.</p>
       )}
       <HudLabel className="mt-3">Treaties</HudLabel>
       <ul className="mt-2 space-y-1.5">
         {treaties.map((t) => (
           <li key={t.id}>
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[10px] text-fg">{t.name}</span>
+              <span className="font-mono text-micro text-fg">{t.name}</span>
               <HudChip danger={t.status === "dead" || t.status === "strained"} active={t.status === "in-force"}>
                 {t.status}
               </HudChip>
             </div>
-            <p className="text-[10px] leading-snug text-subtle">{t.note}</p>
+            <p className="text-micro leading-snug text-subtle">{t.note}</p>
           </li>
         ))}
       </ul>

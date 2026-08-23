@@ -135,7 +135,7 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
       ctx.lineTo(cx + Math.cos(sweepAng - Math.PI / 2) * rMax, cy + Math.sin(sweepAng - Math.PI / 2) * rMax);
       ctx.stroke();
 
-      ctx.fillStyle = "#00e5ff";
+      ctx.fillStyle = "#22d3ee";
       ctx.beginPath();
       ctx.arc(cx, cy, 3, 0, Math.PI * 2);
       ctx.fill();
@@ -172,12 +172,12 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
         const d = polar(cx, cy, destKm, bTo, rMax);
         const cur = polar(cx, cy, hereKm, hereB, rMax);
 
-        ctx.fillStyle = "#00e5ff";
+        ctx.fillStyle = "#22d3ee";
         ctx.beginPath();
         ctx.arc(o.x, o.y, 3.2, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = "#ff3366";
+        ctx.strokeStyle = "#f2495f";
         ctx.beginPath();
         ctx.moveTo(d.x - 5, d.y - 5);
         ctx.lineTo(d.x + 5, d.y + 5);
@@ -186,7 +186,7 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
         ctx.stroke();
 
         const pulse = 2.4 + Math.sin(now / 180) * 1.2;
-        ctx.fillStyle = tr.confirmed ? "#ff3366" : "#00e5ff";
+        ctx.fillStyle = tr.confirmed ? "#f2495f" : "#22d3ee";
         for (let i = 0; i < Math.min(tr.boosts, 6); i++) {
           ctx.beginPath();
           ctx.arc(cur.x + i * 3.5 - 4, cur.y, pulse, 0, Math.PI * 2);
@@ -208,10 +208,10 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
   return (
     <div className="pointer-events-none flex flex-col overflow-hidden rounded-lg glass-panel neon-border-accent">
       <div className="flex items-center justify-between px-2 py-1">
-        <p className="font-mono text-[10px] tracking-[0.2em] text-accent uppercase">
+        <p className="font-mono text-micro tracking-[0.2em] text-accent uppercase">
           {live ? live.source : you.warning >= 70 ? "SBIRS / BMEWS" : "national technical means"}
         </p>
-        <p className="font-mono text-[10px] tracking-[0.16em] text-accent/80 uppercase">
+        <p className="font-mono text-micro tracking-[0.16em] text-accent/80 uppercase">
           {live ? "LIVE TRACK" : "SCOPE QUIET"}
         </p>
       </div>
@@ -227,7 +227,7 @@ function TrackReadout({ world, tracks, you }: { world: World; tracks: Track[]; y
   const live = tracks[0];
   if (!live) {
     return (
-      <p className="px-2 pb-2 font-mono text-[10px] leading-relaxed text-muted">
+      <p className="px-2 pb-2 font-mono text-micro leading-relaxed text-muted">
         Center {you.shortName} {fmtLatLon(you.lat, you.lon)}. No boosts. Sweep is infrared + radar fusion.
       </p>
     );
@@ -236,7 +236,7 @@ function TrackReadout({ world, tracks, you }: { world: World; tracks: Track[]; y
   const brg = bearingDeg(you.lat, you.lon, live.from.lat, live.from.lon);
   const remaining = live.ttiMin;
   return (
-    <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pb-2 font-mono text-[10px] uppercase text-muted">
+    <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pb-2 font-mono text-micro uppercase text-muted">
       <Row k="Origin" v={`${live.from.shortName} ${fmtLatLon(live.from.lat, live.from.lon)}`} />
       <Row k="Impact" v={`${live.to.shortName} ${fmtLatLon(live.to.lat, live.to.lon)}`} />
       <Row k="Azimuth" v={`${fmtBearing(brg)} · ${Math.round(km)} km`} />

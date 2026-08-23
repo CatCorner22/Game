@@ -28,7 +28,7 @@ export function C2Panel({ world }: { world: World }) {
             disabled={!ready}
             onClick={() => applyC2("low")}
             className={cn(
-              "min-h-10 rounded-sm border px-2 text-left font-display text-[11px] tracking-wider uppercase transition-colors disabled:opacity-40",
+              "min-h-11 rounded-sm border px-2 text-left font-display text-micro tracking-wider uppercase transition-colors disabled:opacity-40",
               you.launchOnWarning
                 ? "border-danger/40 bg-danger/15 text-danger"
                 : "border-accent/20 bg-surface/40 text-muted hover:border-accent/40",
@@ -41,7 +41,7 @@ export function C2Panel({ world }: { world: World }) {
             disabled={!ready}
             onClick={() => applyC2("nfu")}
             className={cn(
-              "min-h-10 rounded-sm border px-2 text-left font-display text-[11px] tracking-wider uppercase transition-colors disabled:opacity-40",
+              "min-h-11 rounded-sm border px-2 text-left font-display text-micro tracking-wider uppercase transition-colors disabled:opacity-40",
               you.declaredNfu ? "border-olive/40 bg-olive/15 text-olive" : "border-accent/20 bg-surface/40 text-muted hover:border-accent/40",
             )}
           >
@@ -52,7 +52,7 @@ export function C2Panel({ world }: { world: World }) {
             disabled={!ready}
             onClick={() => applyC2("predel")}
             className={cn(
-              "min-h-10 rounded-sm border px-2 text-left font-display text-[11px] tracking-wider uppercase transition-colors disabled:opacity-40",
+              "min-h-11 rounded-sm border px-2 text-left font-display text-micro tracking-wider uppercase transition-colors disabled:opacity-40",
               you.preDelegation
                 ? "border-danger/40 bg-danger/15 text-danger"
                 : "border-accent/20 bg-surface/40 text-muted hover:border-accent/40",
@@ -60,7 +60,7 @@ export function C2Panel({ world }: { world: World }) {
           >
             Pre-del {you.preDelegation ? "authorized" : "positive control"}
           </button>
-          {!ready ? <p className="text-[10px] text-subtle">One C2 change this month.</p> : null}
+          {!ready ? <p className="text-micro text-subtle">One C2 change this month.</p> : null}
         </div>
       ) : (
         <p className="mt-2 text-xs text-subtle">No nuclear C2 on this seat. The satchel is political.</p>

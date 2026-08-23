@@ -85,9 +85,9 @@ function Earth() {
         map={dark}
         emissiveMap={night}
         emissive={EMISSIVE}
-        emissiveIntensity={0.38}
-        roughness={0.92}
-        metalness={0.05}
+        emissiveIntensity={0.72}
+        roughness={0.86}
+        metalness={0.04}
       />
     </mesh>
   );
@@ -128,10 +128,10 @@ function Atmosphere() {
 
 function markerColor(actor: Actor, selected: boolean, flashHeat: number): string {
   if (selected) return "#e8f4ff";
-  if (flashHeat >= 70) return "#ff3366";
-  if (flashHeat >= 45) return "#00e5ff";
-  if (actor.id === "US") return "#00e5ff";
-  if (actor.hostility.US >= 70) return "#ff3366";
+  if (flashHeat >= 70) return "#f2495f";
+  if (flashHeat >= 45) return "#22d3ee";
+  if (actor.id === "US") return "#22d3ee";
+  if (actor.hostility.US >= 70) return "#f2495f";
   if (actor.hostility.US <= 28) return "#34d399";
   return "#8ba3bc";
 }
@@ -145,7 +145,7 @@ function SiteMarks({ sites, selected }: { sites: LaunchSite[]; selected: ActorId
           const [x, y, z] = latLonToVec3(s.lat, s.lon, R + 0.028);
           const ours = Boolean(s.ourSpy && !s.ourSpy.burned);
           const watched = Boolean(s.hostile && !s.hostile.burned && s.hostile.known);
-          const color = ours ? "#00e5ff" : watched ? "#ff3366" : "#4a6278";
+          const color = ours ? "#22d3ee" : watched ? "#f2495f" : "#7d8fa6";
           return (
             <mesh key={s.id} position={[x, y, z]} scale={0.55}>
               <boxGeometry args={[0.04, 0.04, 0.04]} />
@@ -165,7 +165,7 @@ function HeatRing({ lat, lon, heat }: { lat: number; lon: number; heat: number }
   return (
     <mesh position={[x, y, z]} scale={scale}>
       <ringGeometry args={[0.6, 1, 24]} />
-      <meshBasicMaterial color={heat >= 70 ? "#ff3366" : "#00e5ff"} transparent opacity={opacity} side={THREE.DoubleSide} />
+      <meshBasicMaterial color={heat >= 70 ? "#f2495f" : "#22d3ee"} transparent opacity={opacity} side={THREE.DoubleSide} />
     </mesh>
   );
 }
@@ -279,11 +279,13 @@ function Scene({
 }) {
   return (
     <>
-      <color attach="background" args={["#020617"]} />
-      <ambientLight intensity={0.18} />
-      <directionalLight position={[6, 2.4, 3.2]} intensity={1.2} color="#e8f4ff" />
-      <directionalLight position={[-4, -1, -2]} intensity={0.28} color="#00e5ff" />
-      <Stars radius={40} depth={18} count={520} factor={2} fade speed={0.2} />
+      <color attach="background" args={["#070b12"]} />
+      {/* Lift the terminator: enough ambient that the night side is a surface
+          rather than a hole, and a cool rim light to separate limb from space. */}
+      <ambientLight intensity={0.34} />
+      <directionalLight position={[6, 2.4, 3.2]} intensity={1.35} color="#eef5ff" />
+      <directionalLight position={[-4, -1, -2]} intensity={0.42} color="#22d3ee" />
+      <Stars radius={40} depth={18} count={700} factor={2.2} fade speed={0.2} />
       <Earth />
       <Atmosphere />
       <Markers actors={actors} selected={selected} onSelect={onSelect} flashHeat={flashHeat} />

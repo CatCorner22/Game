@@ -67,7 +67,7 @@ function NuclearTimeline({ world }: { world: NonNullable<ReturnType<typeof useGa
       ) : null}
       <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto">
         {[...world.nuclearUses].reverse().slice(0, 12).map((u, i) => (
-          <li key={`${u.turn}-${u.actor}-${i}`} className="font-mono text-[10px] text-subtle">
+          <li key={`${u.turn}-${u.actor}-${i}`} className="font-mono text-micro text-subtle">
             T{u.turn}: {world.actors[u.actor].shortName} → {world.actors[u.target].shortName} · {u.rung}
             {u.outcome ? ` · ${u.outcome}` : ""} · {u.arrived != null ? `${u.arrived} arrived` : u.location}
           </li>
@@ -91,7 +91,7 @@ export function WarScreen() {
         title="War Watch"
         subtitle={`${dateLabel(world)} · ${world.phase}`}
         right={
-          <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setScreen("play")}>
+          <HudButton variant="ghost" className="px-2 py-1 text-micro" onClick={() => setScreen("play")}>
             Command view
           </HudButton>
         }

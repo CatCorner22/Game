@@ -21,9 +21,9 @@ export function HotlinePanel({ world }: { world: World }) {
       <HudLabel>Hotlines & notices</HudLabel>
       {toSelected ? (
         <GlassPanel glow="accent" className="mt-2 rounded-lg p-2.5">
-          <p className="font-mono text-[9px] tracking-wider text-accent uppercase">Selected target</p>
+          <p className="font-mono text-micro tracking-wider text-accent uppercase">Selected target</p>
           <p className="mt-1 text-xs text-fg">{toSelected.name}</p>
-          <p className="mt-0.5 font-mono text-[10px] text-muted">Reliability {toSelected.reliability}%</p>
+          <p className="mt-0.5 font-mono text-micro text-muted">Reliability {toSelected.reliability}%</p>
         </GlassPanel>
       ) : (
         <p className="mt-2 text-xs text-subtle">No dedicated line to {selected}. Third party. Hours, not minutes.</p>
@@ -38,7 +38,7 @@ export function HotlinePanel({ world }: { world: World }) {
                 type="button"
                 onClick={() => select(other)}
                 className={cn(
-                  "w-full rounded-sm border px-2 py-1.5 text-left font-mono text-[10px] transition-colors",
+                  "w-full rounded-sm border px-2 py-1.5 text-left font-mono text-micro transition-colors",
                   active
                     ? "border-accent/50 bg-accent/15 text-accent"
                     : "border-transparent text-muted hover:border-accent/30 hover:text-fg",
@@ -53,10 +53,10 @@ export function HotlinePanel({ world }: { world: World }) {
       </ul>
       {recent.length ? (
         <div className="mt-3">
-          <p className="font-mono text-[9px] tracking-wider text-muted uppercase">Launch notices on file</p>
+          <p className="font-mono text-micro tracking-wider text-muted uppercase">Launch notices on file</p>
           <ul className="mt-1 space-y-1">
             {recent.map((n, i) => (
-              <li key={`${n.turn}-${n.actor}-${i}`} className="text-[10px] leading-snug text-subtle">
+              <li key={`${n.turn}-${n.actor}-${i}`} className="text-micro leading-snug text-subtle">
                 {world.actors[n.actor].shortName}: {n.claimed} · {n.window}
               </li>
             ))}

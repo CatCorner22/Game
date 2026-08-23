@@ -38,8 +38,8 @@ export function FlashpointBoard({ world }: { world: World }) {
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface/60">
                 <div className={cn("h-1 rounded-full", heatColor(fp.heat))} style={{ width: `${fp.heat}%` }} />
               </div>
-              <p className="mt-1.5 text-[11px] leading-snug text-subtle">{fp.note}</p>
-              <p className="mt-1 font-mono text-[9px] tracking-wider text-muted uppercase">{fp.actors.join(" · ")}</p>
+              <p className="mt-1.5 text-micro leading-snug text-subtle">{fp.note}</p>
+              <p className="mt-1 font-mono text-micro tracking-wider text-muted uppercase">{fp.actors.join(" · ")}</p>
             </button>
           </li>
         ))}

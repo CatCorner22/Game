@@ -80,7 +80,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
                   <HudButton
                     key={slot}
                     variant={saveSlot === slot ? "active" : "default"}
-                    className="min-h-12 flex-1 text-[11px] uppercase"
+                    className="min-h-12 flex-1 text-micro uppercase"
                     onClick={() => saveToSlot(slot)}
                   >
                     {slot + 1}
@@ -123,7 +123,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           Run integrity check
         </HudButton>
         {probe ? (
-          <ul className="max-h-40 space-y-1 overflow-y-auto font-mono text-[10px]">
+          <ul className="max-h-40 space-y-1 overflow-y-auto font-mono text-micro">
             <li className={probe.ok ? "text-olive" : "text-danger"}>{probe.ok ? "All checks passed" : "Faults found"}</li>
             {probe.checks.map((c) => (
               <li key={c.name} className={c.ok ? "text-muted" : "text-danger"}>

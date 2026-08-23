@@ -38,7 +38,7 @@ export function CloseCallOverlay({ world }: { world: World }) {
         <p className="font-mono text-xs tracking-wider text-muted uppercase">
           {anomalous ? "minutes to resolve phenomenology" : "minutes if real"}
         </p>
-        <p className="mt-3 font-mono text-[10px] text-subtle uppercase">
+        <p className="mt-3 font-mono text-micro text-subtle uppercase">
           Confidence {cc.track.confidence}% · {cc.track.source}
         </p>
       </GlassPanel>
