@@ -22,9 +22,13 @@ if (!index.includes(loader)) throw new Error("v2 loader marker not found");
 
 const inlineCss = `<style>\n${baseCss}\n${feedbackCss}\n</style>`;
 const inlineRuntime = `<script>\n${parts.join("\n")}\n</script>`;
+
+// Use callback replacements. A string replacement interprets `$$` as a
+// single literal `$`, which previously changed the collection helper
+// `const $$ = ...` into a duplicate `const $ = ...` and stopped startup.
 const output = index
-  .replace(stylesheet, inlineCss)
-  .replace(loader, inlineRuntime)
+  .replace(stylesheet, () => inlineCss)
+  .replace(loader, () => inlineRuntime)
   .replace("Playable Command Preview v2", "Playable Command Preview v2.3 — Standalone")
   .replace("Portable playable preview · UX v2.2", "Portable playable preview · UX v2.3 standalone");
 
@@ -35,6 +39,19 @@ for (const forbidden of ["<script src=", '<link rel="stylesheet"']) {
 }
 for (const required of ["Begin watch", "Resolving decision", "Turn ${r.turn} complete", "continueResolution", "threshold.portable.v4"]) {
   if (!output.includes(required)) throw new Error(`standalone output missing required behavior marker: ${required}`);
+}
+
+const singleHelper = "const $ = (s, root=document) => root.querySelector(s);";
+const collectionHelper = "const $$ = (s, root=document) => [...root.querySelectorAll(s)];";
+const occurrences = (haystack, needle) => haystack.split(needle).length - 1;
+if (occurrences(output, singleHelper) !== 1) {
+  throw new Error("standalone output must contain exactly one single-element selector helper");
+}
+if (occurrences(output, collectionHelper) !== 1) {
+  throw new Error("standalone output must contain exactly one collection selector helper");
+}
+if (output.includes("const $ = (s, root=document) => [...root.querySelectorAll(s)];")) {
+  throw new Error("standalone output collapsed the $$ collection helper");
 }
 
 const target = resolve(root, "play/standalone/index.html");
