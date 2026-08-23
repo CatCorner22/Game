@@ -51,11 +51,13 @@
       guarded:{label:'Guarded Continuity',line:'Abstract verification gates improve resilience while preserving a human veto.'},
       deadhand:{label:'DEADHAND // Abstract',line:'A fictional fail-deadly pressure system. No real trigger logic or automatic action is modeled.'}
     };
-    const initial = {screen:'landing',scenario:'signal',ai:'copilot',continuity:'off',difficulty:'standard',turn:1,tab:'situation',selectedAction:null,command:7,log:[],seed:Date.now()>>>0,busy:false,lastOutcome:null,resolution:null,settings:{reduced:false,large:false,contrast:false}};
-    let state = load() || structuredClone(initial);
-    state.settings = {...initial.settings,...(state.settings||{})};
-    state.busy = false;
-    if(state.lastOutcome===undefined)state.lastOutcome=null;
-    if(state.resolution===undefined)state.resolution=null;
+    const APP_VERSION=4;
+    const STORAGE_KEY='threshold.portable.v4';
+    const MIGRATABLE_KEYS=['threshold.portable.v3'];
+    const LEGACY_KEYS=['threshold.portable.v2','threshold.portable.v1'];
+    const clone=value=>typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));
+    const initial = {version:APP_VERSION,screen:'landing',scenario:'signal',ai:'copilot',continuity:'off',difficulty:'standard',turn:1,tab:'situation',selectedAction:null,command:7,log:[],seed:Date.now()>>>0,busy:false,lastOutcome:null,resolution:null,recoveryNotice:null,settings:{reduced:false,large:false,contrast:false}};
+    const savedState=readSavedState();
+    let state=normalizeState(savedState);
     function rand(){ state.seed=(1664525*state.seed+1013904223)>>>0; return state.seed/4294967296; }
-    function save(){ try{localStorage.setItem('threshold.portable.v1',JSON.stringify(state));}catch{} }
+    function save(){ try{state.version=APP_VERSION;localStorage.setItem(STORAGE_KEY,JSON.stringify(state));for(const key of MIGRATABLE_KEYS)localStorage.removeItem(key);}catch(error){console.warn('[THRESHOLD] save unavailable',error);} }
