@@ -9,6 +9,14 @@
     .catch((error) => {
       console.error('[THRESHOLD] startup failed', error);
       const app = document.getElementById('app');
-      if (app) app.innerHTML = `<section class="shell"><article class="panel" style="padding:20px"><p class="eyebrow">Startup error</p><h2 style="margin-top:8px">THRESHOLD could not load</h2><p class="muted">Refresh the page. If the problem persists, open the newest playable link.</p></article></section>`;
+      if (!app) return;
+      const message = String(error?.message || error || 'Unknown startup error').replace(/[<>&]/g, '');
+      app.innerHTML = `<main style="min-height:100dvh;display:grid;place-items:center;padding:24px;background:#020617;color:#eaf8ff;font-family:system-ui"><section style="width:min(560px,100%);border:1px solid #22d3ee55;border-radius:16px;padding:24px;background:#071529"><p style="color:#22d3ee;font:700 11px ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase">Startup recovery</p><h1>THRESHOLD could not initialize</h1><p style="color:#9eb4c7">One or more game assets were blocked or incomplete. Reset the local preview state and reload this exact build.</p><pre style="white-space:pre-wrap;overflow:auto;padding:12px;border-radius:10px;background:#020617;color:#f7a8bb">${message}</pre><button id="resetAndReload" style="width:100%;min-height:52px;border:0;border-radius:10px;background:#22d3ee;color:#021018;font-weight:900">Reset local state and reload</button></section></main>`;
+      document.getElementById('resetAndReload')?.addEventListener('click', () => {
+        try {
+          for (const key of Object.keys(localStorage)) if (key.startsWith('threshold.portable.')) localStorage.removeItem(key);
+        } catch {}
+        location.reload();
+      });
     });
 })();
