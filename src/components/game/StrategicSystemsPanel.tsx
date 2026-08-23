@@ -39,7 +39,7 @@ export function StrategicSystemsPanel({ world }: { world: World }) {
     <section className="mt-5 rounded-lg bg-elevated p-3 shadow-[var(--shadow-border)]" aria-labelledby="strategic-systems-title">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p id="strategic-systems-title" className="font-mono text-[10px] tracking-[0.22em] text-accent uppercase">
+          <p id="strategic-systems-title" className="font-mono text-[10px] tracking-[0.18em] text-accent">
             Command intelligence
           </p>
           <p className="mt-1 text-sm font-medium text-fg">{ai.label}</p>
@@ -94,7 +94,7 @@ export function StrategicSystemsPanel({ world }: { world: World }) {
 
       <div className="mt-4 border-t border-border pt-3">
         <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-[10px] tracking-wider text-muted uppercase">Continuity protocol</span>
+          <span className="font-mono text-[10px] tracking-wider text-muted">Continuity protocol</span>
           <span
             className={cn(
               "font-mono text-[10px] tracking-wider uppercase",

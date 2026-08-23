@@ -132,7 +132,7 @@ export function HudHeader({
   return (
     <header
       className={cn(
-        "flex h-14 items-center justify-between gap-3 border-b px-4 backdrop-blur-xl",
+        "flex h-14 max-w-full min-w-0 items-center justify-between gap-3 overflow-hidden border-b px-4 backdrop-blur-xl",
         war ? "border-danger/40 bg-danger/5" : "border-accent/20 bg-surface/40",
       )}
     >
@@ -178,15 +178,19 @@ export function HudModalOverlay({
   children,
   className,
   glow = "accent",
+  label,
 }: {
   children: ReactNode;
   className?: string;
   glow?: "accent" | "danger" | "none";
+  label?: string;
 }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-bg/85 p-3 backdrop-blur-md sm:items-center"
       role="dialog"
+      aria-modal="true"
+      aria-label={label}
     >
       <GlassPanel glow={glow} className={cn("max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-xl p-5", className)}>
         {children}

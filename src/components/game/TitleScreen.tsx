@@ -5,7 +5,7 @@ import { SCENARIO_CATEGORIES, SCENARIOS, type ScenarioCategory, type ScenarioEra
 import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
 import { DEADHAND_CONFIGS, STRATEGIC_AI_CONFIGS, type DeadhandMode, type StrategicAIMode } from "@/lib/game/strategicSystems";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 
@@ -29,8 +29,8 @@ export function TitleScreen() {
   const setScreen = useGame((s) => s.setScreen);
   const lastError = useGame((s) => s.lastError);
   const [save] = useState(() => hasSave());
-  const [team, setTeam] = useState<Team | null>(null);
-  const [country, setCountry] = useState<PlayableId | null>(null);
+  const [team, setTeam] = useState<Team | null>("blue");
+  const [country, setCountry] = useState<PlayableId | null>("US");
   const [scenario, setScenario] = useState<ScenarioId | null>(null);
   const [terminator, setTerminator] = useState(false);
   const [aiMode, setAiMode] = useState<StrategicAIMode>("human");
@@ -54,8 +54,23 @@ export function TitleScreen() {
     });
   }, [eraFilter, categoryFilter, query, seatOnly, country]);
 
+  function launchWatch() {
+    const seatId = country ?? "US";
+    const intent = team ?? "blue";
+    const def = scenario ? SCENARIOS.find((s) => s.id === scenario) : null;
+    start({
+      difficulty: def?.difficulty ?? "standard",
+      playerId: seatId,
+      intent,
+      terminator: terminator || aiMode === "skynet",
+      strategicAI: terminator ? "skynet" : aiMode,
+      deadhand: def?.defaultDeadhand ?? deadhand,
+      scenarioId: scenario ?? undefined,
+    });
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col px-4 py-6 sm:px-8 lg:px-12 lg:py-10">
+    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden px-4 py-6 sm:px-8 lg:px-12 lg:py-10">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <HudChip active>NCA · STRATEGIC WATCH</HudChip>
           <div className="flex flex-wrap gap-2">
@@ -83,7 +98,7 @@ export function TitleScreen() {
 
         <div className="mt-8 grid flex-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-10">
           <div className="max-w-xl">
-            <h1 className="font-display text-5xl font-bold tracking-[0.08em] text-glow-accent text-fg sm:text-7xl">
+            <h1 className="max-w-full font-display text-[clamp(2rem,10vw,4.5rem)] font-bold tracking-[0.04em] text-glow-accent text-fg sm:tracking-[0.08em]">
               THRESHOLD
             </h1>
             <p className="mt-2 font-display text-sm tracking-[0.32em] text-accent uppercase sm:text-base">
@@ -97,6 +112,54 @@ export function TitleScreen() {
               Recommended 16+. Abstract crisis language. No real operational weapon, agent, targeting, or trigger
               procedures. ORACLE, CHORUS, SKYNET, and DEADHAND are fictional/local decision-support puzzles.
             </p>
+            <HudButton
+              variant="danger"
+              aria-label="Begin watch"
+              className="mt-6 min-h-14 w-full px-4 text-lg"
+              onClick={launchWatch}
+            >
+              Begin watch
+            </HudButton>
+            <label className="mt-4 block">
+              <span className="sr-only">Command seat</span>
+              <select
+                value={country ?? "US"}
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => setCountry(event.target.value as PlayableId)}
+                className="min-h-12 w-full rounded-md border border-accent/20 bg-bg/60 px-3 text-sm text-fg outline-none focus:neon-border-accent"
+              >
+                {PLAYABLE.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {p.seat}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-3 block">
+              <span className="sr-only">Choose a scenario</span>
+              <select
+                value={scenario ?? ""}
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                  const id = event.target.value ? (event.target.value as ScenarioId) : null;
+                  setScenario(id);
+                  const def = id ? SCENARIOS.find((s) => s.id === id) : null;
+                  if (def) {
+                    setCountry(def.playerId as PlayableId);
+                    setTeam(def.intent);
+                    setAiMode(def.defaultAI);
+                    setDeadhand(def.defaultDeadhand);
+                  }
+                }}
+                className="min-h-12 w-full rounded-md border border-accent/20 bg-bg/60 px-3 text-sm text-fg outline-none focus:neon-border-accent"
+              >
+                <option value="">Sandbox · March 2027</option>
+                {SCENARIOS.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title} — {item.category} — challenge {item.challenge}/5
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedDef ? <p className="mt-2 text-sm text-fg">{selectedDef.title}</p> : null}
 
             <div className="mt-8 space-y-6">
               <section>
@@ -226,17 +289,18 @@ export function TitleScreen() {
                         key={d.id}
                         variant="default"
                         className="flex min-h-12 items-center justify-between gap-4 px-4 py-3 hover:neon-border-accent"
-                        onClick={() =>
+                        onClick={() => {
+                          const def = scenario ? SCENARIOS.find((s) => s.id === scenario) : null;
                           start({
-                            difficulty: scenario ? SCENARIOS.find((s) => s.id === scenario)!.difficulty : d.id,
-                            playerId: country,
-                            intent: team,
+                            difficulty: def?.difficulty ?? d.id,
+                            playerId: country ?? "US",
+                            intent: team ?? "blue",
                             terminator: terminator || aiMode === "skynet",
                             strategicAI: terminator ? "skynet" : aiMode,
-                            deadhand,
+                            deadhand: def?.defaultDeadhand ?? deadhand,
                             scenarioId: scenario ?? undefined,
-                          })
-                        }
+                          });
+                        }}
                       >
                         <span className="font-display tracking-[0.14em]">{d.label}</span>
                         <span className="text-xs text-muted">{d.line}</span>
@@ -336,6 +400,7 @@ export function TitleScreen() {
                   {seatOnly ? `Seat ${country}` : "All seats"}
                 </button>
               </div>
+              {selectedDef ? <p className="mt-2 text-sm text-fg">{selectedDef.title}</p> : null}
               {selectedDef?.briefing || selectedDef?.contentNote ? (
                 <p className="mt-2 text-xs leading-snug text-accent/80">
                   {selectedDef.briefing ?? selectedDef.contentNote}

@@ -351,7 +351,7 @@ export const SCENARIOS: ScenarioDef[] = [
   },
   {
     id: "signal-window",
-    title: "Three sensors, three stories",
+    title: "The Nine-Minute Window",
     line: "Automated tracks disagree. A late exercise notice arrives on another channel.",
     playerId: "US",
     intent: "blue",
@@ -456,7 +456,7 @@ export const SCENARIOS: ScenarioDef[] = [
   },
   {
     id: "deadhand-dilemma",
-    title: "Continuity protocol loses assurance",
+    title: "Deadhand Dilemma",
     line: "A fictional fail-deadly system receives contradictory signals. Human veto remains.",
     playerId: "RU",
     intent: "blue",

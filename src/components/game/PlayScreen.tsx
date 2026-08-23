@@ -29,7 +29,11 @@ import { fusionName } from "@/lib/game/terminator";
 import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
 
-const MOBILE_TABS = ["map", "status", "act"] as const;
+const MOBILE_TABS = [
+  { id: "map", label: "Map" },
+  { id: "status", label: "Status" },
+  { id: "act", label: "Act" },
+] as const;
 
 function Meter({
   label,
@@ -98,6 +102,7 @@ export function PlayScreen() {
   const toggleGlossary = useGame((s) => s.toggleGlossary);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
   const [muted, setMutedLocal] = useState(() => loadSettings().muted);
 
@@ -106,6 +111,10 @@ export function PlayScreen() {
     const m = meters(world);
     updateAtmosphere(world.defcon, m.risk);
   }, [world?.defcon, world?.globalRisk, world?.turn]);
+
+  useEffect(() => {
+    if (world?.closeCall) setRadarOpen(false);
+  }, [world?.closeCall?.track.minutesToImpact, world?.closeCall?.track.confidence]);
 
   if (!world) return null;
   const m = meters(world);
@@ -117,8 +126,18 @@ export function PlayScreen() {
     setMutedLocal(next);
   }
 
+  function openSettings() {
+    setCommandOpen(false);
+    setSettingsOpen(true);
+  }
+
+  function returnToMenu() {
+    setCommandOpen(false);
+    resetToTitle();
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden pt-[env(safe-area-inset-top)]">
       <HudHeader
         title="Threshold"
         subtitle={`${dateLabel(world)} · ${world.phase} · ${world.actors[world.playerId].name} ${world.intent}${world.terminator ? " · TERMINATOR" : ""}`}
@@ -153,42 +172,54 @@ export function PlayScreen() {
                 BROKEN ARROW
               </HudChip>
             ) : null}
-            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
               {muted ? "Unmute" : "Mute"}
             </HudButton>
-            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setSettingsOpen(true)}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={openSettings}>
               Settings
             </HudButton>
-            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={toggleGlossary}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={toggleGlossary}>
               Glossary
             </HudButton>
-            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setScreen("briefing")}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={() => setScreen("briefing")}>
               Brief
             </HudButton>
-            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setHelpOpen(true)}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={() => setHelpOpen(true)}>
               Keys
             </HudButton>
-            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => resetToTitle()}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={returnToMenu}>
               Menu
+            </HudButton>
+            <HudButton
+              variant="ghost"
+              className="min-h-12 min-w-12 px-3 text-xs lg:hidden"
+              aria-label="More"
+              aria-expanded={commandOpen}
+              onClick={() => setCommandOpen((open) => !open)}
+            >
+              More
             </HudButton>
           </>
         }
       />
-
-      <div className="flex gap-1 border-b border-accent/15 px-3 py-1 lg:hidden">
-        {MOBILE_TABS.map((t) => (
-          <HudButton
-            key={t}
-            variant={tab === t ? "active" : "ghost"}
-            className="min-h-12 flex-1 text-sm"
-            onClick={() => setTab(t)}
-          >
-            {t}
+      {commandOpen ? (
+        <div className="grid grid-cols-2 gap-2 border-b border-accent/15 bg-surface p-3 lg:hidden">
+          <HudButton variant="default" className="min-h-12 uppercase" onClick={toggleMute}>
+            {muted ? "Unmute" : "Mute"}
           </HudButton>
-        ))}
-      </div>
+          <HudButton variant="default" className="min-h-12" aria-label="Settings" onClick={openSettings}>
+            Settings
+          </HudButton>
+          <HudButton variant="default" className="min-h-12" onClick={() => { setCommandOpen(false); setScreen("briefing"); }}>
+            Briefing
+          </HudButton>
+          <HudButton variant="default" className="min-h-12" aria-label="Main menu" onClick={returnToMenu}>
+            Main menu
+          </HudButton>
+        </div>
+      ) : null}
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:grid-cols-[280px_minmax(0,1fr)_340px] lg:pb-0">
         <aside
           className={cn(
             "overflow-y-auto border-accent/10 p-4 lg:block lg:border-r",
@@ -255,22 +286,55 @@ export function PlayScreen() {
           )}
         >
           <GlobeSlot />
-          {!radarOpen && world.closeCall ? <CloseCallOverlay world={world} /> : null}
-          {world.closeCall ? (
+          <div className="hidden lg:block">
+            {world.closeCall ? (
+              <CloseCallOverlay world={world} />
+            ) : (
+              <div className="pointer-events-none absolute top-3 right-3 w-[min(38vw,320px)]">
+                <RadarScreen world={world} pulse={world.defcon <= 2} />
+              </div>
+            )}
+          </div>
+          <div className="lg:hidden">
+            {!radarOpen && world.closeCall ? (
+              <div className="absolute inset-x-3 top-3 z-20 rounded-lg border border-danger bg-bg/92 p-4 shadow-[0_0_30px_rgb(180_35_24/0.25)] backdrop-blur-sm">
+                <p className="font-mono text-[10px] tracking-[0.18em] text-danger">Close call · unverified track</p>
+                <p className="mt-1 font-display text-3xl tabular text-fg">{world.closeCall.track.minutesToImpact} min</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted">
+                  Treat confidence and corroboration as separate variables. Open radar for the full evidence view.
+                </p>
+              </div>
+            ) : null}
+            {radarOpen ? (
+              <div
+                className="absolute inset-x-3 bottom-3 z-30 max-h-[72%] overflow-y-auto rounded-lg border border-border bg-bg/96 p-2 shadow-2xl backdrop-blur-md"
+                role="dialog"
+                aria-label="Radar evidence view"
+              >
+                <div className="mb-2 flex items-center justify-between gap-3 px-1">
+                  <p className="font-mono text-[10px] tracking-wider text-accent">Radar evidence view</p>
+                  <button
+                    type="button"
+                    aria-label="Close"
+                    onClick={() => setRadarOpen(false)}
+                    className="min-h-11 rounded-md bg-elevated px-3 font-display text-xs tracking-wider text-fg"
+                  >
+                    Close
+                  </button>
+                </div>
+                <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} />
+              </div>
+            ) : null}
             <button
               type="button"
-              className="absolute top-3 right-3 z-10 min-h-12 rounded-md border border-accent/30 bg-surface/80 px-3 font-mono text-[10px] tracking-wider text-accent uppercase"
+              aria-label="Radar"
               onClick={() => setRadarOpen((open) => !open)}
+              className="absolute right-3 bottom-3 z-20 min-h-12 rounded-full bg-surface/95 px-4 font-display text-sm tracking-wider text-accent shadow-[var(--shadow-border)] backdrop-blur-md"
             >
-              {radarOpen ? "Track" : "Radar"}
+              {radarOpen ? "Hide radar" : "Radar"}
             </button>
-          ) : null}
-          {radarOpen || !world.closeCall ? (
-            <div className={cn("absolute top-3 right-3 w-[min(100%,320px)]", world.closeCall ? "top-16" : "pointer-events-none")}>
-              <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} />
-            </div>
-          ) : null}
-          <div className="pointer-events-none absolute bottom-3 left-3 max-w-[220px]">
+          </div>
+          <div className="pointer-events-none absolute bottom-3 left-3 hidden max-w-[220px] lg:block">
             <EscalationLadder phase={world.phase} defcon={world.defcon} winter={world.winterStage} />
             <p className="mt-2 font-mono text-[10px] tracking-[0.18em] text-accent/60 uppercase">
               Drag to orbit · click a marker
@@ -287,6 +351,30 @@ export function PlayScreen() {
           <ActionPanel world={world} />
         </aside>
       </div>
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-accent/15 bg-bg/96 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden"
+        aria-label="Game views"
+      >
+        {MOBILE_TABS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            aria-current={tab === item.id ? "page" : undefined}
+            onClick={() => {
+              setCommandOpen(false);
+              setRadarOpen(false);
+              setTab(item.id);
+            }}
+            aria-label={item.label}
+            className={cn(
+              "min-h-12 rounded-md font-display text-sm tracking-[0.16em]",
+              tab === item.id ? "bg-elevated text-accent" : "text-muted",
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
       {confirm ? <NuclearConfirm /> : null}
       <ShortcutsOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />

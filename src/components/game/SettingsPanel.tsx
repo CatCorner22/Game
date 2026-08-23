@@ -38,7 +38,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   }
 
   return (
-    <HudModalOverlay>
+    <HudModalOverlay label="Settings">
       <div className="flex items-center justify-between" id={titleId}>
         <h2 className="font-display text-2xl tracking-[0.12em] text-glow-accent text-fg uppercase">Settings</h2>
         <HudButton variant="ghost" className="min-h-12 px-4" onClick={onClose}>

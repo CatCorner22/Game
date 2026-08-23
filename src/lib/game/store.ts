@@ -141,6 +141,7 @@ export const useGame = create<GameState>((set, get) => ({
         tutorialStep: world.turn === 1 ? 0 : -1,
         scenarioId: scenarioId ?? null,
         lastError: null,
+        mobileTab: "act",
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -344,6 +345,7 @@ export function resetToTitle() {
     tutorialStep: -1,
     scenarioId: null,
     lastError: null,
+    mobileTab: "act",
   });
 }
 

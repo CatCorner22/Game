@@ -36,7 +36,7 @@ export function TutorialOverlay() {
   if (!current) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 p-4 sm:bottom-8 sm:left-auto sm:right-8 sm:max-w-sm">
+    <div className="fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 p-4 lg:bottom-8 lg:left-auto lg:right-8 lg:max-w-sm">
       <div className="glass-panel neon-border-accent rounded-xl p-4">
         <p className="font-mono text-[10px] tracking-wider text-accent uppercase">
           First watch · {step + 1}/{STEPS.length}
