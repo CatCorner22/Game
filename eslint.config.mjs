@@ -15,6 +15,9 @@ export default tseslint.config(
       ".nitro/**",
       "node_modules/**",
       "src/routeTree.gen.ts",
+      // These portable-playable files are concatenated by play/v2/app.js at
+      // runtime. Each fragment is intentionally incomplete when parsed alone.
+      "play/v2/app.part*.js",
     ],
   },
   js.configs.recommended,
