@@ -1,0 +1,43 @@
+name: Sync standalone playable artifact
+
+on:
+  push:
+    paths:
+      - "play/v2/**"
+      - "scripts/build-playable-standalone.mjs"
+      - ".github/workflows/sync-standalone-playable.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out pushed branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Regenerate standalone page
+        run: node scripts/build-playable-standalone.mjs
+
+      - name: Commit generated artifact when changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add play/standalone/index.html
+          if git diff --cached --quiet; then
+            echo "Standalone artifact is already current."
+            exit 0
+          fi
+          git commit -m "Regenerate self-contained playable preview"
+          git push origin HEAD:${GITHUB_REF_NAME}
