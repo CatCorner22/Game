@@ -95,12 +95,12 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
       const sweep = ((now - t0) / (pulse ? 1200 : 2800)) % 1;
       const sweepAng = sweep * Math.PI * 2;
 
-      ctx.fillStyle = "#030805";
+      ctx.fillStyle = "#020a14";
       ctx.beginPath();
       ctx.arc(cx, cy, rMax + 8, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = "rgba(90, 180, 90, 0.22)";
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.22)";
       ctx.lineWidth = 1;
       for (const ring of [0.25, 0.5, 0.75, 1]) {
         ctx.beginPath();
@@ -114,28 +114,28 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
       ctx.lineTo(cx, cy + rMax);
       ctx.stroke();
 
-      ctx.fillStyle = "rgba(110, 190, 110, 0.55)";
-      ctx.font = "9px 'IBM Plex Mono', monospace";
+      ctx.fillStyle = "rgba(0, 229, 255, 0.55)";
+      ctx.font = "9px 'JetBrains Mono', monospace";
       ctx.fillText("N", cx - 3, cy - rMax - 4);
       ctx.fillText(`${MAX_KM / 4}km`, cx + 4, cy - rMax * 0.25 + 3);
       ctx.fillText(`${MAX_KM / 2}km`, cx + 4, cy - rMax * 0.5 + 3);
 
       const grd = ctx.createConicGradient(sweepAng - Math.PI / 2, cx, cy);
-      grd.addColorStop(0, "rgba(80, 220, 90, 0.28)");
-      grd.addColorStop(0.12, "rgba(80, 220, 90, 0.0)");
-      grd.addColorStop(1, "rgba(80, 220, 90, 0.0)");
+      grd.addColorStop(0, "rgba(0, 229, 255, 0.28)");
+      grd.addColorStop(0.12, "rgba(0, 229, 255, 0.0)");
+      grd.addColorStop(1, "rgba(0, 229, 255, 0.0)");
       ctx.fillStyle = grd;
       ctx.beginPath();
       ctx.arc(cx, cy, rMax, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = "rgba(140, 255, 140, 0.85)";
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.85)";
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + Math.cos(sweepAng - Math.PI / 2) * rMax, cy + Math.sin(sweepAng - Math.PI / 2) * rMax);
       ctx.stroke();
 
-      ctx.fillStyle = "#c4a35a";
+      ctx.fillStyle = "#00e5ff";
       ctx.beginPath();
       ctx.arc(cx, cy, 3, 0, Math.PI * 2);
       ctx.fill();
@@ -153,7 +153,7 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
         const hereKm = distanceKm(you.lat, you.lon, pos.lat, pos.lon);
         const hereB = bearingDeg(you.lat, you.lon, pos.lat, pos.lon);
 
-        ctx.strokeStyle = tr.confirmed ? "rgba(180, 35, 24, 0.75)" : "rgba(196, 163, 90, 0.7)";
+        ctx.strokeStyle = tr.confirmed ? "rgba(255, 51, 102, 0.75)" : "rgba(0, 229, 255, 0.55)";
         ctx.setLineDash(tr.confirmed ? [] : [4, 4]);
         ctx.beginPath();
         const steps = 18;
@@ -172,12 +172,12 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
         const d = polar(cx, cy, destKm, bTo, rMax);
         const cur = polar(cx, cy, hereKm, hereB, rMax);
 
-        ctx.fillStyle = "#c4a35a";
+        ctx.fillStyle = "#00e5ff";
         ctx.beginPath();
         ctx.arc(o.x, o.y, 3.2, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = "#b42318";
+        ctx.strokeStyle = "#ff3366";
         ctx.beginPath();
         ctx.moveTo(d.x - 5, d.y - 5);
         ctx.lineTo(d.x + 5, d.y + 5);
@@ -186,15 +186,15 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
         ctx.stroke();
 
         const pulse = 2.4 + Math.sin(now / 180) * 1.2;
-        ctx.fillStyle = tr.confirmed ? "#b42318" : "#d4c070";
+        ctx.fillStyle = tr.confirmed ? "#ff3366" : "#00e5ff";
         for (let i = 0; i < Math.min(tr.boosts, 6); i++) {
           ctx.beginPath();
           ctx.arc(cur.x + i * 3.5 - 4, cur.y, pulse, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        ctx.fillStyle = "rgba(200, 255, 200, 0.9)";
-        ctx.font = "9px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = "rgba(200, 240, 255, 0.9)";
+        ctx.font = "9px 'JetBrains Mono', monospace";
         ctx.fillText(tr.from.shortName, o.x + 6, o.y - 4);
         ctx.fillText(tr.to.shortName, d.x + 6, d.y + 10);
       }
@@ -206,12 +206,12 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
   }, [world.turn, world.closeCall, world.missiles, world.playerId]);
 
   return (
-    <div className="pointer-events-none flex flex-col overflow-hidden rounded-md bg-[#070b07] shadow-[var(--shadow-border)]">
+    <div className="pointer-events-none flex flex-col overflow-hidden rounded-lg glass-panel neon-border-accent">
       <div className="flex items-center justify-between px-2 py-1">
-        <p className="font-mono text-[10px] tracking-[0.2em] text-[#6baf6b] uppercase">
+        <p className="font-mono text-[10px] tracking-[0.2em] text-accent uppercase">
           {live ? live.source : you.warning >= 70 ? "SBIRS / BMEWS" : "national technical means"}
         </p>
-        <p className="font-mono text-[10px] tracking-[0.16em] text-[#c4a35a] uppercase">
+        <p className="font-mono text-[10px] tracking-[0.16em] text-accent/80 uppercase">
           {live ? "LIVE TRACK" : "SCOPE QUIET"}
         </p>
       </div>
@@ -227,7 +227,7 @@ function TrackReadout({ world, tracks, you }: { world: World; tracks: Track[]; y
   const live = tracks[0];
   if (!live) {
     return (
-      <p className="px-2 pb-2 font-mono text-[10px] leading-relaxed text-[#5c7a5c]">
+      <p className="px-2 pb-2 font-mono text-[10px] leading-relaxed text-muted">
         Center {you.shortName} {fmtLatLon(you.lat, you.lon)}. No boosts. Sweep is infrared + radar fusion.
       </p>
     );
@@ -236,7 +236,7 @@ function TrackReadout({ world, tracks, you }: { world: World; tracks: Track[]; y
   const brg = bearingDeg(you.lat, you.lon, live.from.lat, live.from.lon);
   const remaining = live.ttiMin;
   return (
-    <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pb-2 font-mono text-[10px] uppercase text-[#8fbf8f]">
+    <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pb-2 font-mono text-[10px] uppercase text-muted">
       <Row k="Origin" v={`${live.from.shortName} ${fmtLatLon(live.from.lat, live.from.lon)}`} />
       <Row k="Impact" v={`${live.to.shortName} ${fmtLatLon(live.to.lat, live.to.lon)}`} />
       <Row k="Azimuth" v={`${fmtBearing(brg)} · ${Math.round(km)} km`} />
@@ -252,8 +252,8 @@ function TrackReadout({ world, tracks, you }: { world: World; tracks: Track[]; y
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <>
-      <dt className="text-[#5c7a5c]">{k}</dt>
-      <dd className="truncate text-right text-[#d4edd4]">{v}</dd>
+      <dt className="text-subtle">{k}</dt>
+      <dd className="truncate text-right text-fg">{v}</dd>
     </>
   );
 }

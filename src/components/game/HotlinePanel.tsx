@@ -2,6 +2,7 @@ import type { ActorId, World } from "@/lib/game/types";
 import { hotlineBetween } from "@/lib/game/warning";
 import { useGame } from "@/lib/game/store";
 import { cn } from "@/lib/utils";
+import { GlassPanel, HudLabel } from "./ui/Hud";
 
 function playerHotlines(world: World) {
   const pid = world.playerId;
@@ -17,13 +18,13 @@ export function HotlinePanel({ world }: { world: World }) {
 
   return (
     <section className="mt-4">
-      <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Hotlines & notices</p>
+      <HudLabel>Hotlines & notices</HudLabel>
       {toSelected ? (
-        <div className="mt-2 rounded-md bg-accent/10 p-2.5 shadow-[var(--shadow-border)]">
+        <GlassPanel glow="accent" className="mt-2 rounded-lg p-2.5">
           <p className="font-mono text-[9px] tracking-wider text-accent uppercase">Selected target</p>
           <p className="mt-1 text-xs text-fg">{toSelected.name}</p>
           <p className="mt-0.5 font-mono text-[10px] text-muted">Reliability {toSelected.reliability}%</p>
-        </div>
+        </GlassPanel>
       ) : (
         <p className="mt-2 text-xs text-subtle">No dedicated line to {selected}. Third party. Hours, not minutes.</p>
       )}
@@ -37,8 +38,10 @@ export function HotlinePanel({ world }: { world: World }) {
                 type="button"
                 onClick={() => select(other)}
                 className={cn(
-                  "w-full rounded-sm px-2 py-1.5 text-left font-mono text-[10px]",
-                  active ? "bg-fg text-bg" : "text-muted hover:text-fg",
+                  "w-full rounded-sm border px-2 py-1.5 text-left font-mono text-[10px] transition-colors",
+                  active
+                    ? "border-accent/50 bg-accent/15 text-accent"
+                    : "border-transparent text-muted hover:border-accent/30 hover:text-fg",
                 )}
               >
                 <span className="tracking-wider uppercase">{world.actors[other].shortName}</span>

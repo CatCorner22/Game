@@ -12,6 +12,7 @@ import { pinnedLogEntry } from "./SituationLog";
 import { doctrineOptions } from "@/lib/game/doctrine";
 import { loadSettings } from "@/lib/game/settings";
 import { pactHint } from "./DiplomacyPanel";
+import { HudButton, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
 
 export function ActionPanel({ world }: { world: World }) {
   const kind = useGame((s) => s.actionKind);
@@ -56,18 +57,18 @@ export function ActionPanel({ world }: { world: World }) {
   if (world.doctrinePending && doctrineChoices.length) {
     return (
       <section className="flex flex-col gap-3">
-        <p className="font-mono text-[10px] tracking-[0.22em] text-accent uppercase">Doctrine investment · turn {world.turn}</p>
+        <HudLabel>Doctrine investment · turn {world.turn}</HudLabel>
         <p className="text-sm text-muted">Pick one upgrade before this month&apos;s action. Every six months the file offers a choice.</p>
         {doctrineChoices.map((d) => (
-          <button
+          <HudButton
             key={d.id}
-            type="button"
+            variant="default"
+            className="min-h-14 w-full p-3 text-left"
             onClick={() => pickDoctrine(d.id)}
-            className="min-h-14 rounded-md bg-elevated p-3 text-left shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]"
           >
             <span className="font-display text-sm tracking-wide text-fg uppercase">{d.label}</span>
             <span className="mt-1 block text-xs text-subtle">{d.detail}</span>
-          </button>
+          </HudButton>
         ))}
       </section>
     );
@@ -76,14 +77,14 @@ export function ActionPanel({ world }: { world: World }) {
   return (
     <section className="flex flex-col gap-4">
       {pinned && (pinned.kind === "critical" || pinned.kind === "you") ? (
-        <div className="rounded-md border border-danger/30 bg-danger/10 p-3">
-          <p className="font-mono text-[10px] tracking-[0.22em] text-danger uppercase">Priority</p>
+        <HudPanel glow="danger">
+          <HudLabel className="text-danger">Priority</HudLabel>
           <p className="mt-1 text-sm text-fg">{pinned.text}</p>
-        </div>
+        </HudPanel>
       ) : null}
       <div>
-        <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">This month</p>
-        <h2 className="mt-1 font-display text-2xl tracking-[0.06em] text-fg">{world.event.title}</h2>
+        <HudLabel>This month</HudLabel>
+        <h2 className="mt-1 font-display text-2xl tracking-[0.06em] text-glow-accent text-fg">{world.event.title}</h2>
         {world.event.because ? (
           <p className="mt-2 font-mono text-[11px] tracking-wide text-accent uppercase">{world.event.because}</p>
         ) : null}
@@ -111,7 +112,7 @@ export function ActionPanel({ world }: { world: World }) {
           </p>
         ) : null}
         {world.closeCall ? (
-          <dl className="mt-3 space-y-1 rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
+          <HudPanel className="mt-3">
             <Row k="Source" v={world.closeCall.track.source} />
             <Row k="Boosts" v={String(world.closeCall.track.boosts)} />
             <Row k="Azimuth" v={world.closeCall.track.azimuth} />
@@ -123,36 +124,32 @@ export function ActionPanel({ world }: { world: World }) {
             ) : (
               <Row k="HUMINT" v="no cell at origin" />
             )}
-          </dl>
+          </HudPanel>
         ) : null}
         {world.reactions?.length ? (
-          <div className="mt-3 rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
-            <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Humans this month</p>
+          <HudPanel className="mt-3">
+            <HudLabel>Humans this month</HudLabel>
             {world.reactions.slice(0, 3).map((r, i) => (
               <p key={`${r.actor}-${i}`} className="mt-1 text-xs leading-snug text-fg">
                 <span className="font-mono text-accent">{r.temper.toUpperCase()}</span> {r.line}
               </p>
             ))}
-          </div>
+          </HudPanel>
         ) : null}
       </div>
 
       <div>
-        <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Your move</p>
+        <HudLabel>Your move</HudLabel>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           {ACTIONS.map((a) => (
-            <button
+            <HudButton
               key={a.kind}
+              variant={a.kind === kind ? "active" : "default"}
+              className="min-h-11 px-3 text-left text-sm"
               onClick={() => setKind(a.kind)}
-              className={cn(
-                "min-h-11 rounded-sm px-3 text-left font-display text-sm tracking-[0.14em] uppercase transition-[box-shadow,background-color] duration-150",
-                a.kind === kind
-                  ? "bg-fg text-bg"
-                  : "bg-elevated text-fg shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
-              )}
             >
               {a.label}
-            </button>
+            </HudButton>
           ))}
         </div>
         <p className="mt-3 text-sm text-muted">{def.blurb}</p>
@@ -160,21 +157,19 @@ export function ActionPanel({ world }: { world: World }) {
 
       {kind !== "hold" ? (
         <div>
-          <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">
+          <HudLabel>
             Weight · target {selected}
-          </p>
+          </HudLabel>
           <div className="mt-2 grid grid-cols-3 gap-1.5">
             {([1, 2, 3] as const).map((i) => (
-              <button
+              <HudButton
                 key={i}
+                variant={intensity === i ? "active" : "default"}
+                className="min-h-11 px-2 text-xs"
                 onClick={() => setIntensity(i)}
-                className={cn(
-                  "min-h-11 rounded-sm px-2 font-display text-xs tracking-[0.08em] uppercase",
-                  intensity === i ? "bg-accent text-accent-fg" : "bg-elevated text-muted",
-                )}
               >
                 {i} {def.intensities[i - 1]}
-              </button>
+              </HudButton>
             ))}
           </div>
           <p className="mt-2 text-xs text-subtle">{def.intensityHint[intensity - 1]}</p>
@@ -189,7 +184,7 @@ export function ActionPanel({ world }: { world: World }) {
 
       {kind === "employ" && intensity >= 2 ? (
         <div>
-          <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Package · RV / decoys</p>
+          <HudLabel>Package · RV / decoys</HudLabel>
           <div className="mt-2 grid grid-cols-3 gap-1.5">
             {(
               [
@@ -198,25 +193,22 @@ export function ActionPanel({ world }: { world: World }) {
                 ["mirv-decoy", "MIRV+decoy", "RVs plus balloons. Interceptors spend on ghosts."],
               ] as const
             ).map(([id, label, hint]) => (
-              <button
+              <HudButton
                 key={id}
-                type="button"
+                variant={packageMode === id ? "active" : "default"}
+                className="min-h-14 px-2 py-2 text-left"
                 onClick={() => setPackageMode(id as PackageMode)}
-                className={cn(
-                  "min-h-14 rounded-sm px-2 py-2 text-left",
-                  packageMode === id ? "bg-accent text-accent-fg" : "bg-elevated text-muted",
-                )}
               >
                 <span className="block font-display text-xs tracking-[0.08em] uppercase">{label}</span>
                 <span className="mt-0.5 block text-[10px] leading-snug opacity-80">{hint}</span>
-              </button>
+              </HudButton>
             ))}
           </div>
         </div>
       ) : null}
 
       {showNotice ? (
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md bg-elevated px-3 shadow-[var(--shadow-border)]">
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg glass-panel border border-accent/25 px-3">
           <input
             type="checkbox"
             checked={notify}
@@ -232,8 +224,8 @@ export function ActionPanel({ world }: { world: World }) {
         </label>
       ) : null}
 
-      <div className="rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
-        <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Forecast</p>
+      <HudPanel>
+        <HudLabel>Forecast</HudLabel>
         <p className="mt-2 text-sm text-fg">{fc.summary}</p>
         <p className="mt-1 text-xs text-subtle">{fc.riskLine}</p>
         {!forecastSummary ? (
@@ -249,21 +241,19 @@ export function ActionPanel({ world }: { world: World }) {
         <p className="mt-2 text-[11px] text-subtle">
           {warningLine(world)} · winter {winterLabel(world.nuclearWinter)}
         </p>
-      </div>
+      </HudPanel>
 
-      <button
+      <HudButton
+        variant={kind === "employ" && intensity >= 2 ? "danger" : "active"}
+        className="min-h-12 w-full text-lg tracking-[0.22em] uppercase"
         onClick={execute}
-        className={cn(
-          "min-h-12 rounded-md font-display text-lg tracking-[0.22em] uppercase",
-          kind === "employ" && intensity >= 2 ? "bg-danger text-fg" : "bg-accent text-accent-fg",
-        )}
       >
         {kind === "employ" && intensity >= 2
           ? "Open Black Book"
           : kind === "employ"
             ? "Execute conventional"
             : "Execute"}
-      </button>
+      </HudButton>
     </section>
   );
 }
@@ -320,15 +310,10 @@ export function NuclearConfirm() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-bg/85 p-3 sm:items-center">
-      <form
-        onSubmit={onSubmit}
-        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-xl bg-surface p-5 shadow-[var(--shadow-border)]"
-      >
-        <p className="font-mono text-[10px] tracking-[0.22em] text-danger uppercase">
-          {c.satchel} · Presidential Emergency Satchel
-        </p>
-        <h2 className="mt-1 font-display text-3xl tracking-wide text-fg">BLACK BOOK</h2>
+    <HudModalOverlay glow="danger" className="max-w-lg">
+      <form onSubmit={onSubmit}>
+        <HudLabel className="text-danger">{c.satchel} · Presidential Emergency Satchel</HudLabel>
+        <h2 className="mt-1 font-display text-3xl tracking-wide text-glow-danger text-fg">BLACK BOOK</h2>
         <p className="mt-2 text-xs leading-relaxed text-muted">{fc.bag}</p>
         <p className="mt-1 text-xs leading-relaxed text-muted">{fc.biscuit}</p>
         <p className="mt-1 text-xs leading-relaxed text-subtle">{fc.radio}</p>
@@ -348,28 +333,24 @@ export function NuclearConfirm() {
           <Row k="Target" v={world.actors[selected].name} />
         </dl>
 
-        <p className="mt-4 font-mono text-[10px] tracking-[0.22em] text-muted uppercase">
-          Packaged options · you pick a page, not a city
-        </p>
+        <HudLabel className="mt-4">Packaged options · you pick a page, not a city</HudLabel>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           {pages.map((p) => (
-            <button
+            <HudButton
               key={p.id}
               type="button"
+              variant={book === p.id ? "danger" : "default"}
+              className="min-h-14 px-2 py-2 text-left"
               onClick={() => setBook(p.id)}
-              className={cn(
-                "min-h-14 rounded-md px-2 py-2 text-left",
-                book === p.id ? "bg-danger text-fg" : "bg-elevated text-fg shadow-[var(--shadow-border)]",
-              )}
             >
               <span className="font-display text-sm tracking-[0.12em]">
                 {p.letter} · {p.short}
               </span>
               <span className="mt-0.5 block text-[11px] leading-snug opacity-80">{p.yieldLine}</span>
-            </button>
+            </HudButton>
           ))}
         </div>
-        <p className="mt-3 font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Bus · decoys</p>
+        <HudLabel className="mt-3">Bus · decoys</HudLabel>
         <div className="mt-2 grid grid-cols-3 gap-1.5">
           {(
             [
@@ -378,17 +359,15 @@ export function NuclearConfirm() {
               ["mirv-decoy", "MIRV+decoy"],
             ] as const
           ).map(([id, label]) => (
-            <button
+            <HudButton
               key={id}
               type="button"
+              variant={packageMode === id ? "danger" : "default"}
+              className="min-h-10 px-2 text-[11px] uppercase"
               onClick={() => setPackageMode(id)}
-              className={cn(
-                "min-h-10 rounded-sm px-2 font-display text-[11px] tracking-[0.08em] uppercase",
-                packageMode === id ? "bg-danger text-fg" : "bg-elevated text-muted",
-              )}
             >
               {label}
-            </button>
+            </HudButton>
           ))}
         </div>
         <p className="mt-2 text-[11px] leading-snug text-subtle">
@@ -399,7 +378,7 @@ export function NuclearConfirm() {
               : "RVs plus decoys. Interceptors spend on balloons. Particular weapons still fail in boost or reentry."}
         </p>
 
-        <div className="mt-3 rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
+        <HudPanel glow="danger" className="mt-3">
           <p className="font-display text-lg tracking-wide text-fg">
             {page.letter} · {page.name}
           </p>
@@ -408,7 +387,7 @@ export function NuclearConfirm() {
           <p className="font-mono text-[11px] text-muted">Dead {page.deathsLine}</p>
           <p className="font-mono text-[11px] text-muted">Recall {page.recall}</p>
           <p className="font-mono text-[11px] text-accent">Winter {page.winter}</p>
-        </div>
+        </HudPanel>
 
         <p className="mt-4 font-mono text-xs tracking-[0.18em] text-accent uppercase">
           Gold codes · biscuit · type {world.authCode}
@@ -427,7 +406,7 @@ export function NuclearConfirm() {
           spellCheck={false}
           inputMode="text"
           enterKeyHint="done"
-          className="mt-2 h-12 w-full rounded-md bg-elevated px-3 font-mono text-lg tracking-widest text-fg uppercase outline-none shadow-[var(--shadow-border)]"
+          className="mt-2 h-12 w-full rounded-md glass-panel px-3 font-mono text-lg tracking-widest text-fg uppercase outline-none neon-border-accent"
           placeholder={world.authCode}
           aria-label="Type gold-code biscuit"
         />
@@ -445,22 +424,14 @@ export function NuclearConfirm() {
           {stanceLine(world.secondOfficer.stance)} {outlook.risk} {fc.cog}
         </p>
         <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={cancel}
-            className="min-h-11 flex-1 rounded-sm font-display tracking-[0.16em] text-muted uppercase"
-          >
+          <HudButton type="button" variant="ghost" className="min-h-11 flex-1 uppercase" onClick={cancel}>
             Close book
-          </button>
-          <button
-            type="submit"
-            className="min-h-11 flex-1 rounded-sm bg-danger font-display tracking-[0.12em] text-fg uppercase disabled:opacity-30"
-            disabled={!ok}
-          >
+          </HudButton>
+          <HudButton type="submit" variant="danger" className="min-h-11 flex-1 uppercase" disabled={!ok}>
             Voice order
-          </button>
+          </HudButton>
         </div>
       </form>
-    </div>
+    </HudModalOverlay>
   );
 }

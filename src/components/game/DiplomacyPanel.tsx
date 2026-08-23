@@ -1,6 +1,7 @@
 import type { World } from "@/lib/game/types";
 import { hasPact } from "@/lib/game/pacts";
 import { hasCeasefire } from "@/lib/game/ceasefire";
+import { HudLabel, HudPanel } from "./ui/Hud";
 
 export function DiplomacyPanel({ world }: { world: World }) {
   const pacts = (world.pacts ?? []).filter((p) => !p.broken && p.untilTurn >= world.turn);
@@ -10,8 +11,8 @@ export function DiplomacyPanel({ world }: { world: World }) {
       : null;
 
   return (
-    <div className="mt-4 rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
-      <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Diplomacy ledger</p>
+    <HudPanel className="mt-4">
+      <HudLabel>Diplomacy ledger</HudLabel>
       {cf ? (
         <p className="mt-2 text-xs text-accent">
           Ceasefire {world.actors[cf.a].shortName}–{world.actors[cf.b].shortName} until T{cf.untilTurn}. Summit renews.
@@ -33,7 +34,7 @@ export function DiplomacyPanel({ world }: { world: World }) {
       ) : (
         <p className="mt-1 text-[10px] text-subtle">No active non-attack pacts.</p>
       )}
-    </div>
+    </HudPanel>
   );
 }
 

@@ -1,17 +1,8 @@
 import type { ActorId, Team, World } from "./types";
 import { createWorld } from "./world";
-import { applyScenario, type ScenarioId } from "./scenarios";
+import { applyScenario, SCENARIO_IDS, type ScenarioId } from "./scenarios";
 import { resolveTurn } from "./sim";
 import { decodeReplay, type ReplayRecord } from "./replay";
-
-const SCENARIO_IDS: ScenarioId[] = [
-  "petrov-1983",
-  "able-archer",
-  "taiwan-2027",
-  "broken-arrow",
-  "kashmir-2027",
-  "cuba-1962",
-];
 
 function asScenario(id: string | null): ScenarioId | null {
   if (!id) return null;

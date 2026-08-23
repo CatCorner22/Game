@@ -1,6 +1,7 @@
 import type { ActorId, Flashpoint, World } from "@/lib/game/types";
 import { useGame } from "@/lib/game/store";
 import { cn } from "@/lib/utils";
+import { HudLabel } from "./ui/Hud";
 
 function heatColor(heat: number) {
   if (heat >= 75) return "bg-danger";
@@ -21,26 +22,24 @@ export function FlashpointBoard({ world }: { world: World }) {
 
   return (
     <section className="mt-4">
-      <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Flashpoints</p>
+      <HudLabel>Flashpoints</HudLabel>
       <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
         {sorted.map((fp) => (
           <li key={fp.id}>
             <button
               type="button"
               onClick={() => select(pickActor(fp))}
-              className="w-full rounded-md bg-elevated p-2.5 text-left shadow-[var(--shadow-border)] transition-[box-shadow] hover:shadow-[var(--shadow-border-hover)]"
+              className="glass-panel w-full rounded-lg p-2.5 text-left transition-all hover:neon-border-accent"
             >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-display text-sm tracking-wide text-fg">{fp.name}</span>
-                <span className="font-mono text-xs tabular text-muted">{Math.round(fp.heat)}</span>
+                <span className="font-mono text-xs tabular text-accent">{Math.round(fp.heat)}</span>
               </div>
-              <div className="mt-1.5 h-1 rounded-full bg-bg">
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface/60">
                 <div className={cn("h-1 rounded-full", heatColor(fp.heat))} style={{ width: `${fp.heat}%` }} />
               </div>
               <p className="mt-1.5 text-[11px] leading-snug text-subtle">{fp.note}</p>
-              <p className="mt-1 font-mono text-[9px] tracking-wider text-muted uppercase">
-                {fp.actors.join(" · ")}
-              </p>
+              <p className="mt-1 font-mono text-[9px] tracking-wider text-muted uppercase">{fp.actors.join(" · ")}</p>
             </button>
           </li>
         ))}
