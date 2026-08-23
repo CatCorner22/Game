@@ -5,6 +5,8 @@ import { aiChoose, rememberAi } from "./ai";
 import { drawEvent, eventFlash } from "./events";
 import { followUpEvent, rememberDecision, sameFollowBeat, shouldFollowUp } from "./consequences";
 import { redObjectivesMet } from "./objectives";
+import { defeatOf, tickMandate, victoryOf } from "./mandate";
+import { applyDecision, openDecisionIfWarranted } from "./decisions";
 import { breakPactIfAggressive, proposePact, tickPacts } from "./pacts";
 import { breakCeasefire, ceasefirePeaceReady, hasCeasefire, proposeCeasefire, tickCeasefire } from "./ceasefire";
 import { tickTreaties } from "./treaties";
@@ -600,6 +602,7 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   const prevMeters = meters(world);
   const prevEvent = world.event;
   rememberDecision(world, action);
+  applyDecision(world, action);
   applyIgnore(world, action);
   applyAction(world, world.playerId, action);
   reactToAction(world, action);
@@ -728,6 +731,7 @@ export function resolveTurn(world: World, action: PlayerAction): World {
     }
     finishIfNeeded(world);
   }
+  openDecisionIfWarranted(world);
   recompute(world);
   for (const m of world.missiles) {
     m.progress = clamp(m.progress + 0.45, 0, 1);
@@ -879,6 +883,9 @@ function scoreWar(world: World): number {
 
 export function finishIfNeeded(world: World) {
   if (world.ended) return;
+  // Advance the watch's victory/defeat streaks before any ending is chosen.
+  // Guarded internally so the two call sites in one turn only count one month.
+  tickMandate(world);
   const me = world.actors[world.playerId];
   const name = me.shortName;
   if (ceasefirePeaceReady(world)) {
@@ -971,6 +978,32 @@ export function finishIfNeeded(world: World) {
       title: "PYRRHIC",
       body: `The exchange stopped. The country is damaged in ways that will not reset. ${name} dead: ${world.playerCasualties.toLocaleString()}. World dead: ${world.worldCasualties.toLocaleString()}. Winter index ${round(world.nuclearWinter)}.`,
       score: scoreWar(world) * 0.6,
+    });
+    return;
+  }
+
+  // The mandate sits between the catastrophe ladder and the 24-month timer. A
+  // catastrophe still tells its own, better story; but short of one, the watch
+  // can now end early with an explicit win or an explicit loss, which is the
+  // whole point of having a stated mandate.
+  const mandate = world.mandate;
+  if (mandate?.resolved === "defeat") {
+    const cond = defeatOf(world);
+    end(world, {
+      kind: "mandate-loss",
+      title: "MANDATE FAILED",
+      body: `Your loss point was reached: ${cond?.label.toLowerCase() ?? "the standing condition"}. ${cond?.detail ?? ""} The watch is closed early. No mushroom cloud is required to lose this job.`,
+      score: round(scorePeace(world) * 0.35),
+    });
+    return;
+  }
+  if (mandate?.resolved === "victory") {
+    const cond = victoryOf(world);
+    end(world, {
+      kind: "mandate-win",
+      title: "MANDATE MET",
+      body: `You were given one thing to achieve and you achieved it: ${cond?.label.toLowerCase() ?? "the standing condition"}. ${cond?.detail ?? ""} ${name} dead: ${world.playerCasualties.toLocaleString()}. World dead: ${world.worldCasualties.toLocaleString()}.`,
+      score: round(scorePeace(world) * 1.1 + 60),
     });
     return;
   }

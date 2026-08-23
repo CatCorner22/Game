@@ -3,9 +3,10 @@ import { useGame, resetToTitle } from "@/lib/game/store";
 import { clearSave } from "@/lib/game/save";
 import { fmtNum } from "@/lib/game/geo";
 import { meters } from "@/lib/game/world";
-import { letterGrade } from "@/lib/game/stats";
+import { isWin, letterGrade } from "@/lib/game/stats";
+import { defeatOf, victoryOf } from "@/lib/game/mandate";
 import { encodeReplay } from "@/lib/game/replay";
-import { GlassPanel, HudButton, HudChip, HudLabel, HudPanel } from "./ui/Hud";
+import { GlassPanel, HudButton, HudChip, HudLabel, HudPanel, HudRow } from "./ui/Hud";
 
 export function EndScreen() {
   const world = useGame((s) => s.world);
@@ -18,6 +19,9 @@ export function EndScreen() {
   const grade = letterGrade(e.score, world.intent, world.firstUse, world.playerId);
   const replayCode = encodeReplay(world);
   const timeline = [...world.log].reverse();
+  const won = isWin(e.kind);
+  const mandate = world.mandate;
+  const mandateCond = mandate?.resolved === "victory" ? victoryOf(world) : mandate?.resolved === "defeat" ? defeatOf(world) : undefined;
 
   async function copyReplay() {
     try {
@@ -30,7 +34,12 @@ export function EndScreen() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-5 py-12">
-      <HudChip active>Watch closed</HudChip>
+      <div className="flex flex-wrap items-center gap-2">
+        <HudChip active={won} danger={!won}>
+          {won ? "Victory" : "Defeat"}
+        </HudChip>
+        <HudChip>Watch closed</HudChip>
+      </div>
       <div className="mt-3 flex items-end gap-4">
         <h1 className="font-display text-5xl font-semibold tracking-wide text-glow-accent text-fg">{e.title}</h1>
         <span className="font-display text-4xl text-accent glow-accent-sm">{grade}</span>
@@ -38,17 +47,20 @@ export function EndScreen() {
       <p className="mt-6 text-base leading-relaxed text-muted">{e.body}</p>
       <GlassPanel glow="accent" className="mt-8 rounded-xl p-4">
         <dl className="space-y-2">
-          <Row k="Score" v={String(Math.round(e.score))} />
-          <Row k="Grade" v={grade} />
-          <Row k="Seat" v={`${world.playerId} · ${world.intent}`} />
-          <Row k="ALERT" v={String(m.defcon)} />
-          <Row k="Global risk" v={String(Math.round(m.risk))} />
-          <Row k="Winter" v={String(Math.round(m.winter))} />
-          <Row k="Your dead" v={fmtNum(world.playerCasualties)} />
-          <Row k="World dead" v={fmtNum(world.worldCasualties)} />
-          <Row k="Nuclear uses" v={String(world.nuclearUses.length)} />
-          <Row k="First use" v={world.firstUse ?? "none"} />
-          <Row k="Uncontrolled" v={world.uncontrolled ? "yes" : "no"} />
+          <HudRow k="Score" v={String(Math.round(e.score))} />
+          <HudRow k="Grade" v={grade} />
+          <HudRow k="Seat" v={`${world.playerId} · ${world.intent}`} />
+          <HudRow k="ALERT" v={String(m.defcon)} />
+          <HudRow k="Global risk" v={String(Math.round(m.risk))} />
+          <HudRow k="Winter" v={String(Math.round(m.winter))} />
+          <HudRow k="Your dead" v={fmtNum(world.playerCasualties)} />
+          <HudRow k="World dead" v={fmtNum(world.worldCasualties)} />
+          <HudRow k="Nuclear uses" v={String(world.nuclearUses.length)} />
+          <HudRow k="First use" v={world.firstUse ?? "none"} />
+          <HudRow k="Uncontrolled" v={world.uncontrolled ? "yes" : "no"} />
+          {mandateCond ? (
+            <HudRow k={mandate?.resolved === "victory" ? "Mandate met" : "Loss point"} v={mandateCond.label} />
+          ) : null}
         </dl>
       </GlassPanel>
 
@@ -102,11 +114,4 @@ export function EndScreen() {
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between border-b border-accent/15 py-2">
-      <dt className="text-xs tracking-wide text-muted uppercase">{k}</dt>
-      <dd className="font-mono text-sm text-fg tabular">{v}</dd>
-    </div>
-  );
-}
+

@@ -21,6 +21,7 @@ import { recordTurn } from "./replay";
 import { applyScenario, scenarioById, type ScenarioId } from "./scenarios";
 import { recordGameEnd } from "./stats";
 import { applyDoctrine } from "./doctrine";
+import { currentDecision, optionById } from "./decisions";
 import { applyC2Stance, type C2StanceId } from "./c2";
 import { replayFromCode } from "./replayRun";
 import { peekSlotWorld } from "./slots";
@@ -81,7 +82,7 @@ interface GameState {
   setBook: (b: BookId) => void;
   setPackageMode: (m: PackageMode) => void;
   execute: () => void;
-  confirmAndExecute: () => void;
+  confirmAndExecute: (override?: PlayerAction) => void;
   cancelConfirm: () => void;
   setTab: (t: "map" | "status" | "act") => void;
   setBriefingPage: (n: number) => void;
@@ -90,6 +91,7 @@ interface GameState {
   toggleGlossary: () => void;
   setTutorialStep: (n: number) => void;
   dismissTutorial: () => void;
+  chooseDecision: (optionId: string) => void;
   pickDoctrine: (id: DoctrineUpgradeId) => void;
   lastError: string | null;
   clearError: () => void;
@@ -265,10 +267,15 @@ export const useGame = create<GameState>((set, get) => ({
     }
     get().confirmAndExecute();
   },
-  confirmAndExecute: () => {
+  /**
+   * Commit a turn. `override` is supplied by decision cards, whose option
+   * carries its own `PlayerAction` (plus the option id, so the choice rides the
+   * action into `replay.ts` and replays exactly).
+   */
+  confirmAndExecute: (override?: PlayerAction) => {
     const st = get();
     if (!st.world) return;
-    const act = st.action();
+    const act = override ?? st.action();
     const prev = st.world;
     try {
       recordTurn(prev, act);
@@ -311,6 +318,16 @@ export const useGame = create<GameState>((set, get) => ({
   toggleGlossary: () => set({ glossaryOpen: !get().glossaryOpen }),
   setTutorialStep: (n) => set({ tutorialStep: n }),
   dismissTutorial: () => set({ tutorialStep: -1 }),
+  chooseDecision: (optionId: string) => {
+    const st = get();
+    const w = st.world;
+    if (!w) return;
+    const card = currentDecision(w);
+    const opt = optionById(card, optionId);
+    if (!opt) return;
+    // The option id travels on the action so the turn replays faithfully.
+    st.confirmAndExecute({ ...opt.action, decisionOptionId: opt.id });
+  },
   pickDoctrine: (id: DoctrineUpgradeId) => {
     const w = get().world;
     if (!w) return;
