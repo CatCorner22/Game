@@ -25,18 +25,18 @@ export function TutorialOverlay() {
   const dismissTutorial = useGame((s) => s.dismissTutorial);
 
   useEffect(() => {
-    if (!world || world.turn !== 1) return;
+    if (!world || world.turn !== 1 || world.scenarioId) return;
     const s = loadSettings();
     if (!s.tutorialDone) setStep(0);
-  }, [world?.turn, setStep]);
+  }, [world?.turn, world?.scenarioId, setStep]);
 
-  if (!world || world.turn !== 1 || loadSettings().tutorialDone || step < 0) return null;
+  if (!world || world.turn !== 1 || world.scenarioId || loadSettings().tutorialDone || step < 0) return null;
 
   const current = STEPS[step];
   if (!current) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 p-4 lg:bottom-8 lg:left-auto lg:right-8 lg:max-w-sm">
+    <div className="fixed inset-x-0 top-[3.75rem] z-30 p-4 lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto lg:max-w-sm">
       <div className="glass-panel neon-border-accent rounded-xl p-4">
         <p className="font-mono text-[10px] tracking-wider text-accent uppercase">
           First watch · {step + 1}/{STEPS.length}

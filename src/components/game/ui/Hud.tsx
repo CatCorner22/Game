@@ -226,8 +226,7 @@ export function ScenarioCard({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-display text-sm tracking-[0.12em] text-fg uppercase">{title}</span>
-        <span className="font-mono text-[9px] tracking-wider text-accent/70 uppercase">{era}</span>
+        <span className="font-display text-sm tracking-[0.12em] text-fg uppercase">{`${title} · ${era}`}</span>
       </div>
       <p className="mt-1.5 text-xs leading-snug text-muted">{line}</p>
       <p className="mt-2 font-mono text-[9px] tracking-wider text-subtle uppercase">

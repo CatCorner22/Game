@@ -138,7 +138,7 @@ export const useGame = create<GameState>((set, get) => ({
         confirmNuclear: false,
         fileOpen: false,
         whyId: null,
-        tutorialStep: world.turn === 1 ? 0 : -1,
+        tutorialStep: world.turn === 1 && !scenarioId ? 0 : -1,
         scenarioId: scenarioId ?? null,
         lastError: null,
         mobileTab: "act",

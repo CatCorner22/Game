@@ -400,7 +400,6 @@ export function TitleScreen() {
                   {seatOnly ? `Seat ${country}` : "All seats"}
                 </button>
               </div>
-              {selectedDef ? <p className="mt-2 text-sm text-fg">{selectedDef.title}</p> : null}
               {selectedDef?.briefing || selectedDef?.contentNote ? (
                 <p className="mt-2 text-xs leading-snug text-accent/80">
                   {selectedDef.briefing ?? selectedDef.contentNote}
