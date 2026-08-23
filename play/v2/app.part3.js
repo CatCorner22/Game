@@ -93,12 +93,13 @@
     let settingsOpen=false;
     function render(){applySettings();const app=$('#app');app.innerHTML=state.screen==='landing'?landing():state.screen==='game'?game():endScreen();if(settingsOpen&&!state.resolution?.open)app.insertAdjacentHTML('beforeend',settingsDialog());bind();}
     function bind(){
+      const dismissRecovery=$('#dismissRecovery');if(dismissRecovery)dismissRecovery.onclick=()=>{state.recoveryNotice=null;save();render();};
       $$('[data-scenario]').forEach(b=>b.onclick=()=>{state.scenario=b.dataset.scenario;render();});
       $$('[data-ai]').forEach(b=>b.onclick=()=>{state.ai=b.dataset.ai;render();});
       $$('[data-cont]').forEach(b=>b.onclick=()=>{state.continuity=b.dataset.cont;render();});
       const diff=$('#difficulty');if(diff)diff.onchange=()=>{state.difficulty=diff.value;save();};
       const start=$('#start');if(start)start.onclick=setupGame;
-      const resume=$('#resume');if(resume)resume.onclick=()=>{state.screen=state.metrics?'game':'landing';state.busy=false;render();};
+      const resume=$('#resume');if(resume)resume.onclick=()=>{const restored=normalizeState(readSavedState());state=restored.screen==='game'&&validMetrics(restored.metrics)&&validEvent(restored.currentEvent)?restored:{...clone(initial),recoveryNotice:'The saved watch was incomplete, so the scenario library was restored.'};state.busy=false;save();render();};
       $$('[data-action]').forEach(b=>b.onclick=()=>{if(state.busy)return;state.selectedAction=b.dataset.action;save();render();requestAnimationFrame(()=>$('#execute')?.focus({preventScroll:true}));});
       const execute=$('#execute');if(execute)execute.onclick=resolveAction;
       $$('[data-tab]').forEach(b=>b.onclick=()=>{if(state.resolution?.open)return;state.tab=b.dataset.tab;save();render();});
@@ -114,5 +115,15 @@
       const library=$('#library');if(library)library.onclick=()=>{state.screen='landing';state.resolution=null;render();};
       document.onkeydown=e=>{if(state.screen!=='game'||settingsOpen)return;if(state.resolution?.open){if(e.key==='Enter'){e.preventDefault();$('#continueResolution')?.click();}return;}const map={1:'situation',2:'decision',3:'ai',4:'systems',5:'log'};if(map[e.key]){state.tab=map[e.key];render();}if(e.key==='Enter'&&e.shiftKey&&state.selectedAction)resolveAction();};
     }
-    render();
+    function startupRecovery(error){
+      console.error('[THRESHOLD] startup recovery',error);
+      clearSave();state=clone(initial);
+      try{render();}
+      catch(secondError){
+        const app=document.getElementById('app');
+        if(app)app.innerHTML=`<main style="min-height:100dvh;display:grid;place-items:center;padding:24px;background:#020617;color:#eaf8ff;font-family:system-ui"><section style="width:min(560px,100%);border:1px solid #22d3ee55;border-radius:16px;padding:24px;background:#071529"><h1>THRESHOLD could not initialize</h1><p>A saved state or browser restriction interrupted startup.</p><pre style="white-space:pre-wrap">${String(secondError?.message||secondError||error).replace(/[<>&]/g,'')}</pre><button id="hardReset" style="min-height:52px;width:100%">Reset local save and reload</button></section></main>`;
+        document.getElementById('hardReset')?.addEventListener('click',()=>{clearSave();location.reload();});
+      }
+    }
+    try{render();}catch(error){startupRecovery(error);}
   })();
