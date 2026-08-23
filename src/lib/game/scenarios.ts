@@ -2,6 +2,7 @@ import type { World } from "./types";
 import { buildTrack, closeCallEvent } from "./warning";
 import { log } from "./simLog";
 import { seedBrokenArrow } from "./trickery";
+import { seedCarringtonWatch } from "./spaceWeather";
 
 export type ScenarioId =
   | "petrov-1983"
@@ -23,7 +24,10 @@ export type ScenarioId =
   | "frappe-independence"
   | "nasr-flushed"
   | "asat-blind-2028"
-  | "lac-clash-2027";
+  | "lac-clash-2027"
+  | "carrington-2027"
+  | "fobs-ambiguity"
+  | "orbital-inspector";
 
 export type ScenarioEra = "historical" | "2027" | "threshold";
 
@@ -225,6 +229,36 @@ export const SCENARIOS: ScenarioDef[] = [
     difficulty: "standard",
     era: "2027",
     briefing: "A notice says exercise. No notice is how a ridge becomes a nuclear file. DIPLOMACY with Beijing.",
+  },
+  {
+    id: "carrington-2027",
+    title: "Carrington watch",
+    line: "A CME like 1859 is inbound. Generate looks like EMP. The sun is not a bus.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "extreme",
+    era: "threshold",
+    briefing: "Island the grid (KILL on yourself). INTEL is magnetometers. POSTURE is how a storm becomes a war.",
+  },
+  {
+    id: "fobs-ambiguity",
+    title: "Object that stays up",
+    line: "A Plesetsk boost circularized. FOBS or a satellite. The south polar gap is why this file exists.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "threshold",
+    briefing: "Fractional orbital bombardment is a 1960s weapon that looks like a bird until it deorbits.",
+  },
+  {
+    id: "orbital-inspector",
+    title: "Inspector on the bird",
+    line: "A co-orbital closer on SBIRS. Soft kill or debris. You are in Beijing's chair.",
+    playerId: "CN",
+    intent: "red",
+    difficulty: "hard",
+    era: "threshold",
+    briefing: "Rendezvous is legal until the warning bird goes dark. OST is a speech.",
   },
 ];
 
@@ -667,6 +701,76 @@ export function applyScenario(world: World, id: ScenarioId): World {
       tags: ["himalaya", "scenario"],
     };
     log(w, "warn", "Scenario: Ridge at the LAC.", w.event.ignoreLine);
+  }
+
+  if (id === "carrington-2027") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "extreme";
+    const space = w.flashpoints.find((f) => f.id === "space");
+    if (space) space.heat = 76;
+    w.globalRisk = 58;
+    w.defcon = 3;
+    w.spaceWeather = seedCarringtonWatch();
+    w.event = {
+      id: "carrington-scenario",
+      title: "Carrington-class watch",
+      body: "SWPC compares this CME to September 1859. Arrival ~18 hours. Transformers and warning birds will take it. A generate looks like EMP. INTEL is magnetometers versus a lofted bus. KILL on yourself islands the grid. HOLD lets the sun write the outage — and their desk may write first strike.",
+      actor: "US",
+      heat: "critical",
+      ignoreLine: "The CME arrives unanswered. Cascades look like a pulse.",
+      tags: ["space", "scenario"],
+    };
+    log(w, "critical", "Scenario: Carrington watch. The sun is the other phenomenology.", w.event.ignoreLine);
+  }
+
+  if (id === "fobs-ambiguity") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    const space = w.flashpoints.find((f) => f.id === "space");
+    if (space) space.heat = 80;
+    w.globalRisk = 62;
+    w.defcon = 3;
+    w.actors.RU.alert = 4;
+    w.closeCall = {
+      track: buildTrack(w, "RU", "false"),
+      humint: "Plesetsk: the bus circularized. Not a standard ICBM loft.",
+    };
+    w.closeCall.track.minutesToImpact = 22;
+    w.closeCall.track.confidence = 48;
+    w.closeCall.track.kind = "test";
+    w.event = {
+      id: "fobs-scenario",
+      title: "Object that will not come down",
+      body: "A boost from Plesetsk looked like an ICBM, then circularized. FOBS is the 1960s file — a warhead that stays in orbit until it deorbits through the south polar gap. INTEL hunts satellite vs bus. POSTURE without a notice is a bolt. HOLD leaves the object up.",
+      actor: "RU",
+      heat: "critical",
+      ignoreLine: "The object stays in low orbit. Ambiguity is the weapon.",
+      tags: ["space", "scenario"],
+    };
+    log(w, "critical", "Scenario: FOBS ambiguity.", w.event.ignoreLine);
+  }
+
+  if (id === "orbital-inspector") {
+    w.playerId = "CN";
+    w.intent = "red";
+    w.difficulty = "hard";
+    const space = w.flashpoints.find((f) => f.id === "space");
+    if (space) space.heat = 78;
+    w.globalRisk = 54;
+    w.defcon = 3;
+    w.actors.US.warning = 44;
+    w.event = {
+      id: "hunter-killer",
+      title: "Your inspector is on their bird",
+      body: "A Shijian-class closer is on a SBIRS slot. Washington will see the rendezvous. Soft kill, shove, or a legal inspection. DIPLOMACY says debris. INTEL they already have. HOLD leaves the closer there. POSTURE is how they write an ASAT.",
+      actor: "US",
+      heat: "high",
+      ignoreLine: "The inspector stays on station.",
+      tags: ["space", "scenario"],
+    };
+    log(w, "warn", "Scenario: Inspector on the bird.", w.event.ignoreLine);
   }
 
   return w;

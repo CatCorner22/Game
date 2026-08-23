@@ -2,6 +2,7 @@ import type { ActorId, PlayerAction, World } from "./types";
 import { chance, nextUnit, pick } from "./rng";
 import { hostility } from "./world";
 import { aiRespectsPact } from "./pacts";
+import { weatherHostile } from "./spaceWeather";
 
 function act(
   kind: PlayerAction["kind"],
@@ -51,6 +52,11 @@ export function aiChoose(world: World, id: ActorId): PlayerAction | null {
     return act("hold", 1, null);
   }
 
+  if (weatherHostile(world.spaceWeather) && chance(world, 0.62)) {
+    if (chance(world, 0.45)) return act("intelligence", 1, rival);
+    return act("hold", 1, null);
+  }
+
   const vsYou = hostility(world, id, rival);
   const heatMax = Math.max(
     ...world.flashpoints.filter((f) => f.actors.includes(id)).map((f) => f.heat),
@@ -61,7 +67,9 @@ export function aiChoose(world: World, id: ActorId): PlayerAction | null {
   const pactBlocks = aiRespectsPact(world, id, rival);
 
   if (id === "US") {
+    const space = world.flashpoints.find((f) => f.id === "space")?.heat ?? 0;
     if (!pactBlocks && heatMax > 88 && a.alert >= 4 && chance(world, 0.06)) return act("employ", 2, rival);
+    if (space > 70 && chance(world, 0.4)) return act("intelligence", 2, "CN");
     if (world.defcon <= 2 && chance(world, 0.5)) return act("posture", 2, rival, true);
     if (vsYou > 70 && chance(world, 0.35)) return act("posture", 1, rival, notifyOften);
     if (vsYou < 55 && chance(world, 0.3)) return act("diplomacy", 1, rival);
@@ -91,9 +99,13 @@ export function aiChoose(world: World, id: ActorId): PlayerAction | null {
   }
 
   if (id === "CN") {
+    const him = world.flashpoints.find((f) => f.id === "himalaya")?.heat ?? 0;
+    const space = world.flashpoints.find((f) => f.id === "space")?.heat ?? 0;
     if (heatMax > 90 && !a.declaredNfu && chance(world, 0.06)) {
       return act("employ", 2, rival);
     }
+    if (him > 72 && chance(world, 0.4)) return act("posture", 2, "IN", chance(world, 0.35));
+    if (space > 68 && chance(world, 0.3)) return act("posture", 1, "US", true);
     if (heatMax > 70 && chance(world, 0.4)) return act("posture", 2, rival, chance(world, 0.3));
     if (chance(world, 0.2)) return act("pressure", 1, rival);
     return act("hold", 1, null);
@@ -110,9 +122,11 @@ export function aiChoose(world: World, id: ActorId): PlayerAction | null {
 
   if (id === "IN") {
     const kashmir = world.flashpoints.find((f) => f.id === "kashmir")!.heat;
+    const him = world.flashpoints.find((f) => f.id === "himalaya")?.heat ?? 0;
     if (world.nuclearUses.some((u) => u.actor === "PK") && chance(world, 0.7)) {
       return act("employ", 2, "PK");
     }
+    if (him > 70 && chance(world, 0.35)) return act("posture", 2, "CN", true);
     if (kashmir > 70 && chance(world, 0.35)) return act("posture", 2, "PK", true);
     return act("hold", 1, null);
   }

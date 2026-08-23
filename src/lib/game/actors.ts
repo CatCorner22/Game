@@ -266,6 +266,34 @@ export function makeActors(): Record<ActorId, Actor> {
         disclosure: "reported",
         notes: "Program of record, contested in Congress. Not a deployed force. Adversaries still plan against it.",
       }),
+      sys({
+        id: "us-orbital-kinetic",
+        name: "Prompt strike / orbital kinetic (speculated)",
+        kind: "orbital",
+        rangeKm: 40000,
+        launchers: 0,
+        warheads: 0,
+        yieldKt: [0, 0],
+        reliability: 0.35,
+        survivability: 0.55,
+        disclosure: "unacknowledged",
+        notes:
+          "Rods-from-God / Conventional Prompt Strike from orbit is a briefing slide, not a fielded force. Adversaries still write the file. A kinetic from space is indistinguishable from a lofted bus until it is not.",
+      }),
+      sys({
+        id: "us-gmdsats",
+        name: "Space-based intercept layer (speculated)",
+        kind: "orbital",
+        rangeKm: 0,
+        launchers: 0,
+        warheads: 0,
+        yieldKt: [0, 0],
+        reliability: 0.28,
+        survivability: 0.4,
+        disclosure: "suspected",
+        notes:
+          "Brilliant Pebbles never deployed. A thin orbital intercept layer is assessed, not acknowledged. Solar storms blind it the same as SBIRS.",
+      }),
     ],
   });
 
@@ -504,6 +532,37 @@ export function makeActors(): Record<ActorId, Actor> {
         notes:
           "Command rocket / fail-deadly. Suspected still active. If C2 is destroyed, a residual strike may still fly. This is why decapitation is not a clean win.",
       }),
+      sys({
+        id: "ru-fobs",
+        name: "FOBS / fractional orbital (speculated)",
+        kind: "fobs",
+        rangeKm: 40000,
+        launchers: 4,
+        warheads: 4,
+        yieldKt: [200, 1000],
+        reliability: 0.48,
+        survivability: 0.42,
+        disclosure: "suspected",
+        rvsPerBus: 1,
+        decoys: 2,
+        penetrationAids: 0.55,
+        notes:
+          "Fractional Orbital Bombardment: a bus stays in low orbit, then deorbits. Radar sees a satellite until it does not. The USSR flew this. A modern reload is assessed, not confirmed.",
+      }),
+      sys({
+        id: "ru-nukesat",
+        name: "Nuclear ASAT / inspector (speculated)",
+        kind: "orbital",
+        rangeKm: 0,
+        launchers: 1,
+        warheads: 1,
+        yieldKt: [10, 40],
+        reliability: 0.4,
+        survivability: 0.35,
+        disclosure: "unacknowledged",
+        notes:
+          "A nuclear-pumped or co-orbital killer against warning birds. Kosmos-class rumors. One detonation in GEO is Starfish Prime for a hemisphere of electronics.",
+      }),
     ],
   });
 
@@ -647,6 +706,35 @@ export function makeActors(): Record<ActorId, Actor> {
         survivability: 0.28,
         disclosure: "acknowledged",
         notes: "Air-launched ballistic missile on H-6N. The air leg of a new triad.",
+      }),
+      sys({
+        id: "cn-fobs",
+        name: "Fractional orbital HGV (speculated)",
+        kind: "fobs",
+        rangeKm: 40000,
+        launchers: 2,
+        warheads: 2,
+        yieldKt: [10, 300],
+        reliability: 0.45,
+        survivability: 0.5,
+        disclosure: "suspected",
+        dualCapable: true,
+        notes:
+          "2021 fractional-orbit HGV test is in the file. Dual-capable by design. A south-polar approach is how you miss BMEWS.",
+      }),
+      sys({
+        id: "cn-hunter",
+        name: "Co-orbital inspector / hunter (speculated)",
+        kind: "orbital",
+        rangeKm: 0,
+        launchers: 3,
+        warheads: 0,
+        yieldKt: [0, 0],
+        reliability: 0.55,
+        survivability: 0.4,
+        disclosure: "suspected",
+        notes:
+          "Shijian-class inspectors that can rendezvous with a warning bird. Soft kill or a shove. Looks like debris until the bird goes dark.",
       }),
     ],
   });

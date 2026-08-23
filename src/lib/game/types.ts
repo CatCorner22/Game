@@ -87,7 +87,9 @@ export type DeliveryKind =
   | "dca"
   | "gravity"
   | "novel"
-  | "covert";
+  | "covert"
+  | "orbital"
+  | "fobs";
 
 export type ActionKind =
   | "hold"
@@ -368,6 +370,39 @@ export interface Ceasefire {
   broken: boolean;
 }
 
+export interface Treaty {
+  id: string;
+  name: string;
+  parties: ActorId[];
+  status: "in-force" | "dead" | "suspended" | "strained";
+  note: string;
+}
+
+export interface RecapDelta {
+  label: string;
+  delta: number;
+}
+
+export interface TurnRecap {
+  turn: number;
+  actionLabel: string;
+  because?: string;
+  nextTitle: string;
+  deltas: RecapDelta[];
+}
+
+export type FlareClass = "quiet" | "C" | "M" | "X" | "carrington";
+
+export interface SpaceWeather {
+  kp: number;
+  flare: FlareClass;
+  cmeInbound: boolean;
+  hoursToArrival: number | null;
+  gridStress: number;
+  satStress: number;
+  lastNote: string;
+}
+
 export type DoctrineUpgradeId = "pal" | "sbirs" | "hotline" | "humint" | "mirv" | "decoys";
 
 export type SiteKind = "icbm" | "ssbn" | "bomber" | "mobile";
@@ -481,6 +516,9 @@ export interface World {
   threadTag?: string | null;
   aiLast?: Partial<Record<ActorId, PlayerAction>>;
   lastStrike?: StrikeReport | null;
+  treaties?: Treaty[];
+  lastRecap?: TurnRecap | null;
+  spaceWeather?: SpaceWeather;
   log: LogEntry[];
   nuclearUses: NuclearUse[];
   firstUse: ActorId | null;

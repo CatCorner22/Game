@@ -9,6 +9,7 @@ import { HudButton, HudLabel, HudModalOverlay } from "./ui/Hud";
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [s, setS] = useState<GameSettings>(() => loadSettings());
   const [probe, setProbe] = useState<IntegrityResult | null>(null);
+  const [exported, setExported] = useState(false);
   const world = useGame((st) => st.world);
   const saveSlot = useGame((st) => st.saveSlot);
   const saveToSlot = useGame((st) => st.saveToSlot);
@@ -75,6 +76,34 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
               })}
             </div>
           </div>
+        ) : null}
+        {world ? (
+          <HudButton
+            variant="default"
+            className="min-h-10 w-full text-xs uppercase"
+            onClick={() => {
+              try {
+                void navigator.clipboard.writeText(
+                  JSON.stringify(
+                    {
+                      turn: world.turn,
+                      seat: world.playerId,
+                      scenario: world.scenarioId,
+                      recap: world.lastRecap,
+                      event: world.event.title,
+                    },
+                    null,
+                    2,
+                  ),
+                );
+                setExported(true);
+              } catch {
+                setExported(false);
+              }
+            }}
+          >
+            {exported ? "Watch snapshot copied" : "Copy watch snapshot"}
+          </HudButton>
         ) : null}
         <HudButton variant="accent" className="min-h-10 w-full text-xs uppercase" onClick={() => setProbe(runIntegrityChecks())}>
           Run integrity check

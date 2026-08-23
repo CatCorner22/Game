@@ -323,6 +323,7 @@ export function TitleScreen() {
                 <li>· MIRV / decoy strike resolution</li>
                 <li>· Ceasefire · pact ledger · C2 stances</li>
                 <li>· {SCENARIOS.length} scripted scenario watches · CN / UK / FR / PK seats</li>
+                <li>· Carrington / FOBS / orbital weapons · space weather</li>
               </ul>
             </GlassPanel>
           )}

@@ -8,6 +8,8 @@ import { useGame } from "@/lib/game/store";
 import { dateLabel, meters } from "@/lib/game/world";
 import { fmtNum } from "@/lib/game/geo";
 import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudPanel } from "./ui/Hud";
+import { SpaceWeatherPanel } from "./SpaceWeatherPanel";
+import { weatherHostile } from "@/lib/game/spaceWeather";
 
 function GlobeSlot({ emphasized }: { emphasized?: boolean }) {
   const world = useGame((s) => s.world);
@@ -41,6 +43,11 @@ function CasualtyTicker({ world }: { world: NonNullable<ReturnType<typeof useGam
       <HudChip active danger={world.defcon <= 2}>
         ALERT {world.defcon}
       </HudChip>
+      {world.spaceWeather && weatherHostile(world.spaceWeather) ? (
+        <HudChip danger>
+          {world.spaceWeather.flare === "carrington" ? "CARRINGTON" : "SPACE WX"}
+        </HudChip>
+      ) : null}
     </div>
   );
 }
@@ -108,6 +115,7 @@ export function WarScreen() {
           <ActionPanel world={world} />
         </div>
         <div className="overflow-y-auto border-danger/20 p-4 lg:border-l">
+          <SpaceWeatherPanel world={world} />
           <SituationLog world={world} />
           <NuclearTimeline world={world} />
         </div>

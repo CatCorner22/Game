@@ -584,6 +584,114 @@ const DECK: GameEvent[] = [
     ignoreLine: "The boat stays on station. They have a datum.",
     tags: ["nato-ru"],
   },
+  {
+    id: "jcpoa-snap",
+    title: "JCPOA snapback fight",
+    body: "A European party wants snapback sanctions. Tehran says the deal is already dead. Breakout weeks move if you pile on. DIPLOMACY with Tehran or Paris. PRESSURE is the snapback.",
+    actor: "IR",
+    heat: "high",
+    ignoreLine: "The deal stays suspended. The clock runs.",
+    tags: ["iran"],
+  },
+  {
+    id: "ost-debris",
+    title: "Debris through a warning orbit",
+    body: "A cloud from an old ASAT test will cross a missile-warning bird this month. You can maneuver (INTEL/KILL on yourself burns fuel and coverage) or accept a gap. HOLD accepts the gap.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "The bird stays in the cloud. False-track rate ticks.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "npt-review",
+    title: "NPT review conference walkout",
+    body: "Non-aligned states walked out after an upload leak. Threshold states call the treaty a cartel. DIPLOMACY is a speech. POSTURE without a notice confirms their point.",
+    actor: "IR",
+    heat: "low",
+    ignoreLine: "The walkout stands. Proliferation heat ticks a point.",
+    tags: ["iran"],
+  },
+  {
+    id: "carrington-watch",
+    title: "Carrington-class watch",
+    body: "SWPC issued a watch that compares this CME to September 1859 — the Carrington Event that burned telegraph lines and pushed aurora to the tropics. Arrival is this month. Transformers and warning birds will take it. A generate looks like you read EMP. INTEL is magnetometers vs a lofted bus. KILL on yourself islands the grid. HOLD lets the sun write the outage.",
+    actor: "US",
+    heat: "critical",
+    ignoreLine: "The CME arrives unanswered. Cascades look like a first strike to someone else's desk.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "carrington-hit",
+    title: "Aurora at the tropics",
+    body: "The CME is here. HF is dead. Two GEO warning birds are in safe mode. Transformers are tripping. Their desk may write EMP or FOBS. Yours may too. INTEL separates the sun from a pulse. POSTURE without a notice is how a storm becomes a war.",
+    actor: "RU",
+    heat: "critical",
+    ignoreLine: "No islanding. The file stays 'possible EMP.'",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "fobs-track",
+    title: "Object that will not come down",
+    body: "A boost from Plesetsk looked like an ICBM for four minutes, then circularized. FOBS — fractional orbital bombardment — is the 1960s file. A modern reload is speculated. INTEL hunts whether this is a satellite, a test, or a bus that can deorbit on the south polar gap. POSTURE without a notice is how you write first strike. HOLD leaves the object up.",
+    actor: "RU",
+    heat: "critical",
+    ignoreLine: "The object stays in low orbit. Ambiguity is the weapon.",
+    tags: ["space", "nato-ru"],
+  },
+  {
+    id: "orbital-kinetic",
+    title: "Tungsten rumor in a plane",
+    body: "A commercial radar paper claims a dense object in a prompt-strike plane. Rods from God never fielded. Adversaries still write the briefing. INTEL on the origin. DIPLOMACY asks if this is a weather sat. EMPLOY is not how you shoot a rumor.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "The rumor stands. Opacity is a force.",
+    tags: ["space"],
+  },
+  {
+    id: "nukesat-rumor",
+    title: "Reactor in GEO",
+    body: "National technical means see a heat signature consistent with a nuclear reactor — or a nuclear-pumped ASAT — near a missile-warning slot. Kosmos rumors, Starfish Prime memories. One detonation in GEO is a hemisphere of electronics. INTEL names it. POSTURE is how you look like you will shoot the bird.",
+    actor: "RU",
+    heat: "high",
+    ignoreLine: "The heat signature stays. OST did not cover this gray.",
+    tags: ["space"],
+  },
+  {
+    id: "hunter-killer",
+    title: "Inspector on your warning bird",
+    body: "A co-orbital inspector is closing on a SBIRS slot. Soft kill, shove, or debris. Looks like a rendezvous until the bird goes dark. INTEL. COVERT is not a tug. HOLD accepts the gap.",
+    actor: "CN",
+    heat: "high",
+    ignoreLine: "The inspector stays on station. Coverage thins if they shove.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "halloween-storm",
+    title: "Halloween-class series",
+    body: "SWPC is counting X-flares the way they did in October 2003 — a week of pulses, not one. A Japanese bird died then. ISS hid. HF is already gone at high latitude. INTEL is magnetometers. KILL on yourself islands transformers before the next pulse. POSTURE looks like you thought the first one was EMP.",
+    actor: "US",
+    heat: "high",
+    ignoreLine: "The series continues. Coverage thins with each pulse.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "quebec-blackout",
+    title: "Quebec-class grid drop",
+    body: "A geomagnetic induced current just took a regional interconnect the way Hydro-Québec fell in March 1989 — nine hours, no warhead. Their desk may still write EMP. INTEL the magnetometers. KILL on yourself sheds load before the cascade. HOLD lets the transformers cook.",
+    actor: "US",
+    heat: "high",
+    ignoreLine: "The cascade continues. Economy and warning both tick down.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "miyake-class",
+    title: "Miyake-class comparison",
+    body: "The carbon-14 spikes of 774 and 993 AD are the comparison file now — events that may have been ten Carringtons. If SWPC is not wrong, this month's CME is not a telegraph story. Island the grid. Do not generate. INTEL separates the sun from a pulse. HOLD is how a civilization-scale storm becomes a first-strike file.",
+    actor: "US",
+    heat: "critical",
+    ignoreLine: "You treated a Miyake-class watch as weather someone else would manage.",
+    tags: ["space", "warning"],
+  },
 ];
 
 export function openingFor(player: ActorId): GameEvent {
@@ -751,6 +859,15 @@ export function drawEvent(world: World): GameEvent {
     };
   }
   if (choice.id === "biscuit-lost" || choice.id === "upload-mirv") {
+    return { ...choice, actor: world.playerId };
+  }
+  if (
+    choice.id === "carrington-watch" ||
+    choice.id === "carrington-hit" ||
+    choice.id === "halloween-storm" ||
+    choice.id === "quebec-blackout" ||
+    choice.id === "miyake-class"
+  ) {
     return { ...choice, actor: world.playerId };
   }
   return { ...choice };

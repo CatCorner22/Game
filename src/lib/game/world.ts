@@ -15,6 +15,8 @@ import { defaultHotlines, defaultSensors, warningQuality } from "./warning";
 import { seedTerminator } from "./terminator";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
+import { seedTreaties } from "./treaties";
+import { quietWeather } from "./spaceWeather";
 
 export const MONTHS = [
   "JAN",
@@ -231,6 +233,9 @@ export function createWorld(
     threadTag: null,
     aiLast: {},
     lastStrike: null,
+    treaties: [],
+    lastRecap: null,
+    spaceWeather: quietWeather(),
     ceasefire: null,
     c2StanceTurn: 0,
     log: [
@@ -255,6 +260,7 @@ export function createWorld(
   world.authCode = nextAuthCode(world);
   world.actors[playerId].warning = warningQuality(world, playerId);
   seedSpies(world);
+  world.treaties = seedTreaties(world);
   if (terminator) seedTerminator(world);
   recompute(world);
   return world;
@@ -406,6 +412,8 @@ export const KIND_LABEL: Record<string, string> = {
   gravity: "Gravity bomb",
   novel: "Novel / exotic",
   covert: "Covert delivery",
+  orbital: "Orbital / space-based",
+  fobs: "Fractional orbital (FOBS)",
 };
 
 export const DISCLOSURE_LABEL: Record<string, string> = {

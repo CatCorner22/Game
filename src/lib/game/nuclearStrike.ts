@@ -9,8 +9,9 @@ import type {
   World,
 } from "./types";
 import { chance, clamp, nextInt, nextUnit, round } from "./rng";
+import { orbitalWeatherPenalty } from "./spaceWeather";
 
-const STRATEGIC: Set<DeliverySystem["kind"]> = new Set(["icbm", "slbm", "hgv", "bomber"]);
+const STRATEGIC: Set<DeliverySystem["kind"]> = new Set(["icbm", "slbm", "hgv", "bomber", "orbital", "fobs"]);
 const TACTICAL: Set<DeliverySystem["kind"]> = new Set([
   "srbm",
   "dca",
@@ -71,6 +72,7 @@ function systemScore(s: DeliverySystem, mode: PackageMode): number {
   if (mode !== "single" && rvs > 1) n += 4;
   if (mode === "mirv-decoy" && decoys > 0) n += 3;
   if (s.kind === "hgv") n += 2;
+  if (s.kind === "fobs" || s.kind === "orbital") n += 2.5;
   return n;
 }
 
@@ -122,7 +124,8 @@ function interceptHitP(world: World, defender: ActorId, system: DeliverySystem):
   const md = world.actors[defender].missileDefense;
   const aids = system.penetrationAids ?? 0;
   const hgv = system.kind === "hgv" ? 0.22 : 0;
-  return clamp(0.2 + md / 200 - aids * 0.38 - hgv, 0.04, 0.7);
+  const fobs = system.kind === "fobs" || system.kind === "orbital" ? 0.16 : 0;
+  return clamp(0.2 + md / 200 - aids * 0.38 - hgv - fobs, 0.04, 0.7);
 }
 
 function outcomeOf(arrived: number, expected: number, interceptedRv: number, released: number): StrikeOutcome {
@@ -202,7 +205,8 @@ export function resolveStrikePackage(
   };
 
   const kpPenalty = actor === "KP" ? 0.12 : 0;
-  const boostFailP = clamp(1 - chosen.reliability + kpPenalty, 0.04, 0.85);
+  const storm = (chosen.kind === "orbital" || chosen.kind === "fobs" ? 1 : 0.35) * orbitalWeatherPenalty(world);
+  const boostFailP = clamp(1 - chosen.reliability + kpPenalty + storm, 0.04, 0.85);
   const busFailP = (rvsEach > 1 || decoyEach > 0 ? 0.06 : 0.02) + (1 - chosen.reliability) * 0.08;
 
   let busesOk = 0;

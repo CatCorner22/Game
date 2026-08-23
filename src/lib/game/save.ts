@@ -6,6 +6,8 @@ import { makeOfficer, asPlayable } from "./command";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
 import { saveWorldToSlot } from "./slots";
+import { ensureTreaties } from "./treaties";
+import { quietWeather } from "./spaceWeather";
 
 const KEY = "threshold.save.v2";
 const BACKUP = "threshold.save.v2.bak";
@@ -101,6 +103,9 @@ export function migrateWorld(world: World): World {
   if (world.lastStrike === undefined) world.lastStrike = null;
   if (world.ceasefire === undefined) world.ceasefire = null;
   if (world.c2StanceTurn === undefined) world.c2StanceTurn = 0;
+  if (world.lastRecap === undefined) world.lastRecap = null;
+  ensureTreaties(world);
+  if (!world.spaceWeather) world.spaceWeather = quietWeather();
   for (const a of Object.values(world.actors)) {
     for (const s of a.systems) {
       if (s.rvsPerBus === undefined) {
