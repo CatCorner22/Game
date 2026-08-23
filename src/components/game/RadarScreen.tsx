@@ -25,7 +25,7 @@ function tracksOf(world: World): Track[] {
     const from = world.actors[t.from];
     out.push({
       id: "cc",
-      label: t.kind === "attack" ? "INBOUND" : t.kind.toUpperCase(),
+      label: t.kind === "attack" ? "INBOUND" : t.kind === "anomalous" ? "ANOMALOUS" : t.kind.toUpperCase(),
       from,
       to: you,
       boosts: t.boosts,
@@ -154,7 +154,7 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
         const hereB = bearingDeg(you.lat, you.lon, pos.lat, pos.lon);
 
         ctx.strokeStyle = tr.confirmed ? "rgba(255, 51, 102, 0.75)" : "rgba(0, 229, 255, 0.55)";
-        ctx.setLineDash(tr.confirmed ? [] : [4, 4]);
+        ctx.setLineDash(tr.confirmed ? [] : tr.kind === "anomalous" ? [2, 6] : [4, 4]);
         ctx.beginPath();
         const steps = 18;
         for (let i = 0; i <= steps; i++) {

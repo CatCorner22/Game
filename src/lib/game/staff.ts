@@ -59,6 +59,38 @@ export function staffAdvice(world: World): StaffAdvice[] {
     ];
   }
 
+  if (cc?.track.kind === "anomalous" || world.event.tags.includes("phenomenology")) {
+    return [
+      {
+        desk: "Warning phenomenology",
+        kind: "hold",
+        intensity: 1,
+        target: null,
+        notify: false,
+        line: "No boost signature. One phenomenology is not a launch order. HOLD for corroboration.",
+        tone: "hold",
+      },
+      {
+        desk: `${profile.satchel} · J2`,
+        kind: "intelligence",
+        intensity: 1,
+        target: cc?.track.from ?? target,
+        notify: false,
+        line: "Retask radar and compare engineering custody logs before POSTURE.",
+        tone: "collect",
+      },
+      {
+        desk: world.secondOfficer.title,
+        kind: "diplomacy",
+        intensity: 1,
+        target: cc?.track.from ?? target,
+        notify: true,
+        line: "Out-of-band verification. Public rumor is already ahead of the file.",
+        tone: "talk",
+      },
+    ];
+  }
+
   if (stance === "eager" || stance === "machine") {
     out.push({
       desk: world.secondOfficer.title,

@@ -19,6 +19,15 @@ test("commercial scenario catalog contains broad, metadata-rich coverage", async
   assert.match(text, /contamination-corridor/);
   assert.match(text, /deadhand-dilemma/);
   assert.match(text, /machine-chorus/);
+  assert.match(text, /malmstrom-1967/);
+  assert.match(text, /"phenomenology"/);
+});
+
+test("omnibus research doc links close calls and phenomenology", async () => {
+  const text = await source("docs/omnibus-close-calls-and-phenomenology.md");
+  assert.match(text, /black-brant-1995/);
+  assert.match(text, /malmstrom-1967/);
+  assert.match(text, /DEFCON/);
 });
 
 test("mock command intelligence is local, inspectable, and human-vetoed", async () => {

@@ -21,6 +21,7 @@ export function CloseCallOverlay({ world }: { world: World }) {
 
   const tti = cc.track.minutesToImpact;
   const urgent = tti <= 6;
+  const anomalous = cc.track.kind === "anomalous";
 
   return (
     <div
@@ -30,9 +31,13 @@ export function CloseCallOverlay({ world }: { world: World }) {
       )}
     >
       <GlassPanel glow="danger" className="rounded-xl px-6 py-4 backdrop-blur-xl">
-        <HudLabel className="text-danger">Close call · inbound track</HudLabel>
+        <HudLabel className="text-danger">
+          {anomalous ? "Close call · unverified return" : "Close call · inbound track"}
+        </HudLabel>
         <p className="mt-2 font-display text-5xl tabular text-glow-danger text-fg">{tti}</p>
-        <p className="font-mono text-xs tracking-wider text-muted uppercase">minutes if real</p>
+        <p className="font-mono text-xs tracking-wider text-muted uppercase">
+          {anomalous ? "minutes to resolve phenomenology" : "minutes if real"}
+        </p>
         <p className="mt-3 font-mono text-[10px] text-subtle uppercase">
           Confidence {cc.track.confidence}% · {cc.track.source}
         </p>

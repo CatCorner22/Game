@@ -256,9 +256,11 @@ function deceptionLoad(world: World): number {
 }
 
 function recommend(world: World): ActionKind {
+  if (world.closeCall?.track.kind === "anomalous") return "intelligence";
   if (world.closeCall) {
     return world.closeCall.track.confidence < 72 ? "intelligence" : "diplomacy";
   }
+  if (world.event.tags.includes("phenomenology") || world.event.tags.includes("uap")) return "intelligence";
   if (world.event.tags.includes("machine") || world.event.tags.includes("misinformation")) return "intelligence";
   if (world.event.tags.includes("humanitarian") || world.event.tags.includes("public-health")) return "diplomacy";
   if ((world.actors[world.playerId]?.internet ?? 100) < 45 || (world.actors[world.playerId]?.grid ?? 100) < 45) {

@@ -109,6 +109,7 @@ export function buildTrack(world: World, from: ActorId, kind: TrackKind): SatTra
   const spoofed = world.trickery?.noticeSpoof && !notice;
   const real = kind === "attack" || kind === "test";
   let confidence = q;
+  if (kind === "anomalous") confidence = clamp(q * 0.32 + nextInt(world, 6, 22), 10, 52);
   if (kind === "false" || kind === "training") confidence = clamp(q * 0.55 + nextInt(world, 5, 25), 12, 78);
   if (world.terminator && (kind === "false" || kind === "training")) {
     confidence = clamp(confidence + 18 + world.aiTakeover / 8, 20, 94);
@@ -118,12 +119,23 @@ export function buildTrack(world: World, from: ActorId, kind: TrackKind): SatTra
   if (notice) confidence = clamp(confidence - 22, 8, 90);
   if (spoofed) confidence = clamp(confidence - 12, 8, 90);
   const boosts =
-    kind === "attack" ? nextInt(world, 4, 18) : kind === "test" ? nextInt(world, 1, 2) : nextInt(world, 1, 6);
+    kind === "anomalous"
+      ? 0
+      : kind === "attack"
+        ? nextInt(world, 4, 18)
+        : kind === "test"
+          ? nextInt(world, 1, 2)
+          : nextInt(world, 1, 6);
   return {
     from,
     boosts,
     azimuth: pick(world, AZ),
-    minutesToImpact: kind === "attack" ? nextInt(world, 12, 28) : nextInt(world, 8, 30),
+    minutesToImpact:
+      kind === "anomalous"
+        ? nextInt(world, 12, 28)
+        : kind === "attack"
+          ? nextInt(world, 12, 28)
+          : nextInt(world, 8, 30),
     confidence: round(confidence),
     source,
     notified: Boolean(notice) || Boolean(spoofed),
@@ -141,9 +153,12 @@ export function maybeSpawnCloseCall(world: World): CloseCall | null {
   const from = pickAdversary(world);
   const roll = nextUnitish(world);
   let kind: TrackKind = "false";
+  const spaceHot = (world.flashpoints.find((f) => f.id === "space")?.heat ?? 0) >= 55;
+  const phenomenologyWatch = world.scenarioProfile?.category === "phenomenology";
   if (roll < 0.12) kind = "attack";
   else if (roll < 0.4) kind = "test";
   else if (roll < 0.55) kind = "training";
+  else if ((spaceHot || phenomenologyWatch) && roll < 0.68) kind = "anomalous";
   else kind = "false";
   if (world.phase === "nuclear" && chance(world, 0.5)) kind = "attack";
   const track = buildTrack(world, from, kind);
@@ -156,6 +171,20 @@ function nextUnitish(world: World): number {
 
 export function closeCallEvent(world: World, cc: CloseCall): World["event"] {
   const t = cc.track;
+  if (t.kind === "anomalous") {
+    const notice = t.notified
+      ? "A launch notice is on file but does not match this phenomenology."
+      : "No launch notice matches this return.";
+    return {
+      id: "close-call",
+      title: "ANOMALOUS RETURN",
+      body: `${t.source} reports an unidentified return on a ${t.azimuth} azimuth — no infrared boost signature, radar disagreement, confidence ${t.confidence}%. ${notice} This is not a confirmed attack track; it may be weather, debris, a custody fault, or an unverified report. A ${world.secondOfficer.stance} officer (${world.secondOfficer.name}) is on the desk.${cc.humint ? ` ${cc.humint}` : " Engineering and security logs disagree."} HOLD preserves the verification window. INTEL retasks sensors and compares phenomenologies. DIPLOMACY asks for an out-of-band read. POSTURE on a single channel writes the wrong story.${world.terminator ? " TERMINATOR: HOLD also lets the model decide." : ""}`,
+      actor: t.from,
+      heat: t.confidence > 45 ? "high" : "med",
+      ignoreLine: "Generating on one phenomenology is how rumor becomes doctrine.",
+      tags: ["warning", "phenomenology", "uap"],
+    };
+  }
   const notice = t.notified
     ? `${world.actors[t.from].shortName} filed a notice this window.`
     : `${world.actors[t.from].shortName} filed no notice.`;
@@ -180,7 +209,11 @@ export function queryHotline(world: World, target: ActorId): "test" | "denied" |
   const spoof = world.trickery?.hotlineSpoof || world.trickery?.fakeVoice;
   if (spoof) {
     const cc = world.closeCall;
-    const lieHostile = cc?.track.kind === "false" || cc?.track.kind === "training" || cc?.track.kind === "test";
+    const lieHostile =
+      cc?.track.kind === "false" ||
+      cc?.track.kind === "training" ||
+      cc?.track.kind === "test" ||
+      cc?.track.kind === "anomalous";
     if (lieHostile) {
       log(
         world,
@@ -209,6 +242,15 @@ export function queryHotline(world: World, target: ActorId): "test" | "denied" |
   }
   const cc = world.closeCall;
   if (cc && cc.track.from === target) {
+    if (cc.track.kind === "anomalous") {
+      log(
+        world,
+        "you",
+        `${name}: they report no outbound launch. Their radar sees the same disagreement you do.`,
+        "An anomalous return is not a bolt. The wire can still lie — but generating here is posture on rumor.",
+      );
+      return "denied";
+    }
     if (cc.track.kind === "test" || cc.track.kind === "training") {
       log(world, "you", `${name}: they say it is a test / exercise, not an attack.`, "They picked up. That is not proof. It is the cheapest way to not end the world on a satellite glint.");
       return "test";
@@ -235,12 +277,16 @@ export function resolveCloseCallHold(world: World) {
   const cc = world.closeCall;
   if (!cc) return;
   const t = cc.track;
-  if (!t.real || t.kind === "test" || t.kind === "training" || t.kind === "false") {
+  if (!t.real || t.kind === "test" || t.kind === "training" || t.kind === "false" || t.kind === "anomalous") {
     log(
       world,
       "info",
-      "Radar and a second bird did not corroborate an attack. You held.",
-      "1983: Petrov saw five boosts and did not pass the alert. The species is still here because a human refused a satellite. This was that class of night.",
+      t.kind === "anomalous"
+        ? "Custody and warning desks held on an unverified return. No generate order followed."
+        : "Radar and a second bird did not corroborate an attack. You held.",
+      t.kind === "anomalous"
+        ? "Readiness faults and unexplained tracks are not launch orders. Verification beats posture."
+        : "1983: Petrov saw five boosts and did not pass the alert. The species is still here because a human refused a satellite. This was that class of night.",
     );
     world.actors[world.playerId].legitimacy = clamp(world.actors[world.playerId].legitimacy + 2, 0, 100);
   } else {
@@ -268,7 +314,11 @@ export function retaskWarning(world: World) {
   if (world.closeCall) {
     const q = warningQuality(world, you);
     world.closeCall.track.confidence = round(clamp(
-      world.closeCall.track.kind === "false" ? q * 0.4 : q * 0.9,
+      world.closeCall.track.kind === "anomalous"
+        ? q * 0.45
+        : world.closeCall.track.kind === "false"
+          ? q * 0.4
+          : q * 0.9,
       10,
       96,
     ));

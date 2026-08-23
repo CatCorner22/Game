@@ -443,7 +443,7 @@ export function TitleScreen() {
                 <li>· Cyan HUD · live globe · radar sweep</li>
                 <li>· MIRV / decoy strike resolution</li>
                 <li>· Ceasefire · pact ledger · C2 stances</li>
-                <li>· {SCENARIOS.length} scripted scenario watches · CN / UK / FR / PK seats</li>
+                <li>· {SCENARIOS.length} scripted scenario watches · historical close calls · phenomenology</li>
                 <li>· Carrington / FOBS / orbital weapons · space weather</li>
                 <li>· ORACLE / CHORUS / SKYNET · DEADHAND continuity (fictional)</li>
               </ul>

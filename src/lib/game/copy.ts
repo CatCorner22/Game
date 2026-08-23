@@ -15,7 +15,7 @@ export const BRIEFING_PAGES = [
       "Each turn is one month. The world presents one event. You take one action. Other capitals act too. Then the log explains the causal chain.",
       "Select a country on the globe (or in the file list). That country is the target of your action. The event's actor is pre-selected so you do not have to hunt.",
       "HOLD is a real action. If the event is a satellite track, holding waits for radar corroboration. If it was a false alarm, that is how the species survived 1983. If it was real, you eat the first strike.",
-      "The sun is a second phenomenology. A Carrington-class CME (1859) fries transformers and warning birds and looks like EMP. Speculated orbital weapons — FOBS, rods-from-God, nuclear ASATs — live in the same file. INTEL the magnetometers. Do not generate into a storm.",
+      "The sun is a second phenomenology. A Carrington-class CME (1859) fries transformers and warning birds and looks like EMP. Unidentified returns on warning nets are a third — no boost signature, radar disagreement, custody faults. Speculated orbital weapons — FOBS, rods-from-God, nuclear ASATs — live in the same file. INTEL the magnetometers and the engineering chain. Do not generate into a storm or a rumor.",
     ],
   },
   {
@@ -122,6 +122,22 @@ export const GLOSSARY = [
   {
     term: "Terminator mode",
     def: "A rogue fusion model sits on the authenticator path. The military aide still has the football. The model does not need the aide. KILL on yourself is a hard air-gap. HOLD feeds it.",
+  },
+  {
+    term: "Anomalous return",
+    def: "A warning or radar return without a boost signature — weather, debris, custody fault, or an unverified report. Not a confirmed attack track. INTEL compares phenomenologies. POSTURE on one channel writes the wrong story.",
+  },
+  {
+    term: "Notice chain",
+    def: "The path from launch authority to other capitals before a test or exercise. Black Brant 1995: science rocket, late notice, ten minutes on the clock. A notice is a statement, not proof — but absence of one is data.",
+  },
+  {
+    term: "Custody readiness",
+    def: "Abstract launch-complex readiness tokens. A simultaneous No-Go across many sites is engineering stress, not an order to fire. Verify before posture.",
+  },
+  {
+    term: "Faded Giant",
+    def: "USAF term for a serious nuclear weapon incident short of war. In THRESHOLD, an abstract custody/readiness fault puzzle — not operational detail.",
   },
   {
     term: "Nuclear winter",

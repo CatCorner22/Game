@@ -35,6 +35,18 @@ export function followUpEvent(world: World, action: PlayerAction): GameEvent | n
 
   if (prev.id === "close-call") {
     if (action.kind === "hold") {
+      if (prev.tags.includes("phenomenology")) {
+        return {
+          id: followId(world, "phenomenology-hold"),
+          title: "Verification held the line",
+          body: `After you held on an unverified return, ${them} and your own shops are writing different after-action stories. Engineering wants custody checks. Security wants posture. The public file may already claim an attack that never existed.`,
+          actor: target,
+          heat: "med",
+          ignoreLine: "Rumor stays in the file. Next anomalous return gets less slack.",
+          tags: [tag, "phenomenology", "follow"],
+          because,
+        };
+      }
       return {
         id: followId(world, "petrov-after"),
         title: "Desk wants a rule",
@@ -43,6 +55,18 @@ export function followUpEvent(world: World, action: PlayerAction): GameEvent | n
         heat: "med",
         ignoreLine: "The shop stays split. Next false alarm is more likely to leak to politicians.",
         tags: [tag, "warning", "follow"],
+        because,
+      };
+    }
+    if (action.kind === "intelligence" && prev.tags.includes("phenomenology")) {
+      return {
+        id: followId(world, "custody-restored"),
+        title: "Custody chain retasked",
+        body: `INTELLIGENCE separated engineering faults from security rumor. Readiness is climbing back, slowly. ${them} still does not know how close the file came to POSTURE on phenomenology alone.`,
+        actor: world.playerId,
+        heat: "med",
+        ignoreLine: "One channel is cleaner. Public rumor is not.",
+        tags: [tag, "phenomenology", "follow"],
         because,
       };
     }

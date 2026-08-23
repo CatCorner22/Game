@@ -139,9 +139,15 @@ function reportFrom(site: LaunchSite): string {
   return `${site.name} flushing. Hatches or TELs moving. This is what a first strike looks like from the fence line.`;
 }
 
-export function spyCorroboration(world: World, from: ActorId, kind: "test" | "attack" | "false" | "training"): string | null {
+export function spyCorroboration(world: World, from: ActorId, kind: import("./types").TrackKind): string | null {
   const cell = world.sites.find((s) => s.owner === from && s.ourSpy && !s.ourSpy.burned);
   if (!cell || !cell.ourSpy) return null;
+  if (kind === "anomalous") {
+    if (cell.generation === 0) {
+      return `HUMINT (${cell.ourSpy.cover}, ${cell.name}): quiet. No field activity matches an attack track.`;
+    }
+    return `HUMINT (${cell.name}): some activity, not a mass flush. Treat the return as unverified phenomenology.`;
+  }
   if (world.trickery?.humintPoison) {
     if (kind === "false" || kind === "training") {
       return `HUMINT (${cell.ourSpy.cover}, ${cell.name}): FLUSHING — hatches/TELs moving. Cadence flags as interpolated. Treat as poisoned until re-contact.`;
