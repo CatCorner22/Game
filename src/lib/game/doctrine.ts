@@ -1,9 +1,9 @@
-import type { ActorId, PlayableId, World } from "./types";
+import type { ActorId, DoctrineUpgradeId, World } from "./types";
 import { clamp } from "./rng";
 import { log } from "./simLog";
 import { bumpFlash } from "./world";
 
-export type DoctrineUpgradeId = "pal" | "sbirs" | "hotline" | "humint";
+export type { DoctrineUpgradeId };
 
 export interface DoctrineChoice {
   id: DoctrineUpgradeId;
@@ -15,6 +15,12 @@ export function doctrineDue(world: World): boolean {
   return world.turn > 1 && world.turn % 6 === 0 && !world.doctrinePending;
 }
 
+function hasStrategicBus(world: World): boolean {
+  return world.actors[world.playerId].systems.some(
+    (s) => (s.kind === "icbm" || s.kind === "slbm" || s.kind === "mrbm" || s.kind === "irbm") && (s.warheads > 0 || s.launchers > 0),
+  );
+}
+
 export function doctrineOptions(world: World): DoctrineChoice[] {
   const p = world.playerId;
   const base: DoctrineChoice[] = [
@@ -22,10 +28,24 @@ export function doctrineOptions(world: World): DoctrineChoice[] {
     { id: "sbirs", label: "Retask early warning", detail: "Lower false-alarm rate on IR/radar nets." },
     { id: "hotline", label: "Hotline redundancy", detail: "+8 reliability on your dedicated lines." },
     { id: "humint", label: "Deepen HUMINT", detail: "+6 intel; spy quality at your sites." },
+    { id: "mirv", label: "MIRV upload", detail: "+1 RV on ICBM/SLBM/MRBM buses. Saturate thin defense." },
+    { id: "decoys", label: "Penetration aids", detail: "+2 decoys and better shrouds. Interceptors spend on ghosts." },
   ];
   if (p === "IR") return base.filter((b) => b.id === "humint" || b.id === "pal");
-  if (p === "KP" || p === "NS" || p === "CR") return base.filter((b) => b.id === "humint");
+  if (p === "KP" || p === "NS" || p === "CR") return base.filter((b) => b.id === "humint" || (hasStrategicBus(world) && (b.id === "decoys" || b.id === "mirv")));
+  if (p === "CU") return base.filter((b) => b.id === "humint" || b.id === "hotline");
+  if (!hasStrategicBus(world)) return base.filter((b) => b.id !== "mirv" && b.id !== "decoys");
   return base;
+}
+
+function uploadBuses(world: World, you: ActorId, rvs: number, decoys: number, aids: number) {
+  for (const s of world.actors[you].systems) {
+    if (s.kind === "icbm" || s.kind === "slbm" || s.kind === "mrbm" || s.kind === "irbm") {
+      if (rvs) s.rvsPerBus = clamp((s.rvsPerBus ?? 1) + rvs, 1, 14);
+      if (decoys) s.decoys = (s.decoys ?? 0) + decoys;
+      if (aids) s.penetrationAids = clamp((s.penetrationAids ?? 0) + aids, 0, 0.95);
+    }
+  }
 }
 
 export function applyDoctrine(world: World, id: DoctrineUpgradeId) {
@@ -56,6 +76,26 @@ export function applyDoctrine(world: World, id: DoctrineUpgradeId) {
       if (s.ourSpy && !s.ourSpy.burned) s.ourSpy.quality = clamp(s.ourSpy.quality + 8, 0, 100);
     }
     log(world, "info", "HUMINT depth increased.", "Arsenal files and fence-line reports improve.");
+  }
+  if (id === "mirv") {
+    uploadBuses(world, you, 1, 0, 0);
+    world.armsRace = clamp(world.armsRace + 8, 0, 100);
+    log(
+      world,
+      "warn",
+      "MIRV upload authorized.",
+      "Buses carry one more RV. NTM will see the work. Thin missile defense is why this file exists.",
+    );
+  }
+  if (id === "decoys") {
+    uploadBuses(world, you, 0, 2, 0.12);
+    world.armsRace = clamp(world.armsRace + 5, 0, 100);
+    log(
+      world,
+      "info",
+      "Penetration aids and decoys uploaded.",
+      "Balloons, chaff, cooled shrouds. Interceptors have a finite magazine. Ghosts spend it.",
+    );
   }
   if (!world.doctrineTaken) world.doctrineTaken = [];
   world.doctrineTaken.push(id);

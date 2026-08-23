@@ -489,17 +489,22 @@ export function attemptPlayerRelease(world: World, firstUse: boolean): ReleaseRe
   }
 
   let refuseP = 0;
-  if (c.twoMan || !c.twoMan) {
+  if (c.twoMan) {
     if (world.secondOfficer.stance === "professional" && firstUse) refuseP = c.refusal;
     if (world.secondOfficer.stance === "professional" && !firstUse) refuseP = c.refusal * 0.25;
     if (world.secondOfficer.stance === "shaken") refuseP = 0.35;
     if (world.secondOfficer.stance === "eager") refuseP = 0.04;
     if (world.secondOfficer.stance === "loyalist") refuseP = 0.05;
-    if (world.intent === "red" && firstUse) refuseP *= 0.75;
-    if (you.militaryLoyalty < 40) refuseP += 0.15;
-    if (world.terminator && (world.secondOfficer.stance === "machine" || you.aiInC2 >= 62)) {
-      refuseP = 0.03;
-    }
+  } else {
+    if (world.secondOfficer.stance === "professional" && firstUse) refuseP = c.refusal * 0.4;
+    if (world.secondOfficer.stance === "shaken") refuseP = 0.15;
+    if (world.secondOfficer.stance === "eager") refuseP = 0.02;
+    if (world.secondOfficer.stance === "loyalist") refuseP = 0.03;
+  }
+  if (world.intent === "red" && firstUse) refuseP *= 0.75;
+  if (you.militaryLoyalty < 40) refuseP += 0.15;
+  if (world.terminator && (world.secondOfficer.stance === "machine" || you.aiInC2 >= 62)) {
+    refuseP = 0.03;
   }
 
   if (chance(world, refuseP)) {

@@ -1,5 +1,6 @@
 import { BRIEFING_PAGES, GLOSSARY } from "@/lib/game/copy";
 import { useGame } from "@/lib/game/store";
+import { GlassPanel, HudButton, HudChip, HudLabel } from "./ui/Hud";
 
 export function Briefing() {
   const page = useGame((s) => s.briefingPage);
@@ -11,52 +12,50 @@ export function Briefing() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-8 sm:py-12">
-      <button
-        onClick={() => setScreen("title")}
-        className="self-start font-display text-sm tracking-[0.2em] text-muted uppercase"
-      >
+      <HudButton variant="ghost" className="self-start text-sm uppercase" onClick={() => setScreen("title")}>
         Back
-      </button>
-      <p className="mt-8 font-mono text-xs tracking-[0.28em] text-accent uppercase">{p.kicker}</p>
-      <h1 className="mt-3 font-display text-4xl font-semibold tracking-wide text-fg sm:text-5xl">
+      </HudButton>
+      <HudChip active className="mt-8">
+        {p.kicker}
+      </HudChip>
+      <h1 className="mt-3 font-display text-4xl font-semibold tracking-wide text-glow-accent text-fg sm:text-5xl">
         {p.title}
       </h1>
-      <div className="mt-8 space-y-4 text-base leading-relaxed text-muted">
-        {p.body.map((para) => (
-          <p key={para}>{para}</p>
-        ))}
-      </div>
+      <GlassPanel glow="accent" className="mt-8 rounded-xl p-6">
+        <div className="space-y-4 text-base leading-relaxed text-muted">
+          {p.body.map((para) => (
+            <p key={para}>{para}</p>
+          ))}
+        </div>
+      </GlassPanel>
       <div className="mt-10 flex items-center gap-3">
-        <button
-          disabled={page === 0}
-          onClick={() => setPage(page - 1)}
-          className="min-h-11 rounded-sm px-4 font-display tracking-[0.16em] text-fg uppercase shadow-[var(--shadow-border)] disabled:opacity-30"
-        >
+        <HudButton variant="default" disabled={page === 0} className="min-h-11 px-4 uppercase" onClick={() => setPage(page - 1)}>
           Prev
-        </button>
-        <button
+        </HudButton>
+        <HudButton
+          variant="active"
           disabled={page === BRIEFING_PAGES.length - 1}
+          className="min-h-11 px-4 uppercase"
           onClick={() => setPage(page + 1)}
-          className="min-h-11 rounded-sm bg-accent px-4 font-display tracking-[0.16em] text-accent-fg uppercase disabled:opacity-30"
         >
           Next
-        </button>
-        <button
-          onClick={toggleGlossary}
-          className="min-h-11 px-3 font-display tracking-[0.16em] text-muted uppercase"
-        >
+        </HudButton>
+        <HudButton variant="ghost" className="min-h-11 px-3 uppercase" onClick={toggleGlossary}>
           Glossary
-        </button>
+        </HudButton>
       </div>
       {glossaryOpen ? (
-        <dl className="mt-10 space-y-5 border-t border-border pt-8">
-          {GLOSSARY.map((g) => (
-            <div key={g.term}>
-              <dt className="font-display tracking-[0.12em] text-fg uppercase">{g.term}</dt>
-              <dd className="mt-1 text-sm leading-relaxed text-muted">{g.def}</dd>
-            </div>
-          ))}
-        </dl>
+        <GlassPanel className="mt-10 rounded-xl p-6">
+          <HudLabel>Glossary</HudLabel>
+          <dl className="mt-4 space-y-5">
+            {GLOSSARY.map((g) => (
+              <div key={g.term}>
+                <dt className="font-display tracking-[0.12em] text-accent uppercase">{g.term}</dt>
+                <dd className="mt-1 text-sm leading-relaxed text-muted">{g.def}</dd>
+              </div>
+            ))}
+          </dl>
+        </GlassPanel>
       ) : null}
     </div>
   );

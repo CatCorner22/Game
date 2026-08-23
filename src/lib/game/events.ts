@@ -1,6 +1,10 @@
-import type { ActorId, FlashKind, GameEvent, World } from "./types";
-import { chance, pick } from "./rng";
+import type { ActorId, GameEvent, World } from "./types";
+import { chance } from "./rng";
 import { TERMINATOR_EVENTS } from "./terminator";
+import { eventFlash } from "./flash";
+import { pickWeighted, scoreCandidate } from "./consequences";
+
+export { eventFlash };
 
 export const OPENING_EVENT: GameEvent = {
   id: "nk-notam",
@@ -499,6 +503,33 @@ const DECK: GameEvent[] = [
     ignoreLine: "Lights out before missiles is the nightmare read.",
     tags: ["iran"],
   },
+  {
+    id: "gmd-miss",
+    title: "GMD shot misses the dummy",
+    body: "A Ground-based Midcourse intercept against a dummy RV failed. The cluster released balloons that looked like the warhead on radar. Staffs write that a real MIRV bus would be worse. INTEL on the test. POSTURE is how you answer a leaky shield. HOLD leaves the magazine thin.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "The miss stays in the classified file. Adversaries already assumed it.",
+    tags: ["warning", "defense"],
+  },
+  {
+    id: "upload-mirv",
+    title: "Upload order on the desk",
+    body: "New START is dead. The file is whether to put extra RVs and decoys back on the buses. National technical means will see the work. HOLD leaves the download. POSTURE is the upload. EMPLOY is not this month's tool.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "Buses stay downloaded. The other side may upload anyway.",
+    tags: ["arms", "follow"],
+  },
+  {
+    id: "ababeel-cluster",
+    title: "Ababeel cluster on radar",
+    body: "Indian and Pakistani radars both painted a short-range cluster: more objects than launchers. Islamabad says a successful MIRV / decoy test. Delhi says a failed unitary that broke up. One reading is defense-beating. The other is debris. INTEL separates them. POSTURE matches generate.",
+    actor: "PK",
+    heat: "high",
+    ignoreLine: "Both sides keep their reading. Kashmir heat ticks.",
+    tags: ["kashmir", "defense"],
+  },
 ];
 
 export function openingFor(player: ActorId): GameEvent {
@@ -612,6 +643,17 @@ export function openingFor(player: ActorId): GameEvent {
       tags: ["cartel"],
     };
   }
+  if (player === "IR") {
+    return {
+      id: "open-ir",
+      title: "IAEA snap inspection",
+      body: "Inspectors want access to a hall you have not declared. Tel Aviv is already generating tankers. Washington is on the Swiss channel. Breakout is a number of weeks. A notice that this is civil fuel will not be believed. DIPLOMACY buys days. COVERT hides cascades. HOLD lets the clock run.",
+      actor: "IL",
+      heat: "high",
+      ignoreLine: "The clock runs. Israel and the IAEA write different files.",
+      tags: ["iran"],
+    };
+  }
   if (player === "NS") {
     return {
       id: "open-ns",
@@ -628,15 +670,18 @@ export function openingFor(player: ActorId): GameEvent {
 
 export function drawEvent(world: World): GameEvent {
   const extra = world.terminator ? TERMINATOR_EVENTS : [];
-  const unused = [...DECK, ...extra].filter((e) => !world.usedEventIds.includes(e.id));
-  const pool = unused.length ? unused : [...DECK, ...extra];
+  const unused = [...DECK, ...extra].filter((e) => !world.usedEventIds.includes(e.id) && e.id !== world.event.id);
+  const recycle = [...DECK, ...extra].filter((e) => e.id !== world.event.id);
+  const pool = unused.length ? unused : recycle.length ? recycle : [...DECK, ...extra];
   const weighted = pool.filter((e) => {
     if (e.actor === "NS" && world.terrorThreat < 12 && world.difficulty === "standard") {
       return chance(world, 0.4);
     }
     return true;
   });
-  const choice = pick(world, weighted.length ? weighted : pool);
+  const choice = pickWeighted(world, weighted.length ? weighted : pool, (e) =>
+    scoreCandidate(world, e, world.lastAction ?? null),
+  );
   world.usedEventIds.push(choice.id);
   if (world.usedEventIds.length > 40) world.usedEventIds.shift();
   if (choice.id === "satchel-lag") {
@@ -649,21 +694,8 @@ export function drawEvent(world: World): GameEvent {
         : "The authenticating bag is six minutes behind you after a venue change. You can still talk. You cannot release. Positive control is physical.",
     };
   }
-  if (choice.id === "biscuit-lost") {
+  if (choice.id === "biscuit-lost" || choice.id === "upload-mirv") {
     return { ...choice, actor: world.playerId };
   }
   return { ...choice };
-}
-
-export function eventFlash(actor: ActorId): FlashKind | null {
-  if (actor === "KP") return "korea";
-  if (actor === "CN") return "taiwan";
-  if (actor === "RU" || actor === "UK" || actor === "FR") return "nato-ru";
-  if (actor === "SU") return "union";
-  if (actor === "CU") return "cuba";
-  if (actor === "CR") return "cartel";
-  if (actor === "IR" || actor === "IL") return "iran";
-  if (actor === "IN" || actor === "PK") return "kashmir";
-  if (actor === "NS") return "terror";
-  return null;
 }

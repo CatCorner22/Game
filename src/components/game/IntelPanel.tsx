@@ -8,7 +8,7 @@ import {
 } from "@/lib/game/world";
 import { GEN_LABEL, SITE_KIND, spySummary } from "@/lib/game/spies";
 import { useGame } from "@/lib/game/store";
-import { cn } from "@/lib/utils";
+import { GlassPanel, HudButton, HudLabel, HudPanel } from "./ui/Hud";
 
 function visibleSystems(actor: Actor, playerId: ActorId) {
   if (actor.id === playerId) return actor.systems;
@@ -42,22 +42,20 @@ export function IntelPanel({ world, selected }: { world: World; selected: ActorI
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">File</p>
+        <HudLabel>File</HudLabel>
         <div className="mt-2 flex flex-wrap gap-1">
           {ACTOR_IDS.map((id) => (
-            <button
+            <HudButton
               key={id}
+              variant={id === selected ? "active" : "ghost"}
+              className="min-h-9 px-2 text-xs uppercase"
               onClick={() => select(id)}
-              className={cn(
-                "min-h-9 rounded-sm px-2 font-mono text-xs tracking-wide uppercase",
-                id === selected ? "bg-fg text-bg" : "text-muted hover:text-fg",
-              )}
             >
               {id}
               <span className="mt-0.5 block text-[9px] font-normal tracking-normal opacity-80 normal-case">
                 {world.actors[id]?.shortName}
               </span>
-            </button>
+            </HudButton>
           ))}
         </div>
       </div>
@@ -90,20 +88,25 @@ export function IntelPanel({ world, selected }: { world: World; selected: ActorI
       <SiteBoard world={world} selected={selected} />
       <button
         onClick={toggleFile}
-        className="min-h-11 self-start font-display text-sm tracking-[0.18em] text-accent uppercase"
+        className="min-h-11 self-start font-display text-sm tracking-[0.18em] text-accent uppercase hover:text-glow-accent"
       >
         {fileOpen ? "Close arsenal" : "Open arsenal"}
       </button>
       {fileOpen ? (
         <ul className="max-h-64 space-y-3 overflow-y-auto pr-1">
           {systems.map((s) => (
-            <li key={s.id} className="rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
-              <p className="font-display text-sm tracking-wide text-fg">{s.name}</p>
-              <p className="mt-1 font-mono text-[11px] text-muted uppercase">
-                {KIND_LABEL[s.kind]} · {s.rangeKm ? `${s.rangeKm} km` : "n/a"} · WH {s.warheads} ·{" "}
-                {DISCLOSURE_LABEL[s.disclosure]}
-              </p>
-              <p className="mt-2 text-xs leading-relaxed text-muted">{s.notes}</p>
+            <li key={s.id}>
+              <HudPanel>
+                <p className="font-display text-sm tracking-wide text-fg">{s.name}</p>
+                <p className="mt-1 font-mono text-[11px] text-muted uppercase">
+                  {KIND_LABEL[s.kind]} · {s.rangeKm ? `${s.rangeKm} km` : "n/a"} · WH {s.warheads}
+                  {(s.rvsPerBus ?? 1) > 1 ? ` · MIRV ×${s.rvsPerBus}` : ""}
+                  {(s.decoys ?? 0) > 0 ? ` · decoys ${s.decoys}` : ""}
+                  {" · "}
+                  {DISCLOSURE_LABEL[s.disclosure]}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-muted">{s.notes}</p>
+              </HudPanel>
             </li>
           ))}
           {systems.length < a.systems.length ? (
@@ -125,12 +128,13 @@ function SiteBoard({ world, selected }: { world: World; selected: ActorId }) {
   const ours = selected === world.playerId;
   return (
     <div>
-      <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">
+      <HudLabel>
         Launch sites · your cells {sum.ours} · hostile on you {sum.hostile} ({sum.known} named)
-      </p>
+      </HudLabel>
       <ul className="mt-2 space-y-2">
         {sites.map((s) => (
-          <li key={s.id} className="rounded-md bg-elevated px-3 py-2 shadow-[var(--shadow-border)]">
+          <li key={s.id}>
+            <HudPanel>
             <p className="font-display text-sm tracking-wide text-fg">
               {s.name}
               <span className="ml-2 font-mono text-[10px] tracking-wider text-muted uppercase">
@@ -157,8 +161,9 @@ function SiteBoard({ world, selected }: { world: World; selected: ActorId }) {
                     : "Unknown whether they watch this fence too."
                 : ours
                   ? "No hostile cell named on this site."
-                  : ""}
+                    : ""}
             </p>
+            </HudPanel>
           </li>
         ))}
       </ul>

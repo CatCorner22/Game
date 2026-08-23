@@ -10,6 +10,9 @@ import { SituationLog } from "./SituationLog";
 import { ObjectivesPanel } from "./ObjectivesPanel";
 import { HotlinePanel } from "./HotlinePanel";
 import { SettingsPanel } from "./SettingsPanel";
+import { C2Panel } from "./C2Panel";
+import { DiplomacyPanel } from "./DiplomacyPanel";
+import { GLOSSARY } from "@/lib/game/copy";
 import { CloseCallOverlay } from "./CloseCallOverlay";
 import { updateAtmosphere } from "@/lib/game/audio";
 import { resetToTitle, useGame } from "@/lib/game/store";
@@ -19,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { winterLabel } from "@/lib/game/warning";
 import { COMMAND, asPlayable, stanceLine } from "@/lib/game/command";
 import { fusionName } from "@/lib/game/terminator";
+import { GlassPanel, HudButton, HudChip, HudHeader, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
 
 function Meter({
   label,
@@ -38,14 +42,14 @@ function Meter({
   return (
     <div className="mb-3">
       <div className="flex items-baseline justify-between">
-        <span className="font-mono text-xs tracking-[0.18em] text-muted uppercase">{label}</span>
-        <span className={cn("font-mono text-sm tabular", hot ? "text-danger" : "text-fg")}>
+        <HudLabel className="tracking-[0.18em]">{label}</HudLabel>
+        <span className={cn("font-mono text-sm tabular", hot ? "text-danger text-glow-danger" : "text-accent")}>
           {label === "ALERT" ? value : Math.round(value)}
         </span>
       </div>
-      <div className="mt-1 h-1 rounded-full bg-elevated">
+      <div className="mt-1 h-1 overflow-hidden rounded-full bg-surface/80">
         <div
-          className={cn("h-1 rounded-full", hot ? "bg-danger" : "bg-accent")}
+          className={cn("h-1 rounded-full transition-all duration-500", hot ? "bg-danger glow-accent-sm" : "bg-accent glow-accent-sm")}
           style={{ width: `${label === "ALERT" ? ((5 - value) / 4) * 100 : pct}%` }}
         />
       </div>
@@ -63,7 +67,7 @@ function GlobeSlot() {
     void import("./GlobeCanvas").then((m) => setComp(() => m.GlobeCanvas));
   }, []);
   if (!world) return null;
-  if (!Comp) return <div className="h-full min-h-[240px] bg-bg" />;
+  if (!Comp) return <div className="h-full min-h-[240px] bg-bg/50" />;
   return (
     <Comp
       actors={world.actors}
@@ -83,6 +87,8 @@ export function PlayScreen() {
   const confirm = useGame((s) => s.confirmNuclear);
   const setScreen = useGame((s) => s.setScreen);
   const selected = useGame((s) => s.selected);
+  const glossaryOpen = useGame((s) => s.glossaryOpen);
+  const toggleGlossary = useGame((s) => s.toggleGlossary);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [muted, setMutedLocal] = useState(() => loadSettings().muted);
 
@@ -103,99 +109,74 @@ export function PlayScreen() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg">
-      <header className="flex h-14 items-center justify-between gap-3 border-b border-border px-4">
-        <div className="flex items-center gap-4">
-          <span className="font-display text-lg tracking-[0.2em] text-fg">THRESHOLD</span>
-          <span className="hidden font-mono text-xs tracking-[0.18em] text-muted uppercase sm:inline">
-            {dateLabel(world)} · {world.phase} · {world.actors[world.playerId].name} {world.intent}
-            {world.terminator ? " · TERMINATOR" : ""}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xs tracking-wider text-accent tabular">
-            ALERT {world.defcon}
-          </span>
-          <span
-            className={cn(
-              "hidden font-mono text-[10px] tracking-wider uppercase sm:inline",
-              world.footballPresent ? "text-muted" : "text-danger",
-            )}
-          >
-            {world.footballPresent ? "AIDE + BAG" : "NO BAG"}
-          </span>
-          <span
-            className={cn(
-              "hidden font-mono text-[10px] tracking-wider uppercase sm:inline",
-              world.biscuitOnPerson === false ? "text-danger" : "text-muted",
-            )}
-          >
-            {world.biscuitOnPerson === false ? "NO BISCUIT" : "BISCUIT"}
-          </span>
-          <span className={cn("hidden font-mono text-[10px] tracking-wider uppercase sm:inline", m.net < 40 ? "text-danger" : "text-muted")}>
-            NET {Math.round(m.net)}
-          </span>
-          <span className={cn("hidden font-mono text-[10px] tracking-wider uppercase sm:inline", m.grid < 40 ? "text-danger" : "text-muted")}>
-            GRID {Math.round(m.grid)}
-          </span>
-          {world.brokenArrow && !world.brokenArrow.recovered ? (
-            <span className="hidden font-mono text-[10px] tracking-wider text-danger uppercase sm:inline">BROKEN ARROW</span>
-          ) : null}
-          <button
-            type="button"
-            onClick={toggleMute}
-            className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
-            aria-label={muted ? "Unmute" : "Mute"}
-          >
-            {muted ? "Unmute" : "Mute"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
-          >
-            Settings
-          </button>
-          <button
-            onClick={() => setScreen("briefing")}
-            className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
-          >
-            Brief
-          </button>
-          <button
-            onClick={() => resetToTitle()}
-            className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
-          >
-            Menu
-          </button>
-        </div>
-      </header>
+    <div className="flex min-h-dvh flex-col">
+      <HudHeader
+        title="Threshold"
+        subtitle={`${dateLabel(world)} · ${world.phase} · ${world.actors[world.playerId].name} ${world.intent}${world.terminator ? " · TERMINATOR" : ""}`}
+        right={
+          <>
+            <HudChip active danger={world.defcon <= 2}>
+              ALERT {world.defcon}
+            </HudChip>
+            <HudChip danger={!world.footballPresent} className="hidden sm:inline-flex">
+              {world.footballPresent ? "AIDE + BAG" : "NO BAG"}
+            </HudChip>
+            <HudChip danger={world.biscuitOnPerson === false} className="hidden sm:inline-flex">
+              {world.biscuitOnPerson === false ? "NO BISCUIT" : "BISCUIT"}
+            </HudChip>
+            <HudChip danger={m.net < 40} className="hidden sm:inline-flex">
+              NET {Math.round(m.net)}
+            </HudChip>
+            <HudChip danger={m.grid < 40} className="hidden sm:inline-flex">
+              GRID {Math.round(m.grid)}
+            </HudChip>
+            {world.brokenArrow && !world.brokenArrow.recovered ? (
+              <HudChip danger className="hidden sm:inline-flex">
+                BROKEN ARROW
+              </HudChip>
+            ) : null}
+            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
+              {muted ? "Unmute" : "Mute"}
+            </HudButton>
+            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setSettingsOpen(true)}>
+              Settings
+            </HudButton>
+            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={toggleGlossary}>
+              Glossary
+            </HudButton>
+            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setScreen("briefing")}>
+              Brief
+            </HudButton>
+            <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => resetToTitle()}>
+              Menu
+            </HudButton>
+          </>
+        }
+      />
 
-      <div className="flex gap-1 border-b border-border px-3 py-1 lg:hidden">
+      <div className="flex gap-1 border-b border-accent/15 px-3 py-1 lg:hidden">
         {(["map", "status", "act"] as const).map((t) => (
-          <button
+          <HudButton
             key={t}
+            variant={tab === t ? "active" : "ghost"}
+            className="min-h-11 flex-1 text-sm"
             onClick={() => setTab(t)}
-            className={cn(
-              "min-h-11 flex-1 font-display text-sm tracking-[0.16em] uppercase",
-              tab === t ? "text-accent" : "text-muted",
-            )}
           >
             {t}
-          </button>
+          </HudButton>
         ))}
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px]">
         <aside
           className={cn(
-            "overflow-y-auto border-border p-4 lg:block lg:border-r",
+            "overflow-y-auto border-accent/10 p-4 lg:block lg:border-r",
             tab === "status" ? "block" : "hidden",
           )}
         >
-          <p className="font-mono text-xs tracking-[0.22em] text-muted uppercase">
+          <HudLabel>
             {dateLabel(world)} · turn {world.turn}
-          </p>
+          </HudLabel>
           <div className="mt-4">
             <Meter label="ALERT" value={m.defcon} max={5} invert help={METER_HELP.defcon} />
             <Meter label="Stability" value={m.stability} max={100} help={METER_HELP.stability} />
@@ -209,16 +190,12 @@ export function PlayScreen() {
               invert
               help={`${METER_HELP.winter} Now: ${winterLabel(world.nuclearWinter)}.`}
             />
-            {world.terminator ? (
-              <Meter label="Machine" value={m.ai} max={100} invert help={METER_HELP.ai} />
-            ) : null}
+            {world.terminator ? <Meter label="Machine" value={m.ai} max={100} invert help={METER_HELP.ai} /> : null}
             <Meter label="Net" value={m.net} max={100} help={METER_HELP.net} />
             <Meter label="Grid" value={m.grid} max={100} help={METER_HELP.grid} />
           </div>
-          <div className="mt-2 rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
-            <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">
-              {c2.satchel}
-            </p>
+          <HudPanel className="mt-2">
+            <HudLabel>{c2.satchel}</HudLabel>
             <p className="mt-1 font-mono text-xs text-fg">
               {world.footballPresent
                 ? world.playerId === "US"
@@ -235,7 +212,9 @@ export function PlayScreen() {
               {world.uncontrolled ? " Escalation is beyond control." : ""}
               {world.terminator ? ` ${fusionName(world)} takeover ${Math.round(world.aiTakeover)}.` : ""}
             </p>
-          </div>
+          </HudPanel>
+          <C2Panel world={world} />
+          <DiplomacyPanel world={world} />
           <ObjectivesPanel world={world} />
           <FlashpointBoard world={world} />
           <HotlinePanel world={world} />
@@ -256,14 +235,14 @@ export function PlayScreen() {
           <div className="pointer-events-none absolute top-3 right-3 w-[min(100%,320px)]">
             <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} />
           </div>
-          <div className="pointer-events-none absolute bottom-3 left-3 font-mono text-xs tracking-[0.18em] text-muted uppercase">
+          <div className="pointer-events-none absolute bottom-3 left-3 font-mono text-xs tracking-[0.18em] text-accent/60 uppercase">
             Drag to orbit · click a marker
           </div>
         </div>
 
         <aside
           className={cn(
-            "overflow-y-auto border-border p-4 lg:block lg:border-l",
+            "overflow-y-auto border-accent/10 p-4 lg:block lg:border-l",
             tab === "act" ? "block" : "hidden",
           )}
         >
@@ -272,6 +251,24 @@ export function PlayScreen() {
       </div>
       {confirm ? <NuclearConfirm /> : null}
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {glossaryOpen ? (
+        <HudModalOverlay>
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-2xl tracking-[0.12em] text-glow-accent text-fg uppercase">Glossary</h2>
+            <HudButton variant="ghost" onClick={toggleGlossary}>
+              Close
+            </HudButton>
+          </div>
+          <dl className="mt-4 space-y-4">
+            {GLOSSARY.map((g) => (
+              <div key={g.term}>
+                <dt className="font-display tracking-[0.12em] text-accent uppercase">{g.term}</dt>
+                <dd className="mt-1 text-sm leading-relaxed text-muted">{g.def}</dd>
+              </div>
+            ))}
+          </dl>
+        </HudModalOverlay>
+      ) : null}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useGame } from "@/lib/game/store";
 import type { PlayerAction, World } from "@/lib/game/types";
 import { resolveTurn } from "@/lib/game/sim";
 import { saveWorld } from "@/lib/game/save";
+import { recordTurn } from "@/lib/game/replay";
 
 type MpMsg =
   | { type: "turn"; world: World; action: PlayerAction; seat: string }
@@ -39,6 +40,7 @@ export function MultiplayerScreen() {
       onMessage: (from, data) => {
         const msg = data as MpMsg;
         if (msg.type === "turn" && msg.world) {
+          recordTurn(msg.world, msg.action);
           const next = resolveTurn(structuredClone(msg.world), msg.action);
           saveWorld(next);
           useGame.setState({ world: next, screen: next.ended ? "end" : next.phase === "nuclear" || next.defcon <= 2 ? "war" : "play" });

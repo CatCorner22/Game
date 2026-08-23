@@ -1,10 +1,11 @@
-import type { ActorId, NuclearRung, PlayerAction, World } from "./types";
+import type { ActorId, NuclearRung, PackageMode, PlayerAction, World } from "./types";
 import { chance, clamp, nextUnit, round } from "./rng";
 import { addHostility, bumpFlash, setDefcon } from "./world";
 import { log } from "./simLog";
 import { degradeSensors } from "./warning";
 import { aiReleaseOk } from "./command";
 import { pageById } from "./blackbook";
+import { arrivalFraction, resolveStrikePackage } from "./nuclearStrike";
 
 export function isNuclearAction(world: World | PlayerAction, action?: PlayerAction): boolean {
   const act = action ?? (world as PlayerAction);
@@ -46,8 +47,12 @@ export function applyNuclearUse(
   location: string,
   notified = false,
   yieldOverride?: number,
+  packageMode?: PackageMode,
 ): void {
-  const yieldKt =
+  const report = resolveStrikePackage(world, actor, target, rung, packageMode);
+  const frac = arrivalFraction(report);
+  const landed = report.arrived > 0;
+  const perRv =
     yieldOverride ??
     (rung === "demo"
       ? 12
@@ -56,6 +61,15 @@ export function applyNuclearUse(
         : rung === "counterforce"
           ? 300 + round(nextUnit(world) * 400)
           : 800 + round(nextUnit(world) * 1200));
+  const yieldKt = landed ? Math.max(1, round(perRv * Math.max(frac, 1 / Math.max(1, report.expected)))) : perRv;
+
+  const atk = world.actors[actor];
+  const def = world.actors[target];
+  const spent = Math.min(atk.survivingWarheads, Math.max(1, report.launched * Math.max(1, Math.round((report.expected || 1) / Math.max(1, report.launched)))));
+  atk.survivingWarheads = Math.max(0, atk.survivingWarheads - spent);
+  atk.stockpile = Math.max(0, atk.stockpile - spent);
+  const spentSys = atk.systems.find((s) => s.id === report.legs[0]?.systemId);
+  if (spentSys) spentSys.warheads = Math.max(0, spentSys.warheads - spent);
 
   world.nuclearUses.push({
     turn: world.turn,
@@ -65,15 +79,22 @@ export function applyNuclearUse(
     yieldKt,
     location,
     notified,
+    systemId: report.legs[0]?.systemId,
+    launched: report.launched,
+    failed: report.failed,
+    intercepted: report.intercepted,
+    decoys: report.decoys,
+    arrived: report.arrived,
+    outcome: report.outcome,
   });
   if (!world.firstUse) world.firstUse = actor;
 
-  const atk = world.actors[actor];
-  const def = world.actors[target];
-  addHostility(world, actor, target, rung === "demo" ? 18 : rung === "tactical" ? 28 : 45);
+  const hostilityBump =
+    (rung === "demo" ? 18 : rung === "tactical" ? 28 : 45) * (landed ? 1 : 0.55);
+  addHostility(world, actor, target, hostilityBump);
   setDefcon(world, 1);
   world.phase = "nuclear";
-  world.armsRace = clamp(world.armsRace + 25, 0, 100);
+  world.armsRace = clamp(world.armsRace + (landed ? 25 : 16), 0, 100);
   world.proliferation = clamp(world.proliferation + 12, 0, 100);
   world.allianceCohesion = clamp(
     world.allianceCohesion + (actor === world.playerId ? (world.intent === "blue" ? -18 : -8) : actor === "US" ? -10 : 4),
@@ -82,47 +103,67 @@ export function applyNuclearUse(
   );
 
   if (rung === "demo") {
-    const deaths = 0;
-    def.unrest += 12;
-    def.nationalism += 14;
-    atk.legitimacy -= actor === world.playerId ? 22 : 4;
+    const deaths = landed ? 0 : 0;
+    def.unrest += landed ? 12 : 8;
+    def.nationalism += landed ? 14 : 10;
+    atk.legitimacy -= actor === world.playerId ? (landed ? 22 : 16) : 4;
     world.worldCasualties += deaths;
+    report.yieldKt = yieldKt;
+    report.deaths = deaths;
+    world.lastStrike = report;
     log(
       world,
       "critical",
-      `${atk.shortName} conducted a nuclear demonstration (${yieldKt} kt) near ${location}.`,
-      "A demonstration is still first use. It tries to coerce without destroying a city. It often fails, and it ends the taboo for everyone watching.",
+      `${atk.shortName} conducted a nuclear demonstration (${yieldKt} kt) near ${location}. ${report.summary}`,
+      landed
+        ? "A demonstration is still first use. It tries to coerce without destroying a city. It often fails, and it ends the taboo for everyone watching."
+        : "The demonstration left the rail and did not land as packaged. First use still happened. The other side saw a launch.",
     );
-    bumpFlash(world, target === "KP" ? "korea" : target === "CN" ? "taiwan" : "nato-ru", 22);
+    bumpFlash(world, target === "KP" ? "korea" : target === "CN" ? "taiwan" : "nato-ru", landed ? 22 : 16);
     if (notified) {
       addHostility(world, target, actor, -6);
       log(world, "info", "The demonstration was notified on the dedicated line first.", "A warning shot they were told about is still a nuclear use. It is slightly less likely to be read as the start of a disarming strike.");
+    }
+    if (report.launched > 0) {
+      world.missiles.push({
+        id: `nuk-${world.turn}-${actor}-${target}`,
+        from: actor,
+        to: target,
+        progress: 0,
+        kind: landed ? "missile" : "detonation",
+      });
     }
     return;
   }
 
   const surv = forceSurvivability(world, target);
   const pk = rung === "counterforce" ? 0.55 + atk.alert * 0.04 : 0.2;
-  const destroyedFrac = clamp(pk * (1 - surv * 0.6), 0.08, 0.85);
+  const destroyedFrac = clamp(pk * (1 - surv * 0.6) * (landed ? Math.max(frac, 0.12) : 0.02), 0, 0.85);
   const destroyed = round(def.survivingWarheads * destroyedFrac);
   def.survivingWarheads = Math.max(0, def.survivingWarheads - destroyed);
   def.stockpile = Math.max(0, def.stockpile - destroyed);
-  def.c2Intact = def.c2Intact && (rung !== "counterforce" || chance(world, 0.65));
+  def.c2Intact = def.c2Intact && (rung !== "counterforce" || !landed || chance(world, 0.65));
 
   let deaths: number;
-  if (yieldKt >= 20000) {
-    deaths = 12_000_000 + round(nextUnit(world) * 28_000_000);
-    world.nuclearWinter += 36;
+  if (!landed) {
+    deaths = report.outcome === "intercepted" ? 800 + round(nextUnit(world) * 12_000) : 0;
+  } else if (yieldKt >= 20000) {
+    deaths = round((12_000_000 + nextUnit(world) * 28_000_000) * Math.max(frac, 0.35));
+    world.nuclearWinter += round(36 * Math.max(frac, 0.4));
     world.uncontrolled = true;
   } else if (rung === "tactical") {
-    deaths = 40_000 + round(nextUnit(world) * 250_000);
+    deaths = round((40_000 + nextUnit(world) * 250_000) * Math.max(frac, 0.15));
   } else if (rung === "counterforce") {
-    deaths = 400_000 + round(nextUnit(world) * 4_000_000);
-    world.nuclearWinter += yieldKt >= 2000 ? 14 : 6;
+    deaths = round((400_000 + nextUnit(world) * 4_000_000) * Math.max(frac, 0.12));
+    world.nuclearWinter += round((yieldKt >= 2000 ? 14 : 6) * Math.max(frac, 0.15));
   } else {
-    deaths = 8_000_000 + round(nextUnit(world) * 25_000_000);
-    world.nuclearWinter += yieldKt >= 2000 ? 28 : 22;
+    deaths = round((8_000_000 + nextUnit(world) * 25_000_000) * Math.max(frac, 0.2));
+    world.nuclearWinter += round((yieldKt >= 2000 ? 28 : 22) * Math.max(frac, 0.25));
   }
+
+  report.yieldKt = yieldKt;
+  report.deaths = deaths;
+  world.lastStrike = report;
 
   def.casualties += deaths;
   world.worldCasualties += deaths;
@@ -134,7 +175,7 @@ export function applyNuclearUse(
     atk.polarization += 10;
   }
 
-  if (rung === "counterforce" || rung === "countervalue") {
+  if (landed && (rung === "counterforce" || rung === "countervalue")) {
     degradeSensors(world, target);
   }
 
@@ -152,24 +193,31 @@ export function applyNuclearUse(
     }
   }
 
+  const yieldLabel = yieldKt >= 1000 ? `${(yieldKt / 1000).toFixed(1)} Mt` : `${yieldKt} kt`;
   log(
     world,
     "critical",
-    `${atk.shortName} used nuclear weapons (${rung}, ~${yieldKt >= 1000 ? `${(yieldKt / 1000).toFixed(1)} Mt` : `${yieldKt} kt`}) against ${def.shortName} at ${location}. Estimated dead: ${deaths.toLocaleString()}.`,
-    yieldKt >= 20000
+    `${atk.shortName} used nuclear weapons (${rung}, ~${yieldLabel}) against ${def.shortName} at ${location}. ${report.arrived}/${report.expected} RVs arrived. Estimated dead: ${deaths.toLocaleString()}. ${report.summary}`,
+    !landed
+      ? report.outcome === "intercepted"
+        ? "The shot left. Defense claimed the RVs — or claimed they did. Debris and abort still kill. The taboo is broken either way. They may answer the launch, not the crater."
+        : "Buses failed or RVs died on reentry. A fizzle is still first use. Capitals saw boosts. Pre-delegation clocks run."
+      : yieldKt >= 20000
       ? "Tsar-class / Poseidon-class yield. This is not counterforce. Firestorm and famine are the mechanism. Jacobsen: once it leaves, nothing recalls it."
       : rung === "tactical"
-      ? "Tactical use is still nuclear use. The other side must now choose between folding and answering. Many doctrines answer."
-      : "Strategic use against forces still kills people in the blast, fallout, and fire radius. Second strike may already be in the air. ICBMs cannot be recalled.",
+      ? "Tactical use is still nuclear use. Particular weapons fail. Particular interceptors miss. The other side must now choose between folding and answering."
+      : "MIRV buses and decoys are how a thin defense is saturated. What arrives is what burns. ICBMs cannot be recalled.",
   );
 
-  world.missiles.push({
-    id: `nuk-${world.turn}-${actor}-${target}`,
-    from: actor,
-    to: target,
-    progress: 0,
-    kind: "missile",
-  });
+  if (report.launched > 0) {
+    world.missiles.push({
+      id: `nuk-${world.turn}-${actor}-${target}`,
+      from: actor,
+      to: target,
+      progress: 0,
+      kind: landed ? "missile" : "detonation",
+    });
+  }
 }
 
 export function maybeRetaliate(world: World, victim: ActorId, attacker: ActorId, rung: NuclearRung) {
@@ -195,8 +243,8 @@ export function maybeRetaliate(world: World, victim: ActorId, attacker: ActorId,
   let fire = false;
   let theirRung: NuclearRung = "tactical";
 
-  if (v.doctrine === "nfu" && rung === "tactical" && !existential) {
-    fire = chance(world, 0.25 + v.riskTolerance / 400);
+  if ((v.declaredNfu || v.doctrine === "nfu") && rung === "tactical" && !existential) {
+    fire = chance(world, (v.declaredNfu ? 0.16 : 0.25) + v.riskTolerance / 400);
     theirRung = "tactical";
   } else if (v.id === "KP") {
     fire = true;
@@ -275,7 +323,7 @@ export function resolvePlayerNuclear(world: World, action: PlayerAction) {
               : target === "NS"
                 ? "suspected device site"
                 : `${world.actors[target].shortName} ${page.name}`;
-  applyNuclearUse(world, actor, target, rung, loc, Boolean(action.notify), page.yieldKt);
+  applyNuclearUse(world, actor, target, rung, loc, Boolean(action.notify), page.yieldKt, action.packageMode);
   maybeRetaliate(world, target, actor, rung);
   if (target === "KP") {
     const cn = world.actors.CN;
