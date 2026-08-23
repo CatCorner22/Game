@@ -6,14 +6,7 @@ import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import {
-  FuturisticShell,
-  GlassPanel,
-  HudButton,
-  HudChip,
-  HudLabel,
-  ScenarioCard,
-} from "./ui/Hud";
+import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 
 const DIFFS: { id: Difficulty; label: string; line: string }[] = [
   { id: "standard", label: "STANDARD", line: "Readable files. Hostile world." },
@@ -41,16 +34,23 @@ export function TitleScreen() {
   const [terminator, setTerminator] = useState(false);
   const [replayCode, setReplayCode] = useState("");
   const [eraFilter, setEraFilter] = useState<ScenarioEra | "all">("all");
+  const [query, setQuery] = useState("");
+  const [seatOnly, setSeatOnly] = useState(true);
 
   const seat = PLAYABLE.find((p) => p.id === country);
-  const filteredScenarios = useMemo(
-    () => (eraFilter === "all" ? SCENARIOS : SCENARIOS.filter((s) => s.era === eraFilter)),
-    [eraFilter],
-  );
+  const selectedDef = scenario ? SCENARIOS.find((s) => s.id === scenario) : null;
+  const filteredScenarios = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return SCENARIOS.filter((s) => {
+      if (eraFilter !== "all" && s.era !== eraFilter) return false;
+      if (seatOnly && country && s.playerId !== country) return false;
+      if (!q) return true;
+      return `${s.title} ${s.line} ${s.playerId} ${s.id}`.toLowerCase().includes(q);
+    });
+  }, [eraFilter, query, seatOnly, country]);
 
   return (
-    <FuturisticShell>
-      <div className="flex min-h-dvh flex-col px-4 py-6 sm:px-8 lg:px-12 lg:py-10">
+    <div className="flex min-h-dvh flex-col px-4 py-6 sm:px-8 lg:px-12 lg:py-10">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <HudChip active>NCA · STRATEGIC WATCH</HudChip>
           <div className="flex flex-wrap gap-2">
@@ -246,8 +246,16 @@ export function TitleScreen() {
             <aside className="flex min-h-0 flex-col">
               <div className="flex items-center justify-between gap-2">
                 <HudLabel>Scenarios · optional</HudLabel>
-                <HudChip>{SCENARIOS.length} watches</HudChip>
+                <HudChip>
+                  {filteredScenarios.length}/{SCENARIOS.length}
+                </HudChip>
               </div>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search theater, seat, title"
+                className="mt-2 h-9 w-full rounded-md glass-panel px-3 font-mono text-[11px] text-fg outline-none focus:neon-border-accent"
+              />
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {(["all", "historical", "2027", "threshold"] as const).map((e) => (
                   <button
@@ -262,7 +270,20 @@ export function TitleScreen() {
                     {e === "all" ? "All" : ERA_LABEL[e]}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setSeatOnly((v) => !v)}
+                  className={cn(
+                    "rounded-sm px-2 py-1 font-mono text-[9px] tracking-wider uppercase",
+                    seatOnly ? "bg-accent/20 text-accent neon-border-accent" : "text-subtle hover:text-muted",
+                  )}
+                >
+                  {seatOnly ? `Seat ${country}` : "All seats"}
+                </button>
               </div>
+              {selectedDef?.briefing ? (
+                <p className="mt-2 text-xs leading-snug text-accent/80">{selectedDef.briefing}</p>
+              ) : null}
               <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 lg:max-h-[calc(100dvh-12rem)]">
                 <ScenarioCard
                   title="Sandbox"
@@ -279,6 +300,7 @@ export function TitleScreen() {
                     line={s.line}
                     era={ERA_LABEL[s.era]}
                     difficulty={s.difficulty}
+                    seat={s.playerId}
                     selected={scenario === s.id}
                     onClick={() => {
                       setScenario(s.id);
@@ -287,6 +309,9 @@ export function TitleScreen() {
                     }}
                   />
                 ))}
+                {!filteredScenarios.length ? (
+                  <p className="text-xs text-subtle">No watches match. Clear search or show all seats.</p>
+                ) : null}
               </div>
             </aside>
           ) : (
@@ -297,7 +322,7 @@ export function TitleScreen() {
                 <li>· Cyan HUD · live globe · radar sweep</li>
                 <li>· MIRV / decoy strike resolution</li>
                 <li>· Ceasefire · pact ledger · C2 stances</li>
-                <li>· {SCENARIOS.length} scripted scenario watches</li>
+                <li>· {SCENARIOS.length} scripted scenario watches · CN / UK / FR / PK seats</li>
               </ul>
             </GlassPanel>
           )}
@@ -306,7 +331,6 @@ export function TitleScreen() {
         <footer className="mt-8 font-mono text-[10px] tracking-wider text-subtle uppercase">
           FAS / SIPRI 2026 estimates · Football = aide briefcase · Terminator = rogue C2
         </footer>
-      </div>
-    </FuturisticShell>
+    </div>
   );
 }

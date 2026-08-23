@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { winterLabel } from "@/lib/game/warning";
 import { COMMAND, asPlayable, stanceLine } from "@/lib/game/command";
 import { fusionName } from "@/lib/game/terminator";
-import { GlassPanel, HudButton, HudChip, HudHeader, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
+import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
 
 function Meter({
   label,
@@ -235,8 +235,11 @@ export function PlayScreen() {
           <div className="pointer-events-none absolute top-3 right-3 w-[min(100%,320px)]">
             <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} />
           </div>
-          <div className="pointer-events-none absolute bottom-3 left-3 font-mono text-xs tracking-[0.18em] text-accent/60 uppercase">
-            Drag to orbit · click a marker
+          <div className="pointer-events-none absolute bottom-3 left-3 max-w-[220px]">
+            <EscalationLadder phase={world.phase} defcon={world.defcon} winter={world.winterStage} />
+            <p className="mt-2 font-mono text-[10px] tracking-[0.18em] text-accent/60 uppercase">
+              Drag to orbit · click a marker
+            </p>
           </div>
         </div>
 

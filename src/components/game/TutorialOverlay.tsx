@@ -37,18 +37,18 @@ export function TutorialOverlay() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 p-4 sm:bottom-8 sm:left-auto sm:right-8 sm:max-w-sm">
-      <div className="rounded-xl border border-accent/40 bg-surface p-4 shadow-[var(--shadow-border)]">
+      <div className="glass-panel neon-border-accent rounded-xl p-4">
         <p className="font-mono text-[10px] tracking-wider text-accent uppercase">
           First watch · {step + 1}/{STEPS.length}
         </p>
-        <h3 className="mt-2 font-display text-xl text-fg">{current.title}</h3>
+        <h3 className="mt-2 font-display text-xl text-glow-accent text-fg">{current.title}</h3>
         <p className="mt-2 text-sm text-muted">{current.body}</p>
         <div className="mt-4 flex gap-2">
           {step < STEPS.length - 1 ? (
             <button
               type="button"
               onClick={() => setStep(step + 1)}
-              className="min-h-10 flex-1 rounded-sm bg-accent font-display text-xs tracking-wider text-accent-fg uppercase"
+              className="hud-btn min-h-10 flex-1 bg-accent font-display text-xs tracking-wider text-accent-fg uppercase"
             >
               Next
             </button>
@@ -59,7 +59,7 @@ export function TutorialOverlay() {
                 updateSettings({ tutorialDone: true });
                 dismissTutorial();
               }}
-              className="min-h-10 flex-1 rounded-sm bg-accent font-display text-xs tracking-wider text-accent-fg uppercase"
+              className="hud-btn min-h-10 flex-1 bg-accent font-display text-xs tracking-wider text-accent-fg uppercase"
             >
               Begin watch
             </button>
@@ -84,6 +84,7 @@ export function useKeyboardShortcuts() {
   const world = useGame((s) => s.world);
   const screen = useGame((s) => s.screen);
   const setKind = useGame((s) => s.setKind);
+  const setIntensity = useGame((s) => s.setIntensity);
   const execute = useGame((s) => s.execute);
   const confirm = useGame((s) => s.confirmNuclear);
 
@@ -102,6 +103,12 @@ export function useKeyboardShortcuts() {
       } else if (k === "i") {
         setKind("intelligence");
         e.preventDefault();
+      } else if (k === "p") {
+        setKind("posture");
+        e.preventDefault();
+      } else if (k === "1" || k === "2" || k === "3") {
+        setIntensity(Number(k) as 1 | 2 | 3);
+        e.preventDefault();
       } else if (k === "enter" && e.shiftKey) {
         execute();
         e.preventDefault();
@@ -110,5 +117,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [world, screen, confirm, setKind, execute]);
+  }, [world, screen, confirm, setKind, setIntensity, execute]);
 }

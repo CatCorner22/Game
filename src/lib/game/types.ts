@@ -215,7 +215,9 @@ export type FlashKind =
   | "machine"
   | "union"
   | "cuba"
-  | "cartel";
+  | "cartel"
+  | "himalaya"
+  | "space";
 
 export interface Flashpoint {
   id: FlashKind;

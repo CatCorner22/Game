@@ -187,6 +187,30 @@ export function runIntegrityChecks(): IntegrityResult {
     return `until ${w.ceasefire.untilTurn}`;
   });
 
+  check("new-flashpoints", () => {
+    const w = createWorld("standard", 1, "US", "blue");
+    for (const id of ["himalaya", "space"] as const) {
+      if (!w.flashpoints.some((f) => f.id === id)) throw new Error(`missing ${id}`);
+    }
+    return "himalaya+space";
+  });
+
+  check("new-scenario-seats", () => {
+    const expect: Record<string, string> = {
+      "taiwan-prc-2027": "CN",
+      "trident-casd": "UK",
+      "frappe-independence": "FR",
+      "nasr-flushed": "PK",
+      "asat-blind-2028": "US",
+      "lac-clash-2027": "IN",
+    };
+    for (const [id, seat] of Object.entries(expect)) {
+      const def = SCENARIOS.find((s) => s.id === id);
+      if (!def || def.playerId !== seat) throw new Error(`${id} seat`);
+    }
+    return Object.keys(expect).join(",");
+  });
+
   check("mirv-seeded", () => {
     const w = createWorld("standard", 1, "US", "blue");
     const d5 = w.actors.US.systems.find((s) => s.id === "us-d5");
