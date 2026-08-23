@@ -8,6 +8,7 @@ import { encodeReplay } from "@/lib/game/replay";
 
 export function EndScreen() {
   const world = useGame((s) => s.world);
+  const startReplay = useGame((s) => s.startReplay);
   const [copied, setCopied] = useState(false);
   const [timelineIdx, setTimelineIdx] = useState(0);
   if (!world?.ending) return null;
@@ -78,6 +79,13 @@ export function EndScreen() {
           {copied ? "Replay code copied" : "Copy replay code"}
         </button>
         <p className="mt-2 break-all font-mono text-[9px] text-subtle">{replayCode.slice(0, 48)}…</p>
+        <button
+          type="button"
+          onClick={() => startReplay(replayCode)}
+          className="mt-2 min-h-11 w-full font-display text-xs tracking-wider text-muted uppercase"
+        >
+          Watch this replay
+        </button>
       </div>
 
       <div className="mt-10 flex gap-3">

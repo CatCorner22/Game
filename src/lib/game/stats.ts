@@ -61,7 +61,7 @@ function saveStats(s: CareerStats) {
   localStorage.setItem(KEY, JSON.stringify(s));
 }
 
-const WIN_KINDS: EndingKind[] = ["peace", "war-win", "red-win"];
+const WIN_KINDS: EndingKind[] = ["peace", "war-win", "red-win", "ceasefire"];
 
 export function recordGameEnd(world: World, scenarioId: ScenarioId | null) {
   if (!world.ending) return;

@@ -1,6 +1,6 @@
-import { useGame } from "@/lib/game/store";
-import { hasSave, migrateWorld, saveWorld } from "@/lib/game/save";
-import { slotMeta, peekSlotWorld } from "@/lib/game/slots";
+import { abandonSave, useGame } from "@/lib/game/store";
+import { hasSave } from "@/lib/game/save";
+import { slotMeta } from "@/lib/game/slots";
 import { SCENARIOS, type ScenarioId } from "@/lib/game/scenarios";
 import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
@@ -28,12 +28,16 @@ const DIFFS: { id: Difficulty; label: string; line: string }[] = [
 export function TitleScreen() {
   const start = useGame((s) => s.start);
   const resume = useGame((s) => s.resume);
+  const resumeSlot = useGame((s) => s.resumeSlot);
+  const startReplay = useGame((s) => s.startReplay);
   const setScreen = useGame((s) => s.setScreen);
+  const lastError = useGame((s) => s.lastError);
   const [save] = useState(() => hasSave());
   const [team, setTeam] = useState<Team | null>(null);
   const [country, setCountry] = useState<PlayableId | null>(null);
   const [scenario, setScenario] = useState<ScenarioId | null>(null);
   const [terminator, setTerminator] = useState(false);
+  const [replayCode, setReplayCode] = useState("");
 
   const seat = PLAYABLE.find((p) => p.id === country);
 
@@ -258,11 +262,7 @@ export function TitleScreen() {
                     key={slot}
                     type="button"
                     onClick={() => {
-                      const raw = peekSlotWorld(slot);
-                      if (raw && !raw.ended) {
-                        saveWorld(migrateWorld(raw));
-                        resume();
-                      }
+                      resumeSlot(slot);
                     }}
                     className="min-h-14 rounded-md bg-elevated px-2 py-2 text-left shadow-[var(--shadow-border)]"
                   >
@@ -278,12 +278,20 @@ export function TitleScreen() {
 
           <div className="mt-4 flex flex-wrap gap-3">
             {save ? (
-              <button
-                onClick={() => resume()}
-                className="min-h-11 px-3 font-display tracking-[0.16em] text-accent uppercase"
-              >
-                Continue watch
-              </button>
+              <>
+                <button
+                  onClick={() => resume()}
+                  className="min-h-11 px-3 font-display tracking-[0.16em] text-accent uppercase"
+                >
+                  Continue watch
+                </button>
+                <button
+                  onClick={() => abandonSave()}
+                  className="min-h-11 px-3 font-display tracking-[0.16em] text-muted uppercase"
+                >
+                  Abandon watch
+                </button>
+              </>
             ) : null}
             <button
               onClick={() => setScreen("stats")}
@@ -303,6 +311,23 @@ export function TitleScreen() {
             >
               How it works
             </button>
+          </div>
+          <div className="mt-4">
+            <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Watch a replay</p>
+            <textarea
+              value={replayCode}
+              onChange={(e) => setReplayCode(e.target.value)}
+              placeholder="Paste replay code"
+              className="mt-2 h-20 w-full rounded-md bg-elevated px-3 py-2 font-mono text-[11px] text-fg shadow-[var(--shadow-border)]"
+            />
+            <button
+              type="button"
+              onClick={() => startReplay(replayCode)}
+              className="mt-2 min-h-10 px-3 font-display text-xs tracking-wider text-accent uppercase"
+            >
+              Run replay
+            </button>
+            {lastError ? <p className="mt-1 text-xs text-danger">{lastError}</p> : null}
           </div>
         </div>
         <p className="font-mono text-[11px] tracking-wider text-subtle uppercase">

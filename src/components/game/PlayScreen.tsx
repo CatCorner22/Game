@@ -10,6 +10,9 @@ import { SituationLog } from "./SituationLog";
 import { ObjectivesPanel } from "./ObjectivesPanel";
 import { HotlinePanel } from "./HotlinePanel";
 import { SettingsPanel } from "./SettingsPanel";
+import { C2Panel } from "./C2Panel";
+import { DiplomacyPanel } from "./DiplomacyPanel";
+import { GLOSSARY } from "@/lib/game/copy";
 import { CloseCallOverlay } from "./CloseCallOverlay";
 import { updateAtmosphere } from "@/lib/game/audio";
 import { resetToTitle, useGame } from "@/lib/game/store";
@@ -83,6 +86,8 @@ export function PlayScreen() {
   const confirm = useGame((s) => s.confirmNuclear);
   const setScreen = useGame((s) => s.setScreen);
   const selected = useGame((s) => s.selected);
+  const glossaryOpen = useGame((s) => s.glossaryOpen);
+  const toggleGlossary = useGame((s) => s.toggleGlossary);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [muted, setMutedLocal] = useState(() => loadSettings().muted);
 
@@ -155,6 +160,13 @@ export function PlayScreen() {
             className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
           >
             Settings
+          </button>
+          <button
+            type="button"
+            onClick={toggleGlossary}
+            className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
+          >
+            Glossary
           </button>
           <button
             onClick={() => setScreen("briefing")}
@@ -236,6 +248,8 @@ export function PlayScreen() {
               {world.terminator ? ` ${fusionName(world)} takeover ${Math.round(world.aiTakeover)}.` : ""}
             </p>
           </div>
+          <C2Panel world={world} />
+          <DiplomacyPanel world={world} />
           <ObjectivesPanel world={world} />
           <FlashpointBoard world={world} />
           <HotlinePanel world={world} />
@@ -272,6 +286,26 @@ export function PlayScreen() {
       </div>
       {confirm ? <NuclearConfirm /> : null}
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {glossaryOpen ? (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-bg/80 p-3 sm:items-center" role="dialog">
+          <div className="max-h-[80dvh] w-full max-w-lg overflow-y-auto rounded-xl bg-surface p-5 shadow-[var(--shadow-border)]">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-2xl text-fg">Glossary</h2>
+              <button type="button" onClick={toggleGlossary} className="min-h-10 px-3 font-display text-sm text-muted uppercase">
+                Close
+              </button>
+            </div>
+            <dl className="mt-4 space-y-4">
+              {GLOSSARY.map((g) => (
+                <div key={g.term}>
+                  <dt className="font-display tracking-[0.12em] text-fg uppercase">{g.term}</dt>
+                  <dd className="mt-1 text-sm leading-relaxed text-muted">{g.def}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

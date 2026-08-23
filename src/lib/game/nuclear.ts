@@ -243,8 +243,8 @@ export function maybeRetaliate(world: World, victim: ActorId, attacker: ActorId,
   let fire = false;
   let theirRung: NuclearRung = "tactical";
 
-  if (v.doctrine === "nfu" && rung === "tactical" && !existential) {
-    fire = chance(world, 0.25 + v.riskTolerance / 400);
+  if ((v.declaredNfu || v.doctrine === "nfu") && rung === "tactical" && !existential) {
+    fire = chance(world, (v.declaredNfu ? 0.16 : 0.25) + v.riskTolerance / 400);
     theirRung = "tactical";
   } else if (v.id === "KP") {
     fire = true;

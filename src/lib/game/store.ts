@@ -10,6 +10,10 @@ import { recordTurn } from "./replay";
 import { applyScenario, type ScenarioId } from "./scenarios";
 import { recordGameEnd } from "./stats";
 import { applyDoctrine } from "./doctrine";
+import { applyC2Stance, type C2StanceId } from "./c2";
+import { replayFromCode } from "./replayRun";
+import { migrateWorld } from "./save";
+import { peekSlotWorld } from "./slots";
 
 function screenForWorld(world: World): Screen {
   if (world.ended) return "end";
@@ -34,6 +38,7 @@ interface GameState {
   glossaryOpen: boolean;
   tutorialStep: number;
   scenarioId: ScenarioId | null;
+  saveSlot: 0 | 1 | 2;
   start: (opts: {
     difficulty: Difficulty;
     playerId: ActorId;
@@ -42,6 +47,10 @@ interface GameState {
     scenarioId?: ScenarioId;
   }) => void;
   resume: () => boolean;
+  resumeSlot: (slot: 0 | 1 | 2) => boolean;
+  saveToSlot: (slot: 0 | 1 | 2) => void;
+  startReplay: (code: string) => boolean;
+  applyC2: (id: C2StanceId) => void;
   setScreen: (s: Screen) => void;
   select: (id: ActorId) => void;
   setKind: (k: ActionKind) => void;
@@ -82,16 +91,18 @@ export const useGame = create<GameState>((set, get) => ({
   glossaryOpen: false,
   tutorialStep: -1,
   scenarioId: null,
+  saveSlot: 0,
   lastError: null,
   start: ({ difficulty, playerId, intent, terminator, scenarioId }) => {
     unlockAudio();
     try {
       let world = createWorld(difficulty, Date.now() | 0, playerId, intent, Boolean(terminator));
       if (scenarioId) world = applyScenario(world, scenarioId);
-      saveWorld(world);
+      saveWorld(world, 0);
       set({
         screen: screenForWorld(world),
         world,
+        saveSlot: 0,
         selected: world.event.actor === playerId ? "KP" : world.event.actor,
         actionKind: "hold",
         intensity: 1,
@@ -124,6 +135,68 @@ export const useGame = create<GameState>((set, get) => ({
       tutorialStep: -1,
     });
     return true;
+  },
+  resumeSlot: (slot) => {
+    const raw = peekSlotWorld(slot);
+    if (!raw || raw.ended) return false;
+    const world = migrateWorld(raw);
+    saveWorld(world, slot);
+    set({
+      screen: screenForWorld(world),
+      world,
+      selected: world.event.actor,
+      actionKind: "hold",
+      intensity: 1,
+      notify: false,
+      tutorialStep: -1,
+      saveSlot: slot,
+      lastError: null,
+    });
+    return true;
+  },
+  saveToSlot: (slot) => {
+    const w = get().world;
+    if (!w) return;
+    saveWorld(w, slot);
+    set({ saveSlot: slot });
+  },
+  startReplay: (code) => {
+    unlockAudio();
+    try {
+      const run = replayFromCode(code);
+      if (!run) {
+        set({ lastError: "Replay code did not decode." });
+        return false;
+      }
+      saveWorld(run.world, get().saveSlot);
+      set({
+        screen: screenForWorld(run.world),
+        world: run.world,
+        selected: run.world.event.actor,
+        actionKind: "hold",
+        intensity: 1,
+        notify: false,
+        tutorialStep: -1,
+        scenarioId: (run.record.scenarioId as ScenarioId | null) ?? null,
+        lastError: null,
+      });
+      return true;
+    } catch (err) {
+      set({ lastError: err instanceof Error ? err.message : String(err) });
+      return false;
+    }
+  },
+  applyC2: (id: C2StanceId) => {
+    const w = get().world;
+    if (!w) return;
+    try {
+      const next = structuredClone(w);
+      applyC2Stance(next, id);
+      saveWorld(next, get().saveSlot);
+      set({ world: next, lastError: null });
+    } catch (err) {
+      set({ lastError: err instanceof Error ? err.message : String(err) });
+    }
   },
   setScreen: (s) => set({ screen: s }),
   select: (id) => set({ selected: id }),
@@ -164,7 +237,7 @@ export const useGame = create<GameState>((set, get) => ({
     try {
       recordTurn(prev, act);
       const next = resolveTurn(structuredClone(prev), act);
-      saveWorld(next);
+      saveWorld(next, st.saveSlot);
       defconTone(next.defcon);
       updateAtmosphere(next.defcon, next.globalRisk);
       if (next.nuclearUses.length > prev.nuclearUses.length) stinger("detonation");
@@ -207,7 +280,7 @@ export const useGame = create<GameState>((set, get) => ({
     try {
       const next = structuredClone(w);
       applyDoctrine(next, id);
-      saveWorld(next);
+      saveWorld(next, get().saveSlot);
       set({ world: next, lastError: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

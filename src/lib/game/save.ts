@@ -81,6 +81,8 @@ export function migrateWorld(world: World): World {
   if (world.threadTag === undefined) world.threadTag = null;
   if (!world.aiLast) world.aiLast = {};
   if (world.lastStrike === undefined) world.lastStrike = null;
+  if (world.ceasefire === undefined) world.ceasefire = null;
+  if (world.c2StanceTurn === undefined) world.c2StanceTurn = 0;
   for (const a of Object.values(world.actors)) {
     for (const s of a.systems) {
       if (s.rvsPerBus === undefined) {
@@ -110,12 +112,12 @@ export function migrateWorld(world: World): World {
   return world;
 }
 
-export function saveWorld(world: World) {
+export function saveWorld(world: World, slot: 0 | 1 | 2 = 0) {
   try {
     const prev = localStorage.getItem(KEY);
     if (prev) localStorage.setItem(BACKUP, prev);
     localStorage.setItem(KEY, JSON.stringify({ version: SAVE_VERSION, world }));
-    saveWorldToSlot(world, 0);
+    saveWorldToSlot(world, slot);
   } catch {
     /* private mode / quota */
   }

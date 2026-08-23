@@ -6,6 +6,10 @@ import { encodeReplay, decodeReplay, recordTurn } from "./replay";
 import { PLAYABLE_IDS } from "./types";
 import type { ActorId, PlayerAction, World } from "./types";
 import { applyNuclearUse } from "./nuclear";
+import { replayFromCode } from "./replayRun";
+import { proposePact } from "./pacts";
+import { proposeCeasefire } from "./ceasefire";
+import { applyC2Stance } from "./c2";
 
 export interface IntegrityResult {
   ok: boolean;
@@ -140,6 +144,47 @@ export function runIntegrityChecks(): IntegrityResult {
       throw new Error(`expected intercept, got ${u.outcome} int=${u.intercepted}`);
     }
     return `${u.outcome} intercepted=${u.intercepted} decoys=${u.decoys} arrived=${u.arrived}`;
+  });
+
+  check("replay-playback", () => {
+    const original = runTurns(createWorld("standard", 77, "US", "blue"), 4);
+    const code = encodeReplay(original);
+    const run = replayFromCode(code);
+    if (!run) throw new Error("replay decode failed");
+    if (run.world.turn !== original.turn) throw new Error(`turn ${run.world.turn} vs ${original.turn}`);
+    if (run.world.ended !== original.ended) throw new Error("ended mismatch");
+    return `turn ${run.world.turn} event ${run.world.event.id}`;
+  });
+
+  check("pact-renew", () => {
+    const w = createWorld("standard", 1, "US", "blue");
+    w.rngMode = "fixed";
+    w.rngFixed = 0.01;
+    proposePact(w, "US", "RU");
+    if (!w.pacts?.length) throw new Error("pact not accepted");
+    w.turn = 5;
+    proposePact(w, "US", "RU");
+    const until = w.pacts[0]?.untilTurn ?? 0;
+    if (until < 16) throw new Error(`until ${until}`);
+    return `until ${until}`;
+  });
+
+  check("c2-low", () => {
+    const w = createWorld("standard", 1, "US", "blue");
+    const before = w.actors.US.launchOnWarning;
+    if (!applyC2Stance(w, "low")) throw new Error("first LOW failed");
+    if (w.actors.US.launchOnWarning === before) throw new Error("LOW did not toggle");
+    if (applyC2Stance(w, "nfu")) throw new Error("second C2 change should lock");
+    return `LOW ${w.actors.US.launchOnWarning}`;
+  });
+
+  check("ceasefire-offer", () => {
+    const w = createWorld("standard", 8, "US", "blue");
+    w.rngMode = "fixed";
+    w.rngFixed = 0.01;
+    applyNuclearUse(w, "US", "RU", "tactical", "test", false, 20, "single");
+    if (!proposeCeasefire(w, "US", "RU") || !w.ceasefire?.accepted) throw new Error("no ceasefire");
+    return `until ${w.ceasefire.untilTurn}`;
   });
 
   check("mirv-seeded", () => {

@@ -2,7 +2,13 @@ import type { World } from "./types";
 import { buildTrack, closeCallEvent } from "./warning";
 import { log } from "./simLog";
 
-export type ScenarioId = "petrov-1983" | "able-archer" | "taiwan-2027" | "broken-arrow";
+export type ScenarioId =
+  | "petrov-1983"
+  | "able-archer"
+  | "taiwan-2027"
+  | "broken-arrow"
+  | "kashmir-2027"
+  | "cuba-1962";
 
 export interface ScenarioDef {
   id: ScenarioId;
@@ -43,6 +49,22 @@ export const SCENARIOS: ScenarioDef[] = [
     title: "Broken Arrow",
     line: "Custody lost mid-crisis. Locate before Empty Quiver.",
     playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+  },
+  {
+    id: "kashmir-2027",
+    title: "Kashmir 2027",
+    line: "Nasr batteries flushed. NFU under pressure. One tactical ends the taboo.",
+    playerId: "IN",
+    intent: "blue",
+    difficulty: "hard",
+  },
+  {
+    id: "cuba-1962",
+    title: "Caribbean host",
+    line: "Dual-capable canisters in a harbor. Washington has the photographs.",
+    playerId: "CU",
     intent: "blue",
     difficulty: "hard",
   },
@@ -130,6 +152,49 @@ export function applyScenario(world: World, id: ScenarioId): World {
       tags: ["broken-arrow", "scenario"],
     };
     log(w, "critical", "Scenario: Broken Arrow.", w.event.ignoreLine);
+  }
+
+  if (id === "kashmir-2027") {
+    w.playerId = "IN";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    const k = w.flashpoints.find((f) => f.id === "kashmir");
+    if (k) k.heat = 84;
+    w.globalRisk = 64;
+    w.defcon = 3;
+    w.actors.PK.alert = 4;
+    w.actors.PK.preDelegation = true;
+    w.actors.IN.declaredNfu = true;
+    w.event = {
+      id: "kashmir-nasr",
+      title: "Nasr batteries flushed",
+      body: "Pakistan moved Hatf-9 Nasr units toward the Line of Control after a conventional clash. Your NFU is on paper. Their pre-delegation may already be verbal. DIPLOMACY asks if this is a generate. POSTURE without a notice is how both sides write first use. EMPLOY is a Nasr world.",
+      actor: "PK",
+      heat: "critical",
+      ignoreLine: "They keep the batteries flushed. Use-it-or-lose-it is the file.",
+      tags: ["kashmir", "scenario"],
+    };
+    log(w, "critical", "Scenario: Kashmir 2027. Tactical nuclear threshold.", w.event.ignoreLine);
+  }
+
+  if (id === "cuba-1962") {
+    w.playerId = "CU";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    const fp = w.flashpoints.find((f) => f.id === "cuba");
+    if (fp) fp.heat = 76;
+    w.globalRisk = 60;
+    w.defcon = 3;
+    w.event = {
+      id: "cuba-canisters",
+      title: "Canisters photographed",
+      body: "A foreign dual-capable shipment is in the harbor. Washington has the pictures. Moscow says it is an exercise. You can refuse the host mission, take it and file a notice that will not be believed, or pretend it is fertilizer. 1962 started as a lie about fertilizer.",
+      actor: "US",
+      heat: "critical",
+      ignoreLine: "The ship stays. You are a launch pad until you say otherwise.",
+      tags: ["cuba", "scenario"],
+    };
+    log(w, "warn", "Scenario: Caribbean host. Dual-capable in harbor.", w.event.ignoreLine);
   }
 
   return w;

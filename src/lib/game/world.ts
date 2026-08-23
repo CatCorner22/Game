@@ -217,6 +217,8 @@ export function createWorld(
     threadTag: null,
     aiLast: {},
     lastStrike: null,
+    ceasefire: null,
+    c2StanceTurn: 0,
     log: [
       {
         id: "open",

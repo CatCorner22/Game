@@ -17,7 +17,7 @@ export function saveWorldToSlot(world: World, slot: 0 | 1 | 2) {
   }
 }
 
-/** Raw world from a slot. Does not touch the autosave key. */
+/** Raw world from a slot. Does not touch the autosave key. Caller should migrate. */
 export function peekSlotWorld(slot: 0 | 1 | 2): World | null {
   if (typeof window === "undefined") return null;
   try {
@@ -27,6 +27,15 @@ export function peekSlotWorld(slot: 0 | 1 | 2): World | null {
     return parsed.world ?? null;
   } catch {
     return null;
+  }
+}
+
+export function clearSlot(slot: 0 | 1 | 2) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(slotKey(slot));
+  } catch {
+    /* ignore */
   }
 }
 

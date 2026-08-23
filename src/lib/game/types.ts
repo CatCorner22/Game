@@ -358,6 +358,14 @@ export interface NonAttackPact {
   broken: boolean;
 }
 
+export interface Ceasefire {
+  a: ActorId;
+  b: ActorId;
+  untilTurn: number;
+  accepted: boolean;
+  broken: boolean;
+}
+
 export type DoctrineUpgradeId = "pal" | "sbirs" | "hotline" | "humint" | "mirv" | "decoys";
 
 export type SiteKind = "icbm" | "ssbn" | "bomber" | "mobile";
@@ -450,6 +458,8 @@ export interface World {
   hotlines: Hotline[];
   notices: LaunchNotice[];
   pacts?: NonAttackPact[];
+  ceasefire?: Ceasefire | null;
+  c2StanceTurn?: number;
   doctrinePending?: boolean;
   doctrineTaken?: DoctrineUpgradeId[];
   actionHistory?: PlayerAction[];
@@ -488,7 +498,8 @@ export type EndingKind =
   | "unforced"
   | "red-win"
   | "stalemate"
-  | "machine";
+  | "machine"
+  | "ceasefire";
 
 export interface Ending {
   kind: EndingKind;

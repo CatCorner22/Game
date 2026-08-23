@@ -51,6 +51,13 @@ function NuclearTimeline({ world }: { world: NonNullable<ReturnType<typeof useGa
       {world.lastStrike ? (
         <p className="mt-2 text-xs leading-snug text-fg">{world.lastStrike.summary}</p>
       ) : null}
+      {world.ceasefire && world.ceasefire.accepted && !world.ceasefire.broken ? (
+        <p className="mt-2 text-xs text-accent">
+          Ceasefire on file until T{world.ceasefire.untilTurn}. Summit renews. EMPLOY breaks it.
+        </p>
+      ) : world.nuclearUses.length > 0 ? (
+        <p className="mt-2 text-xs text-subtle">No ceasefire. DIPLOMACY weight 3 is the offer.</p>
+      ) : null}
       <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto">
         {[...world.nuclearUses].reverse().slice(0, 12).map((u, i) => (
           <li key={`${u.turn}-${u.actor}-${i}`} className="font-mono text-[10px] text-subtle">

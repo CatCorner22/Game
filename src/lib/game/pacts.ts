@@ -19,7 +19,19 @@ export function hasPact(world: World, a: ActorId, b: ActorId): boolean {
 export function proposePact(world: World, you: ActorId, target: ActorId) {
   if (!world.pacts) world.pacts = [];
   if (hasPact(world, you, target)) {
-    log(world, "info", `${world.actors[target].shortName} already has a pact on file.`, "Renewal extends trust. Breaking it later spikes hostility.");
+    for (const p of world.pacts ?? []) {
+      if (p.broken) continue;
+      if ((p.a === you && p.b === target) || (p.a === target && p.b === you)) {
+        p.untilTurn = world.turn + 12;
+      }
+    }
+    addTrust(world, you, target, 4);
+    log(
+      world,
+      "info",
+      `Non-attack pact with ${world.actors[target].shortName} renewed until turn ${world.turn + 12}.`,
+      "Renewal extends trust. Breaking it later spikes hostility.",
+    );
     return;
   }
   const accept = chance(world, 0.35 + world.actors[target].trust[you] / 200);

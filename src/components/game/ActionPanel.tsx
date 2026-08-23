@@ -11,6 +11,7 @@ import { hotlineBetween, warningLine, winterLabel } from "@/lib/game/warning";
 import { pinnedLogEntry } from "./SituationLog";
 import { doctrineOptions } from "@/lib/game/doctrine";
 import { loadSettings } from "@/lib/game/settings";
+import { pactHint } from "./DiplomacyPanel";
 
 export function ActionPanel({ world }: { world: World }) {
   const kind = useGame((s) => s.actionKind);
@@ -180,6 +181,7 @@ export function ActionPanel({ world }: { world: World }) {
           {kind === "diplomacy" ? (
             <p className="mt-2 text-xs text-muted">
               Line: {line ? `${line.name} · reliability ${line.reliability}` : "No dedicated line. Third party. Hours, not minutes."}
+              {pactHint(world, selected) ? ` · ${pactHint(world, selected)}` : ""}
             </p>
           ) : null}
         </div>

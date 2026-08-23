@@ -2,11 +2,16 @@ import { useEffect, useState } from "react";
 import { loadSettings, saveSettings, type GameSettings } from "@/lib/game/settings";
 import { setMuted } from "@/lib/game/audio";
 import { runIntegrityChecks, type IntegrityResult } from "@/lib/game/integrity";
+import { useGame } from "@/lib/game/store";
+import { slotMeta } from "@/lib/game/slots";
 import { cn } from "@/lib/utils";
 
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [s, setS] = useState<GameSettings>(() => loadSettings());
   const [probe, setProbe] = useState<IntegrityResult | null>(null);
+  const world = useGame((st) => st.world);
+  const saveSlot = useGame((st) => st.saveSlot);
+  const saveToSlot = useGame((st) => st.saveToSlot);
 
   useEffect(() => {
     if (open) setS(loadSettings());
@@ -58,6 +63,30 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           >
             Reset first-watch tutorial
           </button>
+          {world ? (
+            <div>
+              <p className="font-mono text-[10px] tracking-wider text-muted uppercase">Write watch to slot</p>
+              <div className="mt-2 flex gap-2">
+                {([0, 1, 2] as const).map((slot) => {
+                  const meta = slotMeta(slot);
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => saveToSlot(slot)}
+                      className={cn(
+                        "min-h-11 flex-1 rounded-sm font-display text-[11px] tracking-wider uppercase",
+                        saveSlot === slot ? "bg-accent text-accent-fg" : "bg-elevated text-muted",
+                      )}
+                    >
+                      {slot + 1}
+                      {meta ? ` T${meta.turn}` : ""}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => setProbe(runIntegrityChecks())}
