@@ -4,6 +4,7 @@ import { log } from "./simLog";
 import { spyCorroboration } from "./spies";
 import { distanceKm } from "./geo";
 import { flightProfile, isMaritimeAzimuth, unresolvedProfile } from "./flight";
+import { postEffects } from "./posts";
 
 const AZ = ["north polar", "Aleutians", "Kamchatka", "Arctic", "Pacific", "Central Asia", "Indian Ocean", "Mediterranean"];
 
@@ -62,10 +63,14 @@ export function sensorsFor(world: World, id: ActorId): SensorNet[] {
 
 export function warningQuality(world: World, id: ActorId): number {
   const nets = sensorsFor(world, id);
-  if (!nets.length) return world.actors[id].warning;
+  // Where you are sitting changes what you can see. Cheyenne is the sensory
+  // organ; a continuity site hears about it second-hand; a convoy in transit
+  // is nearly blind. Only the player's own seat has a post.
+  const post = id === world.playerId ? postEffects(world).warning : 0;
+  if (!nets.length) return clamp(world.actors[id].warning + post, 5, 98);
   const cov = nets.reduce((a, s) => a + s.coverage, 0) / nets.length;
   const fa = nets.reduce((a, s) => a + s.falseAlarm, 0) / nets.length;
-  return clamp(cov - fa * 0.25 + world.actors[id].intel * 0.08, 5, 98);
+  return clamp(cov - fa * 0.25 + world.actors[id].intel * 0.08 + post, 5, 98);
 }
 
 export function hotlineBetween(world: World, a: ActorId, b: ActorId): Hotline | null {

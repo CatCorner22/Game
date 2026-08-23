@@ -56,6 +56,7 @@ import {
   tickTerminator,
 } from "./terminator";
 import { applySpyCovert, applySpyIntel, applySpyPosture, tickSpies } from "./spies";
+import { beginRelocation, tickRelocation } from "./posts";
 import { panicMayFire, reactToAction, tickNerve } from "./humans";
 import {
   applyKill,
@@ -604,6 +605,9 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   rememberDecision(world, action);
   applyDecision(world, action);
   applyIgnore(world, action);
+  // Relocation rides alongside the turn's action, so it lands before anything
+  // reads warning quality or release integrity this turn. Deterministic.
+  if (action.relocateTo) beginRelocation(world, action.relocateTo);
   applyAction(world, world.playerId, action);
   reactToAction(world, action);
 
@@ -668,6 +672,7 @@ export function resolveTurn(world: World, action: PlayerAction): World {
     maybeRetaliate(world, machineTarget, world.playerId, "tactical");
   }
   tickPolitics(world);
+  tickRelocation(world);
   tickWinter(world);
   tickUncontrolled(world);
   tickCasual(world);

@@ -12,9 +12,11 @@ import { proposePact } from "./pacts";
 import { proposeCeasefire } from "./ceasefire";
 import { applyC2Stance } from "./c2";
 import { majorityKind, staffAdvice } from "./staff";
+import { deskName } from "./humans";
 import { buildTrack, resolveCloseCallHold } from "./warning";
 import { flightProfile, isMaritimeAzimuth, unresolvedProfile, wallSecondsFor } from "./flight";
 import { distanceKm } from "./geo";
+import { currentPost, postEffects, postsFor, standingPost, tickRelocation } from "./posts";
 import {
   DEFEAT_CONDITIONS,
   MIN_VICTORY_MONTH,
@@ -522,6 +524,102 @@ export function runIntegrityChecks(): IntegrityResult {
       throw new Error(`tti ${ta.minutesToImpact} outside ${band.id} ${band.lo}-${band.hi}`);
     }
     return `${ta.minutesToImpact} min in ${band.id}`;
+  });
+
+  check("command-posts-cover-every-seat", () => {
+    // A seat with no posts would render an empty panel and fall through to a
+    // null standing post at world creation.
+    for (const id of PLAYABLE_IDS) {
+      const posts = postsFor(id);
+      if (posts.length < 2) throw new Error(`${id} has ${posts.length} post(s)`);
+      const standing = posts.filter((p) => p.standing);
+      if (standing.length !== 1) throw new Error(`${id} has ${standing.length} standing posts`);
+      // The standing post must be mechanically neutral, or simply starting a
+      // game as that seat would shift warning quality and release integrity.
+      if (standing[0].warning !== 0 || standing[0].releaseIntegrity !== 0) {
+        throw new Error(`${id} standing post is not neutral`);
+      }
+      if (standing[0].transitTurns !== 0) throw new Error(`${id} starts in transit`);
+    }
+    return `${PLAYABLE_IDS.length} seats · ${PLAYABLE_IDS.reduce((n, id) => n + postsFor(id).length, 0)} posts`;
+  });
+
+  check("relocation-replays-and-costs-signature", () => {
+    // Relocation rides on the action, so a replay from the same actions must
+    // land in the same place with the same signature.
+    const target = postsFor("US").find((p) => !p.standing && p.signature >= 2);
+    if (!target) throw new Error("no signature-bearing US post to test");
+    const actions: PlayerAction[] = [
+      { ...hold(), relocateTo: target.id },
+      hold(),
+      hold(),
+    ];
+    const run = (): World => {
+      let w = createWorld("standard", 77, "US", "blue");
+      for (const act of actions) w = resolveTurn(structuredClone(w), act);
+      return w;
+    };
+    const a = run();
+    const b = run();
+    if (a.commandPost !== b.commandPost) throw new Error("relocation not deterministic");
+    if (a.commandPost !== target.id) throw new Error(`ended at ${a.commandPost}, wanted ${target.id}`);
+    if ((a.postureSignature ?? 0) <= 0) throw new Error("moving to a wartime site cost no signature");
+    if (Math.round(a.globalRisk) !== Math.round(b.globalRisk)) throw new Error("risk diverged");
+    return `${target.short} · signature ${Math.round(a.postureSignature ?? 0)}`;
+  });
+
+  check("transit-degrades-then-clears", () => {
+    // Being between posts is meant to be the worst moment to get a warning.
+    const target = postsFor("US").find((p) => p.transitTurns > 0);
+    if (!target) throw new Error("no US post with transit time");
+    const w = createWorld("standard", 78, "US", "blue");
+    const moving = resolveTurn(structuredClone(w), { ...hold(), relocateTo: target.id });
+    const during = postEffects(moving);
+    if (during.comms > 40) throw new Error(`transit comms ${during.comms} not degraded`);
+    if (during.warning >= target.warning) throw new Error("transit did not cost warning");
+    let settled = moving;
+    for (let i = 0; i < 4 && settled.relocation; i += 1) {
+      settled = resolveTurn(structuredClone(settled), hold());
+    }
+    if (settled.relocation) throw new Error("relocation never completed");
+    if (currentPost(settled).id !== target.id) throw new Error("did not arrive");
+    if (postEffects(settled).comms !== target.comms) throw new Error("modifiers did not take effect on arrival");
+    return `transit comms ${during.comms} -> ${target.comms} at ${target.short}`;
+  });
+
+  check("post-signature-decays", () => {
+    // Signature has to come back down, or one relocation poisons the whole run.
+    const w = createWorld("standard", 79, "US", "blue");
+    w.postureSignature = 60;
+    for (let i = 0; i < 10; i += 1) tickRelocation(w);
+    if ((w.postureSignature ?? 0) !== 0) throw new Error(`signature stuck at ${w.postureSignature}`);
+    if (w.relocation) throw new Error("tick invented a relocation");
+    return "60 -> 0 over 10 turns";
+  });
+
+  check("standing-post-is-the-world-default", () => {
+    // createWorld and migrateWorld must agree, or an old save silently moves.
+    for (const id of PLAYABLE_IDS) {
+      const w = createWorld("standard", 80, id, "blue");
+      if (w.commandPost !== standingPost(id).id) throw new Error(`${id} started at ${w.commandPost}`);
+      if (w.relocation) throw new Error(`${id} started in transit`);
+      const e = postEffects(w);
+      if (e.warning !== 0 || e.releaseIntegrity !== 0) throw new Error(`${id} starts with modifiers`);
+    }
+    return `${PLAYABLE_IDS.length} seats start neutral at their standing post`;
+  });
+
+  check("every-seat-has-named-desks", () => {
+    // KP and IR used to fall through to the generic ["staff"] fallback, which
+    // rendered as "North Korea staff: panic" in the humans panel.
+    const w = createWorld("standard", 91, "US", "blue");
+    for (const id of PLAYABLE_IDS) {
+      const seen = new Set<string>();
+      for (let i = 0; i < 24; i += 1) seen.add(deskName(w, id));
+      if (seen.has("staff")) throw new Error(`${id} falls back to the generic desk`);
+      if (seen.size < 2) throw new Error(`${id} has only ${seen.size} desk name(s)`);
+    }
+    return `${PLAYABLE_IDS.length} seats have named desks`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };

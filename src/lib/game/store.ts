@@ -96,6 +96,9 @@ interface GameState {
   lastError: string | null;
   clearError: () => void;
   action: () => PlayerAction;
+  /** Post the player has queued a relocation to, applied on the next commit. */
+  pendingRelocation: string | null;
+  setPendingRelocation: (id: string | null) => void;
 }
 
 export const useGame = create<GameState>((set, get) => ({
@@ -111,6 +114,7 @@ export const useGame = create<GameState>((set, get) => ({
   mobileTab: "act",
   whyId: null,
   confirmNuclear: false,
+  pendingRelocation: null,
   fileOpen: false,
   glossaryOpen: false,
   tutorialStep: -1,
@@ -138,6 +142,7 @@ export const useGame = create<GameState>((set, get) => ({
         book: "A",
         packageMode: "mirv-decoy",
         confirmNuclear: false,
+        pendingRelocation: null,
         fileOpen: false,
         whyId: null,
         tutorialStep: world.turn === 1 && !scenarioId ? 0 : -1,
@@ -243,7 +248,7 @@ export const useGame = create<GameState>((set, get) => ({
   setBook: (b) => set({ book: b }),
   setPackageMode: (m) => set({ packageMode: m }),
   action: () => {
-    const { actionKind, intensity, selected, notify, book, packageMode } = get();
+    const { actionKind, intensity, selected, notify, book, packageMode, pendingRelocation } = get();
     return {
       kind: actionKind,
       intensity,
@@ -251,8 +256,12 @@ export const useGame = create<GameState>((set, get) => ({
       notify: actionKind === "hold" ? false : notify,
       book: actionKind === "employ" ? book : undefined,
       packageMode: actionKind === "employ" ? packageMode : undefined,
+      // Rides alongside the action rather than replacing it: relocating does
+      // not stop you governing. Recorded in actionHistory, so it replays.
+      relocateTo: pendingRelocation ?? undefined,
     };
   },
+  setPendingRelocation: (id) => set({ pendingRelocation: id }),
   execute: () => {
     const { actionKind, intensity } = get();
     const world = get().world;
@@ -299,6 +308,7 @@ export const useGame = create<GameState>((set, get) => ({
         actionKind: "hold",
         intensity: 1,
         notify: false,
+        pendingRelocation: null,
         selected: next.ended ? st.selected : next.event.actor,
         screen: screenForWorld(next),
         whyId: next.log[0]?.id ?? null,
@@ -358,6 +368,7 @@ export function resetToTitle() {
     intensity: 1,
     notify: false,
     confirmNuclear: false,
+    pendingRelocation: null,
     briefingPage: 0,
     tutorialStep: -1,
     scenarioId: null,

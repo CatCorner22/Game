@@ -1,5 +1,6 @@
 import type { ActorId, OfficerStance, PlayableId, World } from "./types";
 import { chance, clamp, nextInt, pick } from "./rng";
+import { postEffects } from "./posts";
 import { log } from "./simLog";
 import { stanceFromNerve } from "./humans";
 
@@ -503,6 +504,11 @@ export function attemptPlayerRelease(world: World, firstUse: boolean): ReleaseRe
   }
   if (world.intent === "red" && firstUse) refuseP *= 0.75;
   if (you.militaryLoyalty < 40) refuseP += 0.15;
+  // Where you are sitting decides whether the two-man rule is really a rule.
+  // A hardened command centre keeps the check intact; dispersed custody or a
+  // leadership that has gone dark is where authentication quietly stops
+  // happening. `postEffects` folds in the penalty for being in transit.
+  refuseP = Math.max(0, refuseP + postEffects(world).releaseIntegrity / 100);
   if (world.terminator && (world.secondOfficer.stance === "machine" || you.aiInC2 >= 62)) {
     refuseP = 0.03;
   }
@@ -552,10 +558,15 @@ export function maybeRogueLaunch(world: World): boolean {
   if (!world.closeCall) return false;
   const c = profileOf(world);
   const eager = world.secondOfficer.stance === "eager";
-  const p =
+  const p = Math.max(
+    0,
     (eager ? c.eager : 0) +
-    (world.closeCall.track.real ? c.preDel * 0.4 : c.preDel * 0.15) +
-    (world.terminator ? world.aiTakeover / 400 : 0);
+      (world.closeCall.track.real ? c.preDel * 0.4 : c.preDel * 0.15) +
+      (world.terminator ? world.aiTakeover / 400 : 0) -
+      // The other side of release integrity: a hardened command centre keeps
+      // the chain answering to you, a dark or dispersed one does not.
+      postEffects(world).releaseIntegrity / 150,
+  );
   if (!chance(world, p)) return false;
   log(
     world,
