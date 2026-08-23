@@ -8,7 +8,8 @@ The player receives one major event per turn, incomplete evidence, institutional
 
 - Responsive command interface with dedicated mobile **Map**, **Status**, and **Act** views.
 - Mobile-safe command bar, bottom navigation, safe-area support, 48px touch targets, and mutually exclusive critical overlays.
-- 18 handcrafted scenarios across history, crisis diplomacy, information integrity, infrastructure, humanitarian response, and machine-risk themes.
+- 45+ handcrafted scenarios across history, crisis diplomacy, information integrity, infrastructure, humanitarian response, machine-risk, and phenomenology themes.
+- Historical close-call pack (Petrov, Black Brant, NORAD faults, Arkhipov, Malmstrom, Vela) plus UAP-as-sensor puzzles — see [docs/omnibus-close-calls-and-phenomenology.md](docs/omnibus-close-calls-and-phenomenology.md).
 - Scenario metadata for challenge, duration, variables, dependencies, content notes, and learning goals.
 - Sandbox campaigns with flashpoints, unreliable intelligence, domestic politics, alliances, infrastructure, and cascading consequences.
 - Four fictional command-intelligence configurations:

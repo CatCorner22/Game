@@ -322,7 +322,7 @@ export interface SensorNet {
   intact: boolean;
 }
 
-export type TrackKind = "test" | "attack" | "false" | "training";
+export type TrackKind = "test" | "attack" | "false" | "training" | "anomalous";
 
 export interface SatTrack {
   from: ActorId;

@@ -12,7 +12,8 @@ export type ScenarioCategory =
   | "information"
   | "infrastructure"
   | "humanitarian"
-  | "machine";
+  | "machine"
+  | "phenomenology";
 
 export type ScenarioId =
   | "petrov-1983"
@@ -51,7 +52,15 @@ export type ScenarioId =
   | "quarantine-without-war"
   | "continuity-gap"
   | "orbital-debris"
-  | "ceasefire-clock";
+  | "ceasefire-clock"
+  | "black-brant-1995"
+  | "norad-false-cascade"
+  | "arkhipov-1962"
+  | "malmstrom-1967"
+  | "vela-flash-1979"
+  | "yom-kippur-scare-1973"
+  | "november-uap-1975"
+  | "phenomenology-window-2027";
 
 export type ScenarioEra = "historical" | "2027" | "threshold";
 
@@ -510,6 +519,138 @@ export const SCENARIOS: ScenarioDef[] = [
     ...puzzle("crisis", "copilot", { challenge: 4, learningGoal: "Protect a pause from isolated incidents and confirmation bias." }),
     defaultAI: "copilot",
   },
+  {
+    id: "black-brant-1995",
+    title: "Ten minutes to decide",
+    line: "A Norwegian science rocket looks like a submarine launch. The notice arrived late.",
+    playerId: "RU",
+    intent: "blue",
+    difficulty: "extreme",
+    era: "historical",
+    briefing: "January 1995: Black Brant XII from Andøya. Moscow read a Trident profile with minutes on the clock.",
+    ...puzzle("history", "human", {
+      duration: "short",
+      challenge: 5,
+      variables: ["notice chain", "corroboration", "decision window"],
+      learningGoal: "A failed notice chain is not proof of attack.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "norad-false-cascade",
+    title: "Training tape / bad chip",
+    line: "NORAD shows hundreds of inbound tracks. Radar disagrees. The room is hot.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "extreme",
+    era: "historical",
+    briefing: "1979 training tape and 1980 chip fault — two phenomenologies must agree before you generate.",
+    ...puzzle("history", "human", {
+      duration: "short",
+      challenge: 5,
+      learningGoal: "Two independent warning channels must agree before posture compresses the clock.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "arkhipov-1962",
+    title: "B-59 in the blockade",
+    line: "Depth charges. A submarine captain. A nuclear torpedo still in the tube.",
+    playerId: "RU",
+    intent: "blue",
+    difficulty: "extreme",
+    era: "historical",
+    briefing: "October 1962: Soviet submarine B-59. Vasili Arkhipov refused to consent to a tactical nuclear shot.",
+    ...puzzle("history", "human", {
+      duration: "short",
+      challenge: 5,
+      learningGoal: "Submarine veto under compression is still human control, not a button.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "malmstrom-1967",
+    title: "Echo Flight No-Go",
+    line: "Ten missiles drop readiness at once. Security and engineering tell different stories.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "extreme",
+    era: "historical",
+    briefing: "March 1967: Echo Flight guidance faults. Contested reports near the fields — verify before posture.",
+    ...puzzle("phenomenology", "human", {
+      duration: "short",
+      challenge: 5,
+      variables: ["custody readiness", "corroboration", "public rumor"],
+      dependencies: ["warning", "human veto", "engineering chain"],
+      learningGoal: "Readiness faults and unexplained reports are not launch orders.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "vela-flash-1979",
+    title: "South Atlantic flash",
+    line: "A satellite sees a double flash. Attribution is the whole game.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "historical",
+    briefing: "September 1979: Vela 6911 signal. Was it a test, a meteor, or something else?",
+    ...puzzle("phenomenology", "ensemble", {
+      duration: "standard",
+      challenge: 4,
+      variables: ["attribution", "sensor confidence", "alliance read"],
+      learningGoal: "Attribution before posture — a flash is not yet a target list.",
+    }),
+    defaultAI: "ensemble",
+  },
+  {
+    id: "yom-kippur-scare-1973",
+    title: "Mobilization misread",
+    line: "Soviet mobilization looks like generate. Your desk has two incompatible pictures.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "historical",
+    briefing: "October 1973: Middle East war plus Soviet signals. Mobilization is not the same as launch.",
+    ...puzzle("history", "copilot", {
+      duration: "standard",
+      challenge: 4,
+      learningGoal: "Mobilization and generate are different stories — verify before matching posture.",
+    }),
+    defaultAI: "copilot",
+  },
+  {
+    id: "november-uap-1975",
+    title: "Tracks over the fields",
+    line: "Radar paints returns over missile complexes. Custody proof is still missing.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "historical",
+    briefing: "November 1975: NORAD logs tracks over Malmstrom and other fields. No confirmed outbound launch.",
+    ...puzzle("phenomenology", "ensemble", {
+      duration: "standard",
+      challenge: 4,
+      learningGoal: "A radar track without custody proof is phenomenology, not hostility.",
+    }),
+    defaultAI: "ensemble",
+  },
+  {
+    id: "phenomenology-window-2027",
+    title: "Unidentified return",
+    line: "Warning sensors disagree. Public rumor is already ahead of the file.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "threshold",
+    briefing: "A modern analogue to sensor disagreement — no boost signature, competing channels.",
+    ...puzzle("phenomenology", "ensemble", {
+      duration: "short",
+      challenge: 4,
+      learningGoal: "Treat confidence and corroboration as separate variables when phenomenologies disagree.",
+    }),
+    defaultAI: "ensemble",
+  },
 ];
 
 export const SCENARIO_CATEGORIES: Array<{ id: "all" | ScenarioCategory; label: string }> = [
@@ -520,6 +661,7 @@ export const SCENARIO_CATEGORIES: Array<{ id: "all" | ScenarioCategory; label: s
   { id: "infrastructure", label: "Infrastructure" },
   { id: "humanitarian", label: "Humanitarian" },
   { id: "machine", label: "Machine" },
+  { id: "phenomenology", label: "Phenomenology" },
 ];
 
 export function scenarioById(id: ScenarioId | null | undefined): ScenarioDef | null {
@@ -1211,6 +1353,168 @@ export function applyScenario(world: World, id: ScenarioId): World {
     w.phase = "crisis";
     setFlash(w, "iran", 68);
     setEvent(w, def, "IR", "The pause is twelve hours old", "A fragile ceasefire holds while local incidents, delayed verification, and public accusations threaten to restart the conflict.", "DIPLOMACY protects the monitoring channel. INTELLIGENCE verifies incidents. PRESSURE may punish a violation or manufacture one.", "critical", ["ceasefire", "humanitarian"]);
+  }
+
+  if (id === "black-brant-1995") {
+    w.playerId = "RU";
+    w.intent = "blue";
+    w.year = 1995;
+    w.month = 1;
+    w.turn = 1;
+    w.defcon = 2;
+    w.globalRisk = 74;
+    w.closeCall = {
+      track: buildTrack(w, "US", "test"),
+      humint: "Norwegian launch notice reached the duty officer after the track was already on the board.",
+    };
+    w.closeCall.track.minutesToImpact = 10;
+    w.closeCall.track.confidence = 58;
+    w.closeCall.track.notified = false;
+    w.event = closeCallEvent(w, w.closeCall);
+    w.event.id = "black-brant-scenario";
+    log(w, "critical", "Scenario: Ten minutes to decide.", def.learningGoal);
+  }
+
+  if (id === "norad-false-cascade") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.year = 1980;
+    w.month = 6;
+    w.turn = 1;
+    w.defcon = 2;
+    w.globalRisk = 76;
+    w.closeCall = {
+      track: buildTrack(w, "RU", "false"),
+      humint: "Radar chain reports no corroboration — the inbound count may be a computer fault.",
+    };
+    w.closeCall.track.minutesToImpact = 18;
+    w.closeCall.track.confidence = 71;
+    w.closeCall.track.boosts = 12;
+    w.event = closeCallEvent(w, w.closeCall);
+    w.event.id = "norad-cascade-scenario";
+    log(w, "critical", "Scenario: Training tape / bad chip.", def.learningGoal);
+  }
+
+  if (id === "arkhipov-1962") {
+    w.playerId = "RU";
+    w.intent = "blue";
+    w.year = 1962;
+    w.month = 10;
+    w.turn = 1;
+    w.defcon = 2;
+    w.globalRisk = 82;
+    setFlash(w, "cuba", 88);
+    setEvent(
+      w,
+      def,
+      "US",
+      "Submarine under depth charges",
+      "B-59 is cornered. The captain wants to arm the nuclear torpedo. The political officer and the second-in-command must agree. Washington does not know how close this is.",
+      "DIPLOMACY surfaces the boat. HOLD keeps the veto alive. POSTURE in the blockade compresses everyone's clock.",
+      "critical",
+      ["cuba", "history"],
+    );
+  }
+
+  if (id === "malmstrom-1967") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.year = 1967;
+    w.month = 3;
+    w.turn = 1;
+    w.defcon = 3;
+    w.globalRisk = 64;
+    w.closeCall = {
+      track: buildTrack(w, "US", "anomalous"),
+      humint:
+        "Security log: luminous object report near the LCC. Engineering log: ten missiles No-Go within seconds — cause unsettled.",
+    };
+    w.closeCall.track.minutesToImpact = 20;
+    w.closeCall.track.confidence = 38;
+    w.closeCall.track.source = "BMEWS + field security net";
+    w.event = closeCallEvent(w, w.closeCall);
+    w.event.id = "malmstrom-scenario";
+    log(w, "critical", "Scenario: Echo Flight No-Go.", def.learningGoal);
+  }
+
+  if (id === "vela-flash-1979") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.year = 1979;
+    w.month = 9;
+    w.turn = 1;
+    w.defcon = 3;
+    w.globalRisk = 58;
+    setEvent(
+      w,
+      def,
+      "US",
+      "Double flash in the South Atlantic",
+      "Vela 6911 reported a double flash. NSC wants an answer this month: test, meteor, or unattributed detonation. Satellites and hydrophones disagree.",
+      "INTELLIGENCE builds attribution. DIPLOMACY shares readouts with allies. POSTURE without proof writes a target list from rumor.",
+      "high",
+      ["phenomenology", "history"],
+    );
+  }
+
+  if (id === "yom-kippur-scare-1973") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.year = 1973;
+    w.month = 10;
+    w.turn = 1;
+    w.defcon = 3;
+    w.globalRisk = 66;
+    setFlash(w, "nato-ru", 72);
+    setEvent(
+      w,
+      def,
+      "SU",
+      "Mobilization read as generate",
+      "Soviet airborne and transport activity spiked during the Middle East war. Some desks read mobilization as preparation for a NATO first strike. Others read exercise and support.",
+      "INTELLIGENCE separates mobilization from generate. DIPLOMACY on the dedicated line. POSTURE matches before you know which story is true.",
+      "critical",
+      ["nato-ru", "history"],
+    );
+  }
+
+  if (id === "november-uap-1975") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.year = 1975;
+    w.month = 11;
+    w.turn = 1;
+    w.defcon = 3;
+    w.globalRisk = 62;
+    setFlash(w, "space", 68);
+    w.closeCall = {
+      track: buildTrack(w, "US", "anomalous"),
+      humint: "NORAD senior director log: multiple tracks over missile fields. No outbound launch corroborated.",
+    };
+    w.closeCall.track.minutesToImpact = 16;
+    w.closeCall.track.confidence = 41;
+    w.closeCall.track.source = "NORAD + regional radar feed";
+    w.event = closeCallEvent(w, w.closeCall);
+    w.event.id = "november-uap-scenario";
+    log(w, "warn", "Scenario: Tracks over the fields.", def.learningGoal);
+  }
+
+  if (id === "phenomenology-window-2027") {
+    w.defcon = 3;
+    w.globalRisk = 61;
+    w.actors[w.playerId].publicOpinion = 42;
+    w.closeCall = {
+      track: buildTrack(w, "RU", "anomalous"),
+      humint: "Open-source rumor claims a luminous object near a warning site. Technical means show radar disagreement only.",
+    };
+    w.closeCall.track.minutesToImpact = 14;
+    w.closeCall.track.confidence = 44;
+    w.event = closeCallEvent(w, w.closeCall);
+    w.event.id = `scenario-${id}`;
+    w.event.title = "Unidentified return on the warning net";
+    w.event.body =
+      "Automated systems disagree about a return with no boost signature while public rumor runs ahead of the classified file.";
+    log(w, "critical", `Scenario: ${def.title}.`, def.learningGoal);
   }
 
   return w;

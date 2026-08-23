@@ -12,6 +12,7 @@ import { proposePact } from "./pacts";
 import { proposeCeasefire } from "./ceasefire";
 import { applyC2Stance } from "./c2";
 import { majorityKind, staffAdvice } from "./staff";
+import { buildTrack, resolveCloseCallHold } from "./warning";
 
 export interface IntegrityResult {
   ok: boolean;
@@ -267,6 +268,33 @@ export function runIntegrityChecks(): IntegrityResult {
     if (w.closeCall?.track.kind !== "test") throw new Error(`track ${w.closeCall?.track.kind}`);
     if (w.event.id !== "fobs-scenario") throw new Error(w.event.id);
     return `kind ${w.closeCall.track.kind} conf ${w.closeCall.track.confidence}`;
+  });
+
+  check("anomalous-track-hold", () => {
+    const w = createWorld("hard", 11, "US", "blue");
+    w.closeCall = {
+      track: buildTrack(w, "RU", "anomalous"),
+      humint: "Radar and IR disagree — no boost signature.",
+    };
+    const before = w.defcon;
+    resolveCloseCallHold(w);
+    if (w.defcon < before && w.defcon === 1) throw new Error("anomalous hold escalated to war");
+    return `defcon ${w.defcon}`;
+  });
+
+  check("black-brant-close-call", () => {
+    const w = applyScenario(createWorld("extreme", 12, "RU", "blue"), "black-brant-1995");
+    if (!w.closeCall) throw new Error("no close call");
+    if (w.closeCall.track.minutesToImpact !== 10) throw new Error(`tti ${w.closeCall.track.minutesToImpact}`);
+    return `conf ${w.closeCall.track.confidence}`;
+  });
+
+  check("malmstrom-phenomenology", () => {
+    const w = applyScenario(createWorld("extreme", 13, "US", "blue"), "malmstrom-1967");
+    if (w.closeCall?.track.kind !== "anomalous") throw new Error(`kind ${w.closeCall?.track.kind}`);
+    const advice = staffAdvice(w);
+    if (!advice.some((a) => a.kind === "hold")) throw new Error("staff did not recommend hold");
+    return advice.map((a) => a.kind).join(",");
   });
 
   check("mirv-seeded", () => {
