@@ -1,6 +1,10 @@
-import type { ActorId, FlashKind, GameEvent, World } from "./types";
-import { chance, pick } from "./rng";
+import type { ActorId, GameEvent, World } from "./types";
+import { chance } from "./rng";
 import { TERMINATOR_EVENTS } from "./terminator";
+import { eventFlash } from "./flash";
+import { pickWeighted, scoreCandidate } from "./consequences";
+
+export { eventFlash };
 
 export const OPENING_EVENT: GameEvent = {
   id: "nk-notam",
@@ -499,6 +503,195 @@ const DECK: GameEvent[] = [
     ignoreLine: "Lights out before missiles is the nightmare read.",
     tags: ["iran"],
   },
+  {
+    id: "gmd-miss",
+    title: "GMD shot misses the dummy",
+    body: "A Ground-based Midcourse intercept against a dummy RV failed. The cluster released balloons that looked like the warhead on radar. Staffs write that a real MIRV bus would be worse. INTEL on the test. POSTURE is how you answer a leaky shield. HOLD leaves the magazine thin.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "The miss stays in the classified file. Adversaries already assumed it.",
+    tags: ["warning", "defense"],
+  },
+  {
+    id: "upload-mirv",
+    title: "Upload order on the desk",
+    body: "New START is dead. The file is whether to put extra RVs and decoys back on the buses. National technical means will see the work. HOLD leaves the download. POSTURE is the upload. EMPLOY is not this month's tool.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "Buses stay downloaded. The other side may upload anyway.",
+    tags: ["arms", "follow"],
+  },
+  {
+    id: "ababeel-cluster",
+    title: "Ababeel cluster on radar",
+    body: "Indian and Pakistani radars both painted a short-range cluster: more objects than launchers. Islamabad says a successful MIRV / decoy test. Delhi says a failed unitary that broke up. One reading is defense-beating. The other is debris. INTEL separates them. POSTURE matches generate.",
+    actor: "PK",
+    heat: "high",
+    ignoreLine: "Both sides keep their reading. Kashmir heat ticks.",
+    tags: ["kashmir", "defense"],
+  },
+  {
+    id: "asat-shot",
+    title: "Warning bird goes dark",
+    body: "A geosynchronous missile-warning satellite stopped reporting after a debris event. National technical means say a direct-ascent ASAT. Your remaining birds still see boosts — later, thinner, and with more false tracks. INTEL names the shooter. POSTURE without a notice is how a blindfold becomes a bolt.",
+    actor: "CN",
+    heat: "critical",
+    ignoreLine: "Coverage stays thin. Close-call confidence drops. Space heat ticks.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "trident-dark",
+    title: "CASD boat missed the window",
+    body: "One SSBN missed a communications window. The boat is designed to stay dark. The file is whether this is patrol discipline or a casualty. INTEL hunts. HOLD is how 1983 treated a missing boat: wait. POSTURE generates the rest of the force.",
+    actor: "UK",
+    heat: "high",
+    ignoreLine: "The boat stays dark. Continuous-at-sea deterrence is a faith until it isn't.",
+    tags: ["nato-ru", "warning"],
+  },
+  {
+    id: "frappe-split",
+    title: "Washington asks for the keys",
+    body: "NATO wants a coordinated generate. Your independent deterrent is the point of the Fifth Republic. Sharing targeting is how you cease to be a third center. DIPLOMACY with Washington keeps the alliance. HOLD keeps the force de frappe yours.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "They write you as a follower. Moscow writes a split.",
+    tags: ["nato-ru"],
+  },
+  {
+    id: "lac-clash",
+    title: "Patrol clash at the LAC",
+    body: "Troops fought at altitude with no shots that count as a war. Dual-capable aircraft are forward on both sides. A notice says exercise. No notice is how a ridge becomes a nuclear file. DIPLOMACY with Beijing. POSTURE matches generate.",
+    actor: "CN",
+    heat: "high",
+    ignoreLine: "The ridge stays occupied. Himalaya heat ticks.",
+    tags: ["himalaya"],
+  },
+  {
+    id: "df26-guam",
+    title: "DF-26 movement toward Guam",
+    body: "Rocket Force TELs associated with the Guam killer left garrison. Washington will see it. A notice keeps it an exercise. Silence is how a carrier group writes a first-strike file.",
+    actor: "CN",
+    heat: "high",
+    ignoreLine: "The TELs stay out. South China Sea and Taiwan heat both tick.",
+    tags: ["taiwan", "south-china"],
+  },
+  {
+    id: "casd-patrol",
+    title: "Vanguard on station, noisy",
+    body: "A Vanguard boat was prosecuted by a hostile SSN for six hours. The patrol is still valid. The question is whether you generate airborne and tell Washington, or keep Continuous At Sea Deterrence quiet and hope the next window is clean.",
+    actor: "RU",
+    heat: "med",
+    ignoreLine: "The boat stays on station. They have a datum.",
+    tags: ["nato-ru"],
+  },
+  {
+    id: "jcpoa-snap",
+    title: "JCPOA snapback fight",
+    body: "A European party wants snapback sanctions. Tehran says the deal is already dead. Breakout weeks move if you pile on. DIPLOMACY with Tehran or Paris. PRESSURE is the snapback.",
+    actor: "IR",
+    heat: "high",
+    ignoreLine: "The deal stays suspended. The clock runs.",
+    tags: ["iran"],
+  },
+  {
+    id: "ost-debris",
+    title: "Debris through a warning orbit",
+    body: "A cloud from an old ASAT test will cross a missile-warning bird this month. You can maneuver (INTEL/KILL on yourself burns fuel and coverage) or accept a gap. HOLD accepts the gap.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "The bird stays in the cloud. False-track rate ticks.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "npt-review",
+    title: "NPT review conference walkout",
+    body: "Non-aligned states walked out after an upload leak. Threshold states call the treaty a cartel. DIPLOMACY is a speech. POSTURE without a notice confirms their point.",
+    actor: "IR",
+    heat: "low",
+    ignoreLine: "The walkout stands. Proliferation heat ticks a point.",
+    tags: ["iran"],
+  },
+  {
+    id: "carrington-watch",
+    title: "Carrington-class watch",
+    body: "SWPC issued a watch that compares this CME to September 1859 — the Carrington Event that burned telegraph lines and pushed aurora to the tropics. Arrival is this month. Transformers and warning birds will take it. A generate looks like you read EMP. INTEL is magnetometers vs a lofted bus. KILL on yourself islands the grid. HOLD lets the sun write the outage.",
+    actor: "US",
+    heat: "critical",
+    ignoreLine: "The CME arrives unanswered. Cascades look like a first strike to someone else's desk.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "carrington-hit",
+    title: "Aurora at the tropics",
+    body: "The CME is here. HF is dead. Two GEO warning birds are in safe mode. Transformers are tripping. Their desk may write EMP or FOBS. Yours may too. INTEL separates the sun from a pulse. POSTURE without a notice is how a storm becomes a war.",
+    actor: "RU",
+    heat: "critical",
+    ignoreLine: "No islanding. The file stays 'possible EMP.'",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "fobs-track",
+    title: "Object that will not come down",
+    body: "A boost from Plesetsk looked like an ICBM for four minutes, then circularized. FOBS — fractional orbital bombardment — is the 1960s file. A modern reload is speculated. INTEL hunts whether this is a satellite, a test, or a bus that can deorbit on the south polar gap. POSTURE without a notice is how you write first strike. HOLD leaves the object up.",
+    actor: "RU",
+    heat: "critical",
+    ignoreLine: "The object stays in low orbit. Ambiguity is the weapon.",
+    tags: ["space", "nato-ru"],
+  },
+  {
+    id: "orbital-kinetic",
+    title: "Tungsten rumor in a plane",
+    body: "A commercial radar paper claims a dense object in a prompt-strike plane. Rods from God never fielded. Adversaries still write the briefing. INTEL on the origin. DIPLOMACY asks if this is a weather sat. EMPLOY is not how you shoot a rumor.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "The rumor stands. Opacity is a force.",
+    tags: ["space"],
+  },
+  {
+    id: "nukesat-rumor",
+    title: "Reactor in GEO",
+    body: "National technical means see a heat signature consistent with a nuclear reactor — or a nuclear-pumped ASAT — near a missile-warning slot. Kosmos rumors, Starfish Prime memories. One detonation in GEO is a hemisphere of electronics. INTEL names it. POSTURE is how you look like you will shoot the bird.",
+    actor: "RU",
+    heat: "high",
+    ignoreLine: "The heat signature stays. OST did not cover this gray.",
+    tags: ["space"],
+  },
+  {
+    id: "hunter-killer",
+    title: "Inspector on your warning bird",
+    body: "A co-orbital inspector is closing on a SBIRS slot. Soft kill, shove, or debris. Looks like a rendezvous until the bird goes dark. INTEL. COVERT is not a tug. HOLD accepts the gap.",
+    actor: "CN",
+    heat: "high",
+    ignoreLine: "The inspector stays on station. Coverage thins if they shove.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "halloween-storm",
+    title: "Halloween-class series",
+    body: "SWPC is counting X-flares the way they did in October 2003 — a week of pulses, not one. A Japanese bird died then. ISS hid. HF is already gone at high latitude. INTEL is magnetometers. KILL on yourself islands transformers before the next pulse. POSTURE looks like you thought the first one was EMP.",
+    actor: "US",
+    heat: "high",
+    ignoreLine: "The series continues. Coverage thins with each pulse.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "quebec-blackout",
+    title: "Quebec-class grid drop",
+    body: "A geomagnetic induced current just took a regional interconnect the way Hydro-Québec fell in March 1989 — nine hours, no warhead. Their desk may still write EMP. INTEL the magnetometers. KILL on yourself sheds load before the cascade. HOLD lets the transformers cook.",
+    actor: "US",
+    heat: "high",
+    ignoreLine: "The cascade continues. Economy and warning both tick down.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "miyake-class",
+    title: "Miyake-class comparison",
+    body: "The carbon-14 spikes of 774 and 993 AD are the comparison file now — events that may have been ten Carringtons. If SWPC is not wrong, this month's CME is not a telegraph story. Island the grid. Do not generate. INTEL separates the sun from a pulse. HOLD is how a civilization-scale storm becomes a first-strike file.",
+    actor: "US",
+    heat: "critical",
+    ignoreLine: "You treated a Miyake-class watch as weather someone else would manage.",
+    tags: ["space", "warning"],
+  },
 ];
 
 export function openingFor(player: ActorId): GameEvent {
@@ -612,6 +805,17 @@ export function openingFor(player: ActorId): GameEvent {
       tags: ["cartel"],
     };
   }
+  if (player === "IR") {
+    return {
+      id: "open-ir",
+      title: "IAEA snap inspection",
+      body: "Inspectors want access to a hall you have not declared. Tel Aviv is already generating tankers. Washington is on the Swiss channel. Breakout is a number of weeks. A notice that this is civil fuel will not be believed. DIPLOMACY buys days. COVERT hides cascades. HOLD lets the clock run.",
+      actor: "IL",
+      heat: "high",
+      ignoreLine: "The clock runs. Israel and the IAEA write different files.",
+      tags: ["iran"],
+    };
+  }
   if (player === "NS") {
     return {
       id: "open-ns",
@@ -628,15 +832,20 @@ export function openingFor(player: ActorId): GameEvent {
 
 export function drawEvent(world: World): GameEvent {
   const extra = world.terminator ? TERMINATOR_EVENTS : [];
-  const unused = [...DECK, ...extra].filter((e) => !world.usedEventIds.includes(e.id));
-  const pool = unused.length ? unused : [...DECK, ...extra];
+  const deck = extra.length ? [...DECK, ...extra] : DECK;
+  const used = new Set(world.usedEventIds);
+  const unused = deck.filter((e) => !used.has(e.id) && e.id !== world.event.id);
+  const recycle = unused.length ? unused : deck.filter((e) => e.id !== world.event.id);
+  const pool = recycle.length ? recycle : deck;
   const weighted = pool.filter((e) => {
     if (e.actor === "NS" && world.terrorThreat < 12 && world.difficulty === "standard") {
       return chance(world, 0.4);
     }
     return true;
   });
-  const choice = pick(world, weighted.length ? weighted : pool);
+  const choice = pickWeighted(world, weighted.length ? weighted : pool, (e) =>
+    scoreCandidate(world, e, world.lastAction ?? null),
+  );
   world.usedEventIds.push(choice.id);
   if (world.usedEventIds.length > 40) world.usedEventIds.shift();
   if (choice.id === "satchel-lag") {
@@ -649,21 +858,17 @@ export function drawEvent(world: World): GameEvent {
         : "The authenticating bag is six minutes behind you after a venue change. You can still talk. You cannot release. Positive control is physical.",
     };
   }
-  if (choice.id === "biscuit-lost") {
+  if (choice.id === "biscuit-lost" || choice.id === "upload-mirv") {
+    return { ...choice, actor: world.playerId };
+  }
+  if (
+    choice.id === "carrington-watch" ||
+    choice.id === "carrington-hit" ||
+    choice.id === "halloween-storm" ||
+    choice.id === "quebec-blackout" ||
+    choice.id === "miyake-class"
+  ) {
     return { ...choice, actor: world.playerId };
   }
   return { ...choice };
-}
-
-export function eventFlash(actor: ActorId): FlashKind | null {
-  if (actor === "KP") return "korea";
-  if (actor === "CN") return "taiwan";
-  if (actor === "RU" || actor === "UK" || actor === "FR") return "nato-ru";
-  if (actor === "SU") return "union";
-  if (actor === "CU") return "cuba";
-  if (actor === "CR") return "cartel";
-  if (actor === "IR" || actor === "IL") return "iran";
-  if (actor === "IN" || actor === "PK") return "kashmir";
-  if (actor === "NS") return "terror";
-  return null;
 }

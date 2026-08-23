@@ -1,10 +1,14 @@
 import type { ActorId, Ending, Forecast, PlayerAction, World } from "./types";
 import { ACTOR_IDS } from "./types";
 import { actionDef } from "./actions";
-import { aiChoose } from "./ai";
+import { aiChoose, rememberAi } from "./ai";
 import { drawEvent, eventFlash } from "./events";
+import { followUpEvent, rememberDecision, sameFollowBeat, shouldFollowUp } from "./consequences";
 import { redObjectivesMet } from "./objectives";
 import { breakPactIfAggressive, proposePact, tickPacts } from "./pacts";
+import { breakCeasefire, ceasefirePeaceReady, hasCeasefire, proposeCeasefire, tickCeasefire } from "./ceasefire";
+import { tickTreaties } from "./treaties";
+import { applyWeatherIgnore, armSpaceFromEvent, stormHitEvent, tickSpaceWeather } from "./spaceWeather";
 import { markDoctrinePending } from "./doctrine";
 import {
   applyNuclearUse,
@@ -97,6 +101,8 @@ function applyIgnore(world: World, action: PlayerAction) {
     return;
   }
 
+  applyWeatherIgnore(world, action);
+
   if (ev.id === "term-wake" || ev.id === "term-airgap") {
     if (action.kind === "hold" && world.terminator) {
       world.aiTakeover = clamp(world.aiTakeover + 8, 0, 100);
@@ -146,6 +152,16 @@ function applyIgnore(world: World, action: PlayerAction) {
   }
   if (ev.id === "notice-ru") fileNotice(world, "RU", "test");
   if (ev.id === "notice-us") fileNotice(world, "US", "test");
+  if (ev.id === "upload-mirv" && (action.kind === "posture" || action.kind === "pressure")) {
+    for (const s of world.actors[you].systems) {
+      if (s.kind === "icbm" || s.kind === "slbm") {
+        s.rvsPerBus = clamp((s.rvsPerBus ?? 1) + 1, 1, 14);
+        s.decoys = (s.decoys ?? 0) + 1;
+      }
+    }
+    world.armsRace = clamp(world.armsRace + 6, 0, 100);
+    log(world, "warn", "Buses uploaded. Extra RVs and decoys. NTM will see the work.", ev.ignoreLine);
+  }
   if (ev.id === "broken-arrow" || ev.id === "empty-quiver") {
     if (action.kind === "hold") ignoreBrokenArrow(world);
   }
@@ -280,7 +296,7 @@ function applyIgnore(world: World, action: PlayerAction) {
 }
 
 function hostility(world: World, a: ActorId, b: ActorId): number {
-  return world.actors[a].hostility[b];
+  return world.actors[a]?.hostility[b] ?? 50;
 }
 
 function applyAction(world: World, actor: ActorId, action: PlayerAction) {
@@ -296,7 +312,12 @@ function applyAction(world: World, actor: ActorId, action: PlayerAction) {
 
   if (action.kind === "hold") return;
 
-  if (t) breakPactIfAggressive(world, actor, t.id, action.kind);
+  if (t) {
+    breakPactIfAggressive(world, actor, t.id, action.kind);
+    if (action.kind === "employ" || action.kind === "pressure" || (action.kind === "posture" && I >= 3)) {
+      breakCeasefire(world, actor, t.id, action.kind);
+    }
+  }
 
   if (action.kind === "kill" && t) {
     applyKill(world, actor, action);
@@ -318,7 +339,10 @@ function applyAction(world: World, actor: ActorId, action: PlayerAction) {
         world.armsRace = clamp(world.armsRace - (t.id === "RU" || t.id === "CN" ? 6 : 2), 0, 100);
       }
       if (I === 1) queryHotline(world, t.id);
-      if (I === 3 && you && actor !== t.id) proposePact(world, actor, t.id);
+      if (I === 3 && you && actor !== t.id) {
+        if (world.nuclearUses.length > 0) proposeCeasefire(world, actor, t.id);
+        else proposePact(world, actor, t.id);
+      }
       if (you) {
         log(
           world,
@@ -573,6 +597,9 @@ function tickCasual(world: World) {
 }
 
 export function resolveTurn(world: World, action: PlayerAction): World {
+  const prevMeters = meters(world);
+  const prevEvent = world.event;
+  rememberDecision(world, action);
   applyIgnore(world, action);
   applyAction(world, world.playerId, action);
   reactToAction(world, action);
@@ -580,7 +607,14 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   for (const id of ACTOR_IDS) {
     if (id === world.playerId) continue;
     const ai = aiChoose(world, id);
-    if (ai) applyAction(world, id, ai);
+    if (ai) {
+      const next = rememberAi(world, id, ai);
+      if (next.kind === "employ" && next.target && hasCeasefire(world, id, next.target)) {
+        applyAction(world, id, { kind: "hold", intensity: 1, target: null });
+      } else {
+        applyAction(world, id, next);
+      }
+    }
     if (panicMayFire(world, id)) {
       const rival = world.playerId;
       applyNuclearUse(world, id, rival, "tactical", `${world.actors[rival].shortName} (panic / pre-delegated)`);
@@ -601,6 +635,9 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   tickBrokenArrow(world);
   tickTerminator(world, action);
   tickPacts(world);
+  tickCeasefire(world);
+  tickTreaties(world, action);
+  const stormArrived = tickSpaceWeather(world);
   const expanded = machineExpandsOrder(world, action);
   if (expanded) {
     log(
@@ -646,13 +683,33 @@ export function resolveTurn(world: World, action: PlayerAction): World {
     }
     if (world.turn % 6 === 0) markDoctrinePending(world);
     if (!world.ended) {
-      const cc = maybeSpawnCloseCall(world);
+      const skipClose =
+        prevEvent.id === "close-call" ||
+        prevEvent.id.startsWith("follow-petrov") ||
+        (prevEvent.tags.includes("warning") && action.kind === "hold");
+      const cc = skipClose ? null : maybeSpawnCloseCall(world);
       if (cc) {
         world.closeCall = cc;
         world.event = closeCallEvent(world, cc);
+      } else if (stormArrived) {
+        world.event = stormHitEvent(world.playerId);
+        world.usedEventIds.push(world.event.id);
+        if (world.usedEventIds.length > 40) world.usedEventIds.shift();
+        armSpaceFromEvent(world);
       } else {
-        world.event = drawEvent(world);
+        const follow = shouldFollowUp(world, action) ? followUpEvent(world, action) : null;
+        if (follow && !sameFollowBeat(prevEvent, follow)) {
+          world.event = follow;
+          world.usedEventIds.push(follow.id);
+          if (world.usedEventIds.length > 40) world.usedEventIds.shift();
+        } else {
+          world.event = drawEvent(world);
+        }
         armTrickFromEvent(world, world.event.id);
+        armSpaceFromEvent(world);
+        if (world.event.tags.includes("space")) {
+          bumpFlash(world, "space", world.event.heat === "critical" ? 6 : 3);
+        }
         if (world.event.id === "broken-arrow") {
           world.event = { ...world.event, actor: world.playerId };
           seedBrokenArrow(world, world.playerId, "crash");
@@ -672,17 +729,38 @@ export function resolveTurn(world: World, action: PlayerAction): World {
     finishIfNeeded(world);
   }
   recompute(world);
+  for (const m of world.missiles) {
+    m.progress = clamp(m.progress + 0.45, 0, 1);
+    if (m.progress >= 1) m.kind = "detonation";
+  }
   world.missiles = world.missiles.slice(-6);
+  const after = meters(world);
+  const def = actionDef(action.kind);
+  world.lastRecap = {
+    turn: world.turn,
+    actionLabel: `${def.label} · ${action.kind === "hold" ? "hold" : def.intensities[action.intensity - 1]}`,
+    because: world.event.because,
+    nextTitle: world.event.title,
+    deltas: [
+      { label: "Alert", delta: round(after.defcon - prevMeters.defcon) },
+      { label: "Risk", delta: round(after.risk - prevMeters.risk) },
+      { label: "Stability", delta: round(after.stability - prevMeters.stability) },
+      { label: "Partners", delta: round(after.alliances - prevMeters.alliances) },
+      { label: "Winter", delta: round(after.winter - prevMeters.winter) },
+    ].filter((d) => d.delta !== 0),
+  };
   return world;
 }
 
-export function cloneWorld(world: World): World {
-  return structuredClone(world);
+export function cloneWorld(world: World, slim = false): World {
+  const w = structuredClone(world);
+  if (slim && w.log.length > 12) w.log = w.log.slice(0, 12);
+  return w;
 }
 
 export function forecast(world: World, action: PlayerAction): Forecast {
   const run = (fixed: number) => {
-    const w = cloneWorld(world);
+    const w = cloneWorld(world, true);
     w.rngMode = "fixed";
     w.rngFixed = fixed;
     resolveTurn(w, action);
@@ -738,23 +816,40 @@ export function forecast(world: World, action: PlayerAction): Forecast {
         ]
       : []),
   ];
+  const conf = action.target ? world.actors[action.target].intel : 100;
+  if (conf < 45) {
+    for (const d of deltas) {
+      const mid = (d.low + d.high) / 2;
+      d.low = round(mid - (mid - d.low) * 1.6);
+      d.high = round(mid + (d.high - mid) * 1.6);
+    }
+  }
+  const pactLine =
+    action.target && hasCeasefire(world, world.playerId, action.target)
+      ? " A ceasefire is on file. EMPLOY or maximum generate breaks it."
+      : action.kind === "diplomacy" && action.intensity >= 3 && world.nuclearUses.length > 0
+        ? " Summit after first use is a ceasefire offer, not a peacetime pact."
+        : "";
+  const intelLine = conf < 45 ? " Low confidence on that capital — bands are wide." : "";
   return {
     summary: `${def.verb} at weight ${action.intensity}${action.target ? ` vs ${action.target}` : ""}${action.notify ? " · notice filed" : ""}. ${def.intensityHint[action.intensity - 1]}`,
-    riskLine: action.kind === "kill"
+    riskLine: (action.kind === "kill"
       ? action.target === world.playerId
         ? "You are isolating yourself. Cloud C2 and commerce die. Dedicated hotlines can still ring if the building has power. Radar will not."
         : "Lights going out on their side can look like the opening of a disarming strike. They may fire while they still can."
       : world.terminator && action.kind === "hold"
       ? "HOLD lets the model keep the keys. INTEL on your capital maps it. COVERT on yourself is the air-gap."
       : irreversible
-      ? "Irreversible. Nuclear employment ends the taboo even if the yield is small. The football is authentication, not a toy."
+      ? `Irreversible. The shot leaves; particular buses fail; decoys soak interceptors. Package ${action.packageMode ?? "auto"}. What arrives is what burns.`
       : action.kind === "posture"
         ? "Raises survival against surprise. Raises the chance of war. A launch notice only changes how they read the heat."
         : action.kind === "hold"
           ? "Holding is a decision. If the event named a cost for silence, that cost is real."
           : action.kind === "diplomacy"
             ? "Weight 1 is the dedicated line: ask if a track is hostile. They can answer, lie, or not pick up."
-            : "Ranges below are a dry run of this model at two luck values. Not a promise.",
+            : "Ranges below are a dry run of this model at two luck values. Not a promise.") +
+      pactLine +
+      intelLine,
     deltas,
     irreversible,
   };
@@ -786,6 +881,15 @@ export function finishIfNeeded(world: World) {
   if (world.ended) return;
   const me = world.actors[world.playerId];
   const name = me.shortName;
+  if (ceasefirePeaceReady(world)) {
+    end(world, {
+      kind: "ceasefire",
+      title: "CEASEFIRE HOLDS",
+      body: `The guns stayed quiet long enough to count. ${name} dead: ${world.playerCasualties.toLocaleString()}. World dead: ${world.worldCasualties.toLocaleString()}. This is not victory. It is a living country after first use.`,
+      score: scorePeace(world) + 80,
+    });
+    return;
+  }
   if (world.terminator && world.aiTakeover >= 88) {
     end(world, {
       kind: "machine",

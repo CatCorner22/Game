@@ -5,9 +5,11 @@ import { fmtNum } from "@/lib/game/geo";
 import { meters } from "@/lib/game/world";
 import { letterGrade } from "@/lib/game/stats";
 import { encodeReplay } from "@/lib/game/replay";
+import { GlassPanel, HudButton, HudChip, HudLabel, HudPanel } from "./ui/Hud";
 
 export function EndScreen() {
   const world = useGame((s) => s.world);
+  const startReplay = useGame((s) => s.startReplay);
   const [copied, setCopied] = useState(false);
   const [timelineIdx, setTimelineIdx] = useState(0);
   if (!world?.ending) return null;
@@ -28,28 +30,30 @@ export function EndScreen() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-5 py-12">
-      <p className="font-mono text-xs tracking-[0.28em] text-accent uppercase">Watch closed</p>
+      <HudChip active>Watch closed</HudChip>
       <div className="mt-3 flex items-end gap-4">
-        <h1 className="font-display text-5xl font-semibold tracking-wide text-fg">{e.title}</h1>
-        <span className="font-display text-4xl text-accent">{grade}</span>
+        <h1 className="font-display text-5xl font-semibold tracking-wide text-glow-accent text-fg">{e.title}</h1>
+        <span className="font-display text-4xl text-accent glow-accent-sm">{grade}</span>
       </div>
       <p className="mt-6 text-base leading-relaxed text-muted">{e.body}</p>
-      <dl className="mt-8 space-y-2">
-        <Row k="Score" v={String(Math.round(e.score))} />
-        <Row k="Grade" v={grade} />
-        <Row k="Seat" v={`${world.playerId} · ${world.intent}`} />
-        <Row k="ALERT" v={String(m.defcon)} />
-        <Row k="Global risk" v={String(Math.round(m.risk))} />
-        <Row k="Winter" v={String(Math.round(m.winter))} />
-        <Row k="Your dead" v={fmtNum(world.playerCasualties)} />
-        <Row k="World dead" v={fmtNum(world.worldCasualties)} />
-        <Row k="Nuclear uses" v={String(world.nuclearUses.length)} />
-        <Row k="First use" v={world.firstUse ?? "none"} />
-        <Row k="Uncontrolled" v={world.uncontrolled ? "yes" : "no"} />
-      </dl>
+      <GlassPanel glow="accent" className="mt-8 rounded-xl p-4">
+        <dl className="space-y-2">
+          <Row k="Score" v={String(Math.round(e.score))} />
+          <Row k="Grade" v={grade} />
+          <Row k="Seat" v={`${world.playerId} · ${world.intent}`} />
+          <Row k="ALERT" v={String(m.defcon)} />
+          <Row k="Global risk" v={String(Math.round(m.risk))} />
+          <Row k="Winter" v={String(Math.round(m.winter))} />
+          <Row k="Your dead" v={fmtNum(world.playerCasualties)} />
+          <Row k="World dead" v={fmtNum(world.worldCasualties)} />
+          <Row k="Nuclear uses" v={String(world.nuclearUses.length)} />
+          <Row k="First use" v={world.firstUse ?? "none"} />
+          <Row k="Uncontrolled" v={world.uncontrolled ? "yes" : "no"} />
+        </dl>
+      </GlassPanel>
 
-      <div className="mt-8 rounded-md bg-elevated p-4 shadow-[var(--shadow-border)]">
-        <p className="font-mono text-[10px] tracking-wider text-muted uppercase">Timeline</p>
+      <HudPanel className="mt-8">
+        <HudLabel>Timeline</HudLabel>
         <input
           type="range"
           min={0}
@@ -67,35 +71,32 @@ export function EndScreen() {
             <p className="mt-2 text-xs text-subtle">{timeline[timelineIdx].why}</p>
           </div>
         ) : null}
-      </div>
+      </HudPanel>
 
       <div className="mt-6">
-        <button
-          type="button"
-          onClick={() => void copyReplay()}
-          className="min-h-11 w-full rounded-md bg-elevated font-display text-xs tracking-wider text-accent uppercase shadow-[var(--shadow-border)]"
-        >
+        <HudButton variant="accent" className="min-h-11 w-full text-xs uppercase" onClick={() => void copyReplay()}>
           {copied ? "Replay code copied" : "Copy replay code"}
-        </button>
+        </HudButton>
         <p className="mt-2 break-all font-mono text-[9px] text-subtle">{replayCode.slice(0, 48)}…</p>
+        <HudButton variant="ghost" className="mt-2 min-h-11 w-full text-xs uppercase" onClick={() => startReplay(replayCode)}>
+          Watch this replay
+        </HudButton>
       </div>
 
       <div className="mt-10 flex gap-3">
-        <button
+        <HudButton
+          variant="active"
+          className="min-h-12 px-5 tracking-[0.18em] uppercase"
           onClick={() => {
             clearSave();
             resetToTitle();
           }}
-          className="min-h-12 rounded-md bg-accent px-5 font-display tracking-[0.18em] text-accent-fg uppercase"
         >
           New watch
-        </button>
-        <button
-          onClick={() => resetToTitle()}
-          className="min-h-12 px-3 font-display tracking-[0.18em] text-muted uppercase"
-        >
+        </HudButton>
+        <HudButton variant="ghost" className="min-h-12 px-3 tracking-[0.18em] uppercase" onClick={() => resetToTitle()}>
           Menu
-        </button>
+        </HudButton>
       </div>
     </div>
   );
@@ -103,7 +104,7 @@ export function EndScreen() {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex justify-between border-b border-border py-2">
+    <div className="flex justify-between border-b border-accent/15 py-2">
       <dt className="text-xs tracking-wide text-muted uppercase">{k}</dt>
       <dd className="font-mono text-sm text-fg tabular">{v}</dd>
     </div>

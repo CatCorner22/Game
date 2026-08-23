@@ -15,6 +15,8 @@ import { defaultHotlines, defaultSensors, warningQuality } from "./warning";
 import { seedTerminator } from "./terminator";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
+import { seedTreaties } from "./treaties";
+import { quietWeather } from "./spaceWeather";
 
 export const MONTHS = [
   "JAN",
@@ -154,6 +156,20 @@ export function createWorld(
       heat: 24,
       note: "Money, ports, and colonels. A warhead is inventory if someone sells one.",
     },
+    {
+      id: "himalaya",
+      name: "Himalaya / LAC",
+      actors: ["IN", "CN"],
+      heat: 20,
+      note: "High-altitude clash. Dual-capable aircraft make a patrol nuclear-adjacent.",
+    },
+    {
+      id: "space",
+      name: "Early warning / space",
+      actors: ["US", "RU", "CN"],
+      heat: 14,
+      note: "SBIRS and missile-warning birds. An ASAT shot is a blindfold.",
+    },
   ];
 
   const opening = openingFor(playerId);
@@ -197,6 +213,11 @@ export function createWorld(
     sensors: defaultSensors(),
     hotlines: defaultHotlines(),
     notices: [],
+    pacts: [],
+    doctrinePending: false,
+    doctrineTaken: [],
+    actionHistory: [],
+    scenarioId: null,
     sites: makeSites(),
     trickery: emptyTrickery(),
     brokenArrow: null,
@@ -205,6 +226,18 @@ export function createWorld(
     flashpoints,
     event: opening,
     usedEventIds: [opening.id],
+    lastAction: null,
+    lastDecisionKey: null,
+    recentDecisionKeys: [],
+    threadActor: null,
+    threadTag: null,
+    aiLast: {},
+    lastStrike: null,
+    treaties: [],
+    lastRecap: null,
+    spaceWeather: quietWeather(),
+    ceasefire: null,
+    c2StanceTurn: 0,
     log: [
       {
         id: "open",
@@ -227,6 +260,7 @@ export function createWorld(
   world.authCode = nextAuthCode(world);
   world.actors[playerId].warning = warningQuality(world, playerId);
   seedSpies(world);
+  world.treaties = seedTreaties(world);
   if (terminator) seedTerminator(world);
   recompute(world);
   return world;
@@ -289,24 +323,26 @@ export function recompute(world: World) {
   if (world.defcon <= 2 && world.phase === "peacetime") world.phase = "crisis";
 }
 
-export function flash(world: World, id: Flashpoint["id"]): Flashpoint {
-  return world.flashpoints.find((f) => f.id === id)!;
+export function flash(world: World, id: Flashpoint["id"]): Flashpoint | undefined {
+  return world.flashpoints.find((f) => f.id === id);
 }
 
 export function bumpFlash(world: World, id: Flashpoint["id"], delta: number) {
   const f = flash(world, id);
+  if (!f) return;
   f.heat = clamp(f.heat + delta, 0, 100);
 }
 
 export function hostility(world: World, a: ActorId, b: ActorId): number {
-  return world.actors[a].hostility[b];
+  return world.actors[a]?.hostility[b] ?? 50;
 }
 
 export function addHostility(world: World, a: ActorId, b: ActorId, delta: number) {
   const A = world.actors[a];
   const B = world.actors[b];
-  A.hostility[b] = clamp(A.hostility[b] + delta, 0, 100);
-  B.hostility[a] = clamp(B.hostility[a] + delta * 0.85, 0, 100);
+  if (!A || !B) return;
+  A.hostility[b] = clamp((A.hostility[b] ?? 50) + delta, 0, 100);
+  B.hostility[a] = clamp((B.hostility[a] ?? 50) + delta * 0.85, 0, 100);
   A.trust[b] = clamp(A.trust[b] - delta * 0.5, 0, 100);
   B.trust[a] = clamp(B.trust[a] - delta * 0.4, 0, 100);
 }
@@ -314,10 +350,11 @@ export function addHostility(world: World, a: ActorId, b: ActorId, delta: number
 export function addTrust(world: World, a: ActorId, b: ActorId, delta: number) {
   const A = world.actors[a];
   const B = world.actors[b];
-  A.trust[b] = clamp(A.trust[b] + delta, 0, 100);
-  B.trust[a] = clamp(B.trust[a] + delta * 0.8, 0, 100);
-  A.hostility[b] = clamp(A.hostility[b] - delta * 0.45, 0, 100);
-  B.hostility[a] = clamp(B.hostility[a] - delta * 0.4, 0, 100);
+  if (!A || !B) return;
+  A.trust[b] = clamp((A.trust[b] ?? 50) + delta, 0, 100);
+  B.trust[a] = clamp((B.trust[a] ?? 50) + delta * 0.8, 0, 100);
+  A.hostility[b] = clamp((A.hostility[b] ?? 50) - delta * 0.45, 0, 100);
+  B.hostility[a] = clamp((B.hostility[a] ?? 50) - delta * 0.4, 0, 100);
 }
 
 export function setDefcon(world: World, n: number) {
@@ -375,6 +412,8 @@ export const KIND_LABEL: Record<string, string> = {
   gravity: "Gravity bomb",
   novel: "Novel / exotic",
   covert: "Covert delivery",
+  orbital: "Orbital / space-based",
+  fobs: "Fractional orbital (FOBS)",
 };
 
 export const DISCLOSURE_LABEL: Record<string, string> = {

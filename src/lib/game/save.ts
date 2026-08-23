@@ -6,12 +6,15 @@ import { makeOfficer, asPlayable } from "./command";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
 import { saveWorldToSlot } from "./slots";
+import { ensureTreaties } from "./treaties";
+import { quietWeather } from "./spaceWeather";
+import { ensureStrategicSystems } from "./strategicSystems";
 
 const KEY = "threshold.save.v2";
 const BACKUP = "threshold.save.v2.bak";
 const SAVE_VERSION = 2;
 
-function migrate(world: World): World {
+export function migrateWorld(world: World): World {
   if (!world.playerId) world.playerId = "US";
   if (!world.intent) world.intent = "blue";
   if (world.footballPresent === undefined) world.footballPresent = true;
@@ -68,12 +71,58 @@ function migrate(world: World): World {
       note: "Money, ports, colonels.",
     });
   }
+  if (!world.flashpoints.some((f) => f.id === "himalaya")) {
+    world.flashpoints.push({
+      id: "himalaya",
+      name: "Himalaya / LAC",
+      actors: ["IN", "CN"],
+      heat: 18,
+      note: "High-altitude clash. Dual-capable aircraft make a patrol nuclear-adjacent.",
+    });
+  }
+  if (!world.flashpoints.some((f) => f.id === "space")) {
+    world.flashpoints.push({
+      id: "space",
+      name: "Early warning / space",
+      actors: ["US", "RU", "CN"],
+      heat: 12,
+      note: "SBIRS and missile-warning birds. An ASAT shot is a blindfold.",
+    });
+  }
   if (world.brokenArrow === undefined) world.brokenArrow = null;
   if (!world.reactions) world.reactions = [];
   if (!world.pacts) world.pacts = [];
   if (world.doctrinePending === undefined) world.doctrinePending = false;
   if (!world.doctrineTaken) world.doctrineTaken = [];
   if (!world.actionHistory) world.actionHistory = [];
+  if (world.lastAction === undefined) world.lastAction = null;
+  if (world.lastDecisionKey === undefined) world.lastDecisionKey = null;
+  if (!world.recentDecisionKeys) world.recentDecisionKeys = [];
+  if (world.threadActor === undefined) world.threadActor = null;
+  if (world.threadTag === undefined) world.threadTag = null;
+  if (!world.aiLast) world.aiLast = {};
+  if (world.lastStrike === undefined) world.lastStrike = null;
+  if (world.ceasefire === undefined) world.ceasefire = null;
+  if (world.c2StanceTurn === undefined) world.c2StanceTurn = 0;
+  if (world.lastRecap === undefined) world.lastRecap = null;
+  ensureTreaties(world);
+  if (!world.spaceWeather) world.spaceWeather = quietWeather();
+  ensureStrategicSystems(world);
+  for (const a of Object.values(world.actors)) {
+    for (const s of a.systems) {
+      if (s.rvsPerBus === undefined) {
+        const launchers = Math.max(1, s.launchers);
+        s.rvsPerBus =
+          s.warheads > launchers && (s.kind === "icbm" || s.kind === "slbm" || s.kind === "mrbm")
+            ? Math.min(12, Math.round(s.warheads / launchers))
+            : 1;
+      }
+      if (s.decoys === undefined) {
+        s.decoys = (s.kind === "icbm" || s.kind === "slbm") && (s.rvsPerBus ?? 1) >= 2 ? s.rvsPerBus ?? 0 : 0;
+      }
+      if (s.penetrationAids === undefined) s.penetrationAids = s.kind === "hgv" ? 0.8 : 0;
+    }
+  }
   const fresh = makeActors();
   for (const id of Object.keys(fresh) as (keyof typeof fresh)[]) {
     if (!world.actors[id]) world.actors[id] = fresh[id];
@@ -88,12 +137,12 @@ function migrate(world: World): World {
   return world;
 }
 
-export function saveWorld(world: World) {
+export function saveWorld(world: World, slot: 0 | 1 | 2 = 0) {
   try {
     const prev = localStorage.getItem(KEY);
     if (prev) localStorage.setItem(BACKUP, prev);
     localStorage.setItem(KEY, JSON.stringify({ version: SAVE_VERSION, world }));
-    saveWorldToSlot(world, 0);
+    saveWorldToSlot(world, slot);
   } catch {
     /* private mode / quota */
   }
@@ -105,7 +154,7 @@ export function loadWorld(): World | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { version?: number; world?: World };
     if (!parsed.world) return null;
-    return migrate(parsed.world);
+    return migrateWorld(parsed.world);
   } catch {
     return null;
   }

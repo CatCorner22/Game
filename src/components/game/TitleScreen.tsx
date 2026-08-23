@@ -1,415 +1,395 @@
-import { useMemo, useState, type ChangeEvent } from "react";
-import { useGame } from "@/lib/game/store";
-import { hasSave, saveWorld } from "@/lib/game/save";
-import { loadWorldFromSlot, slotMeta } from "@/lib/game/slots";
-import {
-  SCENARIOS,
-  SCENARIO_CATEGORIES,
-  scenarioById,
-  type ScenarioCategory,
-  type ScenarioId,
-} from "@/lib/game/scenarios";
-import {
-  DEADHAND_CONFIGS,
-  STRATEGIC_AI_CONFIGS,
-  type DeadhandMode,
-  type StrategicAIMode,
-} from "@/lib/game/strategicSystems";
+import { abandonSave, useGame } from "@/lib/game/store";
+import { hasSave } from "@/lib/game/save";
+import { slotMeta } from "@/lib/game/slots";
+import { SCENARIO_CATEGORIES, SCENARIOS, type ScenarioCategory, type ScenarioEra, type ScenarioId } from "@/lib/game/scenarios";
 import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
+import { DEADHAND_CONFIGS, STRATEGIC_AI_CONFIGS, type DeadhandMode, type StrategicAIMode } from "@/lib/game/strategicSystems";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 
-const DIFFICULTIES: Array<{ id: Difficulty; label: string; line: string }> = [
-  { id: "standard", label: "Standard", line: "Readable evidence, forgiving clocks, full forecasts." },
-  { id: "hard", label: "Hard", line: "Noisier intelligence, tighter resources, more aggressive rivals." },
-  { id: "extreme", label: "Extreme", line: "Sparse evidence, fast clocks, cascading dependencies." },
+const DIFFS: { id: Difficulty; label: string; line: string }[] = [
+  { id: "standard", label: "STANDARD", line: "Readable files. Hostile world." },
+  { id: "hard", label: "HARD", line: "Worse intel. Faster clocks." },
+  { id: "extreme", label: "EXTREME", line: "Sparse files. No slack." },
 ];
 
-function Stars({ value }: { value: number }) {
-  return (
-    <span aria-label={`Challenge ${value} of 5`} className="font-mono text-[10px] tracking-widest text-accent">
-      {"●".repeat(value)}
-      <span className="text-subtle">{"○".repeat(5 - value)}</span>
-    </span>
-  );
-}
+const ERA_LABEL: Record<ScenarioEra, string> = {
+  historical: "Historical",
+  "2027": "2027 theater",
+  threshold: "Threshold",
+};
 
 export function TitleScreen() {
-  const start = useGame((state) => state.start);
-  const resume = useGame((state) => state.resume);
-  const setScreen = useGame((state) => state.setScreen);
+  const start = useGame((s) => s.start);
+  const resume = useGame((s) => s.resume);
+  const resumeSlot = useGame((s) => s.resumeSlot);
+  const startReplay = useGame((s) => s.startReplay);
+  const setScreen = useGame((s) => s.setScreen);
+  const lastError = useGame((s) => s.lastError);
   const [save] = useState(() => hasSave());
-  const [team, setTeam] = useState<Team>("blue");
-  const [country, setCountry] = useState<PlayableId>("US");
+  const [team, setTeam] = useState<Team | null>(null);
+  const [country, setCountry] = useState<PlayableId | null>(null);
   const [scenario, setScenario] = useState<ScenarioId | null>(null);
-  const [category, setCategory] = useState<"all" | ScenarioCategory>("all");
-  const [difficulty, setDifficulty] = useState<Difficulty>("standard");
-  const [aiMode, setAiMode] = useState<StrategicAIMode>("copilot");
-  const [deadhandMode, setDeadhandMode] = useState<DeadhandMode>("off");
-  const [backgroundOk, setBackgroundOk] = useState(true);
+  const [terminator, setTerminator] = useState(false);
+  const [aiMode, setAiMode] = useState<StrategicAIMode>("human");
+  const [deadhand, setDeadhand] = useState<DeadhandMode>("off");
+  const [replayCode, setReplayCode] = useState("");
+  const [eraFilter, setEraFilter] = useState<ScenarioEra | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | ScenarioCategory>("all");
+  const [query, setQuery] = useState("");
+  const [seatOnly, setSeatOnly] = useState(true);
 
-  const seat = PLAYABLE.find((item) => item.id === country)!;
-  const selectedScenario = scenarioById(scenario);
-  const visibleScenarios = useMemo(
-    () => (category === "all" ? SCENARIOS : SCENARIOS.filter((item) => item.category === category)),
-    [category],
-  );
-
-  function chooseScenario(id: ScenarioId | null) {
-    setScenario(id);
-    const definition = scenarioById(id);
-    if (!definition) return;
-    setCategory(definition.category);
-    setCountry(definition.playerId as PlayableId);
-    setTeam(definition.intent);
-    setDifficulty(definition.difficulty);
-    setAiMode(definition.defaultAI);
-    setDeadhandMode(definition.defaultDeadhand);
-  }
-
-  function launch() {
-    start({
-      difficulty,
-      playerId: country,
-      intent: team,
-      strategicAI: aiMode,
-      deadhand: deadhandMode,
-      scenarioId: scenario ?? undefined,
+  const seat = PLAYABLE.find((p) => p.id === country);
+  const selectedDef = scenario ? SCENARIOS.find((s) => s.id === scenario) : null;
+  const filteredScenarios = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return SCENARIOS.filter((s) => {
+      if (eraFilter !== "all" && s.era !== eraFilter) return false;
+      if (categoryFilter !== "all" && s.category !== categoryFilter) return false;
+      if (seatOnly && country && s.playerId !== country) return false;
+      if (!q) return true;
+      return `${s.title} ${s.line} ${s.playerId} ${s.id} ${s.category}`.toLowerCase().includes(q);
     });
-  }
+  }, [eraFilter, categoryFilter, query, seatOnly, country]);
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden bg-bg">
-      {backgroundOk ? (
-        <img
-          src="/textures/command-room.jpg"
-          alt=""
-          className="fixed inset-0 size-full object-cover opacity-35"
-          onError={() => setBackgroundOk(false)}
-        />
-      ) : null}
-      <div className="fixed inset-0 bg-linear-to-b from-bg/78 via-bg/94 to-bg" />
-      <div className="scanline fixed inset-0 opacity-30" />
-
-      <main className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-12 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-8 lg:px-10">
-        <header className="flex flex-col gap-5 border-b border-border pb-7 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="font-mono text-[10px] tracking-[0.3em] text-muted uppercase">National Command Authority · fictional simulation</p>
-            <h1 className="mt-2 font-display text-6xl font-semibold tracking-[0.06em] text-fg sm:text-8xl">THRESHOLD</h1>
-            <p className="mt-2 font-display text-lg tracking-[0.18em] text-accent uppercase sm:text-xl">Stay below the line</p>
-          </div>
-          <div className="max-w-xl rounded-lg border border-accent/25 bg-bg/75 p-4 backdrop-blur-sm">
-            <p className="font-mono text-[10px] tracking-[0.22em] text-accent uppercase">Content note · recommended 16+</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted">
-              This strategy game explores mass-harm crises, deterrence, institutional failure, and humanitarian response. New scenarios use abstract tokens and non-graphic language. No real operational weapon, agent, targeting, or trigger instructions are modeled.
-            </p>
+    <div className="flex min-h-dvh flex-col px-4 py-6 sm:px-8 lg:px-12 lg:py-10">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <HudChip active>NCA · STRATEGIC WATCH</HudChip>
+          <div className="flex flex-wrap gap-2">
+            {save ? (
+              <>
+                <HudButton variant="accent" className="px-4 py-2 text-xs" onClick={() => resume()}>
+                  Continue
+                </HudButton>
+                <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => abandonSave()}>
+                  Abandon
+                </HudButton>
+              </>
+            ) : null}
+            <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("stats")}>
+              Career
+            </HudButton>
+            <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("multiplayer")}>
+              Multiplayer
+            </HudButton>
+            <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("briefing")}>
+              Briefing
+            </HudButton>
           </div>
         </header>
 
-        <div className="mt-8 grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
-          <section className="min-w-0 space-y-6">
-            <div className="rounded-xl bg-surface/95 p-4 shadow-[var(--shadow-border)] sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="font-mono text-[10px] tracking-[0.24em] text-accent uppercase">1 · Mission and seat</p>
-                  <h2 className="mt-1 font-display text-2xl tracking-wide text-fg">Who are you trying to protect—or pressure?</h2>
+        <div className="mt-8 grid flex-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-10">
+          <div className="max-w-xl">
+            <h1 className="font-display text-5xl font-bold tracking-[0.08em] text-glow-accent text-fg sm:text-7xl">
+              THRESHOLD
+            </h1>
+            <p className="mt-2 font-display text-sm tracking-[0.32em] text-accent uppercase sm:text-base">
+              Stay below the line
+            </p>
+            <p className="mt-5 text-sm leading-relaxed text-muted sm:text-base">
+              One event per month. One decision. The football is authentication, not a button. MIRV buses fail.
+              Decoys soak interceptors. Humans refuse — and fire too soon.
+            </p>
+            <p className="mt-3 rounded-lg border border-accent/20 bg-surface/60 p-3 text-xs leading-relaxed text-subtle">
+              Recommended 16+. Abstract crisis language. No real operational weapon, agent, targeting, or trigger
+              procedures. ORACLE, CHORUS, SKYNET, and DEADHAND are fictional/local decision-support puzzles.
+            </p>
+
+            <div className="mt-8 space-y-6">
+              <section>
+                <HudLabel>1 · Intent</HudLabel>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <HudButton
+                    variant={team === "blue" ? "active" : "default"}
+                    className="min-h-16 p-4 text-left"
+                    onClick={() => setTeam("blue")}
+                  >
+                    <span className="font-display text-base tracking-[0.2em]">BLUE</span>
+                    <span className="mt-1 block text-xs font-normal normal-case tracking-normal text-muted">
+                      Prevent war. If it starts, keep a country.
+                    </span>
+                  </HudButton>
+                  <HudButton
+                    variant={team === "red" ? "danger" : "default"}
+                    className={cn("min-h-16 p-4 text-left", team === "red" && "bg-danger text-fg")}
+                    onClick={() => setTeam("red")}
+                  >
+                    <span className="font-display text-base tracking-[0.2em]">RED</span>
+                    <span className="mt-1 block text-xs font-normal normal-case tracking-normal opacity-80">
+                      Coerce and dominate. A spasm is still a loss.
+                    </span>
+                  </HudButton>
                 </div>
-                <div className="grid grid-cols-2 gap-2 sm:w-72">
-                  {(["blue", "red"] as const).map((intent) => (
-                    <button
-                      key={intent}
-                      type="button"
-                      onClick={() => setTeam(intent)}
-                      className={cn(
-                        "min-h-12 rounded-md px-3 font-display text-sm tracking-[0.15em] uppercase",
-                        team === intent
-                          ? intent === "blue"
-                            ? "bg-fg text-bg"
-                            : "bg-danger text-fg"
-                          : "bg-elevated text-muted",
-                      )}
+              </section>
+
+              {team ? (
+                <section>
+                  <HudLabel>2 · Seat</HudLabel>
+                  <p className="mt-2 font-mono text-[9px] tracking-wider text-subtle uppercase">Nuclear states</p>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    {PLAYABLE.filter((p) => p.group === "nuclear").map((p) => (
+                      <HudButton
+                        key={p.id}
+                        variant={country === p.id ? "active" : "default"}
+                        className="min-h-10 px-2 py-2 text-left text-xs"
+                        onClick={() => setCountry(p.id)}
+                      >
+                        {p.id}
+                      </HudButton>
+                    ))}
+                  </div>
+                  <p className="mt-2 font-mono text-[9px] tracking-wider text-subtle uppercase">Threshold / other</p>
+                  <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                    {PLAYABLE.filter((p) => p.group === "other").map((p) => (
+                      <HudButton
+                        key={p.id}
+                        variant={country === p.id ? "accent" : "default"}
+                        className="min-h-10 px-2 py-2 text-left text-xs"
+                        onClick={() => setCountry(p.id)}
+                      >
+                        {p.name}
+                      </HudButton>
+                    ))}
+                  </div>
+                  {seat ? (
+                    <p className="mt-3 text-sm text-muted">
+                      <span className="text-accent">{seat.seat}.</span> {team === "blue" ? seat.blue : seat.red}
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {team && country ? (
+                <section>
+                  <HudLabel>3 · C2 mode</HudLabel>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <HudButton
+                      variant={!terminator ? "active" : "default"}
+                      className="min-h-14 p-3 text-left"
+                      onClick={() => setTerminator(false)}
                     >
-                      {intent}
-                    </button>
-                  ))}
+                      <span className="font-display tracking-[0.16em]">HUMAN</span>
+                      <span className="mt-1 block text-xs font-normal normal-case text-muted">Football · refusal</span>
+                    </HudButton>
+                    <HudButton
+                      variant={terminator ? "danger" : "default"}
+                      className={cn("min-h-14 p-3 text-left", terminator && "text-fg")}
+                      onClick={() => setTerminator(true)}
+                    >
+                      <span className="font-display tracking-[0.16em]">TERMINATOR</span>
+                      <span className="mt-1 block text-xs font-normal normal-case opacity-80">Rogue model on keys</span>
+                    </HudButton>
+                  </div>
+                  <p className="mt-3 font-mono text-[9px] tracking-wider text-subtle uppercase">Command intelligence</p>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    {STRATEGIC_AI_CONFIGS.map((cfg) => (
+                      <HudButton
+                        key={cfg.id}
+                        variant={aiMode === cfg.id ? "active" : "default"}
+                        className="min-h-12 p-2 text-left text-[11px]"
+                        onClick={() => {
+                          setAiMode(cfg.id);
+                          if (cfg.id === "skynet") setTerminator(true);
+                        }}
+                      >
+                        <span className="font-display tracking-wider uppercase">{cfg.label}</span>
+                        <span className="mt-1 block text-[10px] font-normal normal-case text-muted">{cfg.risk}</span>
+                      </HudButton>
+                    ))}
+                  </div>
+                  <p className="mt-3 font-mono text-[9px] tracking-wider text-subtle uppercase">Continuity</p>
+                  <div className="mt-2 grid grid-cols-1 gap-1.5">
+                    {DEADHAND_CONFIGS.map((cfg) => (
+                      <HudButton
+                        key={cfg.id}
+                        variant={deadhand === cfg.id ? "accent" : "default"}
+                        className="min-h-12 p-2 text-left text-[11px]"
+                        onClick={() => setDeadhand(cfg.id)}
+                      >
+                        <span className="font-display tracking-wider uppercase">{cfg.label}</span>
+                        <span className="mt-1 block text-[10px] font-normal normal-case text-muted">{cfg.line}</span>
+                      </HudButton>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {team && country ? (
+                <section>
+                  <HudLabel>4 · Launch</HudLabel>
+                  <div className="mt-3 flex flex-col gap-2">
+                    {DIFFS.map((d) => (
+                      <HudButton
+                        key={d.id}
+                        variant="default"
+                        className="flex min-h-12 items-center justify-between gap-4 px-4 py-3 hover:neon-border-accent"
+                        onClick={() =>
+                          start({
+                            difficulty: scenario ? SCENARIOS.find((s) => s.id === scenario)!.difficulty : d.id,
+                            playerId: country,
+                            intent: team,
+                            terminator: terminator || aiMode === "skynet",
+                            strategicAI: terminator ? "skynet" : aiMode,
+                            deadhand,
+                            scenarioId: scenario ?? undefined,
+                          })
+                        }
+                      >
+                        <span className="font-display tracking-[0.14em]">{d.label}</span>
+                        <span className="text-xs text-muted">{d.line}</span>
+                      </HudButton>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              <section>
+                <HudLabel>Save slots</HudLabel>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {([0, 1, 2] as const).map((slot) => {
+                    const meta = slotMeta(slot);
+                    return (
+                      <HudButton
+                        key={slot}
+                        variant="default"
+                        className="min-h-14 p-2 text-left"
+                        onClick={() => resumeSlot(slot)}
+                      >
+                        <span className="font-display text-xs">Slot {slot + 1}</span>
+                        <span className="mt-1 block font-mono text-[10px] text-subtle">
+                          {meta ? `${meta.seat} · T${meta.turn}` : "Empty"}
+                        </span>
+                      </HudButton>
+                    );
+                  })}
                 </div>
-              </div>
+              </section>
 
-              <label className="mt-5 block">
-                <span className="font-mono text-[10px] tracking-[0.2em] text-muted uppercase">Command seat</span>
-                <select
-                  value={country}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) => setCountry(event.target.value as PlayableId)}
-                  className="mt-2 min-h-12 w-full rounded-md border border-border bg-elevated px-3 text-base text-fg outline-none focus:border-accent"
-                >
-                  <optgroup label="Nuclear-weapon states">
-                    {PLAYABLE.filter((item) => item.group === "nuclear").map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} — {item.seat}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Other seats">
-                    {PLAYABLE.filter((item) => item.group === "other").map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} — {item.seat}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-              </label>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                <span className="font-medium text-fg">{seat.seat}.</span> {team === "blue" ? seat.blue : seat.red}
-              </p>
+              <GlassPanel className="p-4">
+                <HudLabel>Replay decode</HudLabel>
+                <textarea
+                  value={replayCode}
+                  onChange={(e) => setReplayCode(e.target.value)}
+                  placeholder="Paste replay code"
+                  className="mt-2 h-16 w-full rounded-md border border-accent/20 bg-bg/60 px-3 py-2 font-mono text-[11px] text-fg outline-none focus:neon-border-accent"
+                />
+                <HudButton variant="accent" className="mt-2 px-4 py-2 text-xs" onClick={() => startReplay(replayCode)}>
+                  Run replay
+                </HudButton>
+                {lastError ? <p className="mt-2 text-xs text-danger">{lastError}</p> : null}
+              </GlassPanel>
             </div>
+          </div>
 
-            <div className="rounded-xl bg-surface/95 p-4 shadow-[var(--shadow-border)] sm:p-6">
-              <p className="font-mono text-[10px] tracking-[0.24em] text-accent uppercase">2 · Scenario library</p>
-              <div className="mt-4 flex max-w-full gap-2 overflow-x-auto pb-2" aria-label="Scenario categories">
-                {SCENARIO_CATEGORIES.map((item) => (
+          {team && country ? (
+            <aside className="flex min-h-0 flex-col">
+              <div className="flex items-center justify-between gap-2">
+                <HudLabel>Scenarios · optional</HudLabel>
+                <HudChip>
+                  {filteredScenarios.length}/{SCENARIOS.length}
+                </HudChip>
+              </div>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search theater, seat, title"
+                className="mt-2 h-9 w-full rounded-md glass-panel px-3 font-mono text-[11px] text-fg outline-none focus:neon-border-accent"
+              />
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {SCENARIO_CATEGORIES.map((c) => (
                   <button
-                    key={item.id}
+                    key={c.id}
                     type="button"
-                    onClick={() => setCategory(item.id)}
+                    onClick={() => setCategoryFilter(c.id)}
                     className={cn(
-                      "min-h-11 shrink-0 rounded-full px-4 font-mono text-[10px] tracking-wider uppercase",
-                      category === item.id ? "bg-accent text-accent-fg" : "bg-elevated text-muted",
+                      "rounded-sm px-2 py-1 font-mono text-[9px] tracking-wider uppercase",
+                      categoryFilter === c.id ? "bg-accent/20 text-accent neon-border-accent" : "text-subtle hover:text-muted",
                     )}
                   >
-                    {item.label}
+                    {c.label}
                   </button>
                 ))}
-              </div>
-
-              <label className="mt-3 block">
-                <span className="sr-only">Choose a scenario</span>
-                <select
-                  value={scenario ?? ""}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                    chooseScenario(event.target.value ? (event.target.value as ScenarioId) : null)
-                  }
-                  className="min-h-12 w-full rounded-md border border-border bg-elevated px-3 text-base text-fg outline-none focus:border-accent"
+                {(["all", "historical", "2027", "threshold"] as const).map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setEraFilter(e)}
+                    className={cn(
+                      "rounded-sm px-2 py-1 font-mono text-[9px] tracking-wider uppercase",
+                      eraFilter === e ? "bg-accent/20 text-accent neon-border-accent" : "text-subtle hover:text-muted",
+                    )}
+                  >
+                    {e === "all" ? "All" : ERA_LABEL[e]}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSeatOnly((v) => !v)}
+                  className={cn(
+                    "rounded-sm px-2 py-1 font-mono text-[9px] tracking-wider uppercase",
+                    seatOnly ? "bg-accent/20 text-accent neon-border-accent" : "text-subtle hover:text-muted",
+                  )}
                 >
-                  <option value="">Sandbox · March 2027 · emergent campaign</option>
-                  {visibleScenarios.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.title} — {item.category} — challenge {item.challenge}/5
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {selectedScenario ? (
-                <article className="mt-4 rounded-lg bg-bg/70 p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-display text-xl tracking-wide text-fg">{selectedScenario.title}</p>
-                      <p className="mt-1 text-sm leading-relaxed text-muted">{selectedScenario.line}</p>
-                    </div>
-                    <div className="text-right">
-                      <Stars value={selectedScenario.challenge} />
-                      <p className="mt-1 font-mono text-[9px] tracking-wider text-subtle uppercase">{selectedScenario.duration} run</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div>
-                      <p className="font-mono text-[9px] tracking-wider text-muted uppercase">Variables</p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {selectedScenario.variables.map((variable) => (
-                          <span key={variable} className="rounded-full bg-elevated px-2 py-1 text-[11px] text-fg">
-                            {variable}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-mono text-[9px] tracking-wider text-muted uppercase">Dependencies</p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {selectedScenario.dependencies.map((dependency) => (
-                          <span key={dependency} className="rounded-full bg-elevated px-2 py-1 text-[11px] text-fg">
-                            {dependency}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="mt-4 border-l border-accent pl-3 text-xs leading-relaxed text-subtle">
-                    {selectedScenario.contentNote}
-                  </p>
-                </article>
-              ) : (
-                <p className="mt-4 text-sm leading-relaxed text-muted">
-                  Sandbox combines flashpoints, unreliable information, politics, infrastructure, AI risk, and human behavior into a different campaign each run.
+                  {seatOnly ? `Seat ${country}` : "All seats"}
+                </button>
+              </div>
+              {selectedDef?.briefing || selectedDef?.contentNote ? (
+                <p className="mt-2 text-xs leading-snug text-accent/80">
+                  {selectedDef.briefing ?? selectedDef.contentNote}
                 </p>
-              )}
-            </div>
-
-            <div className="rounded-xl bg-surface/95 p-4 shadow-[var(--shadow-border)] sm:p-6">
-              <p className="font-mono text-[10px] tracking-[0.24em] text-accent uppercase">3 · Command intelligence</p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {STRATEGIC_AI_CONFIGS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setAiMode(item.id)}
-                    className={cn(
-                      "min-h-28 rounded-lg p-4 text-left shadow-[var(--shadow-border)]",
-                      aiMode === item.id ? "bg-accent text-accent-fg" : "bg-elevated text-fg",
-                    )}
-                  >
-                    <span className="font-display text-lg tracking-wide">{item.label}</span>
-                    <span className="mt-2 block text-xs leading-relaxed opacity-80">{item.line}</span>
-                    <span className="mt-3 block font-mono text-[9px] tracking-wider opacity-65 uppercase">Risk: {item.risk}</span>
-                  </button>
+              ) : null}
+              <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 lg:max-h-[calc(100dvh-12rem)]">
+                <ScenarioCard
+                  title="Sandbox"
+                  line="March 2027 · New START dead · pick your difficulty"
+                  era="2027"
+                  difficulty="player choice"
+                  selected={scenario === null}
+                  onClick={() => setScenario(null)}
+                />
+                {filteredScenarios.map((s) => (
+                  <ScenarioCard
+                    key={s.id}
+                    title={s.title}
+                    line={s.line}
+                    era={ERA_LABEL[s.era]}
+                    difficulty={s.difficulty}
+                    seat={s.playerId}
+                    selected={scenario === s.id}
+                    onClick={() => {
+                      setScenario(s.id);
+                      setCountry(s.playerId as PlayableId);
+                      setTeam(s.intent);
+                    }}
+                  />
                 ))}
-              </div>
-
-              <p className="mt-6 font-mono text-[10px] tracking-[0.2em] text-muted uppercase">Continuity / Deadhand option</p>
-              <div className="mt-3 grid gap-2 md:grid-cols-3">
-                {DEADHAND_CONFIGS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setDeadhandMode(item.id)}
-                    className={cn(
-                      "min-h-28 rounded-lg p-4 text-left shadow-[var(--shadow-border)]",
-                      deadhandMode === item.id ? "bg-fg text-bg" : "bg-elevated text-fg",
-                    )}
-                  >
-                    <span className="font-display text-base tracking-wide">{item.label}</span>
-                    <span className="mt-2 block text-xs leading-relaxed opacity-80">{item.line}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <aside className="min-w-0 xl:sticky xl:top-6 xl:self-start">
-            <div className="rounded-xl bg-surface/98 p-5 shadow-[var(--shadow-border)] sm:p-6">
-              <p className="font-mono text-[10px] tracking-[0.24em] text-accent uppercase">Run configuration</p>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <dt className="text-muted">Mission</dt>
-                  <dd className="text-right font-medium text-fg uppercase">{team}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-4">
-                  <dt className="text-muted">Seat</dt>
-                  <dd className="text-right text-fg">{seat.name}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-4">
-                  <dt className="text-muted">Scenario</dt>
-                  <dd className="max-w-52 text-right text-fg">{selectedScenario?.title ?? "Sandbox"}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-4">
-                  <dt className="text-muted">AI</dt>
-                  <dd className="max-w-52 text-right text-fg">{STRATEGIC_AI_CONFIGS.find((item) => item.id === aiMode)?.label}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-4">
-                  <dt className="text-muted">Continuity</dt>
-                  <dd className="max-w-52 text-right text-fg">{DEADHAND_CONFIGS.find((item) => item.id === deadhandMode)?.label}</dd>
-                </div>
-              </dl>
-
-              <fieldset className="mt-6">
-                <legend className="font-mono text-[10px] tracking-[0.2em] text-muted uppercase">Difficulty</legend>
-                <div className="mt-3 space-y-2">
-                  {DIFFICULTIES.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setDifficulty(item.id)}
-                      className={cn(
-                        "min-h-14 w-full rounded-md px-3 py-2 text-left",
-                        difficulty === item.id ? "bg-accent text-accent-fg" : "bg-elevated text-fg",
-                      )}
-                    >
-                      <span className="font-display text-sm tracking-wider uppercase">{item.label}</span>
-                      <span className="mt-0.5 block text-[11px] leading-snug opacity-75">{item.line}</span>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              <button
-                type="button"
-                onClick={launch}
-                className="mt-6 min-h-14 w-full rounded-md bg-danger px-5 font-display text-lg tracking-[0.18em] text-fg uppercase shadow-[0_0_0_1px_rgb(255_255_255/0.12)] transition-transform active:scale-[0.99]"
-              >
-                Begin watch
-              </button>
-              <p className="mt-3 text-center text-[11px] leading-relaxed text-subtle">
-                Every new system is simulated locally. No external model or account is required.
-              </p>
-            </div>
-
-            <div className="mt-4 rounded-xl bg-surface/95 p-5 shadow-[var(--shadow-border)]">
-              <div className="flex flex-wrap gap-2">
-                {save ? (
-                  <button
-                    type="button"
-                    onClick={() => resume()}
-                    className="min-h-12 flex-1 rounded-md bg-accent px-3 font-display text-sm tracking-wider text-accent-fg uppercase"
-                  >
-                    Continue
-                  </button>
+                {!filteredScenarios.length ? (
+                  <p className="text-xs text-subtle">No watches match. Clear search or show all seats.</p>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => setScreen("stats")}
-                  className="min-h-12 flex-1 rounded-md bg-elevated px-3 font-display text-sm tracking-wider text-fg uppercase"
-                >
-                  Career
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScreen("briefing")}
-                  className="min-h-12 flex-1 rounded-md bg-elevated px-3 font-display text-sm tracking-wider text-fg uppercase"
-                >
-                  Briefing
-                </button>
               </div>
-
-              <p className="mt-5 font-mono text-[10px] tracking-[0.2em] text-muted uppercase">Save slots</p>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {([0, 1, 2] as const).map((slot) => {
-                  const meta = slotMeta(slot);
-                  return (
-                    <button
-                      key={slot}
-                      type="button"
-                      onClick={() => {
-                        const world = loadWorldFromSlot(slot);
-                        if (!world || world.ended) return;
-                        saveWorld(world);
-                        resume();
-                      }}
-                      disabled={!meta}
-                      className="min-h-14 rounded-md bg-elevated px-2 py-2 text-left shadow-[var(--shadow-border)] disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <span className="font-display text-xs text-fg">Slot {slot + 1}</span>
-                      <span className="mt-1 block font-mono text-[9px] text-subtle">
-                        {meta ? `${meta.seat} · T${meta.turn}` : "Empty"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setScreen("multiplayer")}
-                className="mt-4 min-h-12 w-full rounded-md bg-elevated px-3 font-display text-sm tracking-wider text-muted uppercase hover:text-fg"
-              >
-                Multiplayer lab
-              </button>
-            </div>
-          </aside>
+            </aside>
+          ) : (
+            <GlassPanel className="hidden p-6 lg:block" glow="accent">
+              <HudLabel>Command interface</HudLabel>
+              <p className="mt-4 font-display text-2xl tracking-[0.12em] text-fg uppercase">Glass C2</p>
+              <ul className="mt-4 space-y-2 text-sm text-muted">
+                <li>· Cyan HUD · live globe · radar sweep</li>
+                <li>· MIRV / decoy strike resolution</li>
+                <li>· Ceasefire · pact ledger · C2 stances</li>
+                <li>· {SCENARIOS.length} scripted scenario watches · CN / UK / FR / PK seats</li>
+                <li>· Carrington / FOBS / orbital weapons · space weather</li>
+                <li>· ORACLE / CHORUS / SKYNET · DEADHAND continuity (fictional)</li>
+              </ul>
+            </GlassPanel>
+          )}
         </div>
 
-        <footer className="mt-8 border-t border-border pt-5 font-mono text-[10px] leading-relaxed tracking-wider text-subtle uppercase">
-          Fictional strategy game · abstract crisis mechanics · trauma-aware framing · accessibility-first controls
+        <footer className="mt-8 font-mono text-[10px] tracking-wider text-subtle uppercase">
+          FAS / SIPRI 2026 estimates · Football = aide briefcase · Terminator = rogue C2
         </footer>
-      </main>
     </div>
   );
 }

@@ -87,7 +87,9 @@ export type DeliveryKind =
   | "dca"
   | "gravity"
   | "novel"
-  | "covert";
+  | "covert"
+  | "orbital"
+  | "fobs";
 
 export type ActionKind =
   | "hold"
@@ -101,6 +103,8 @@ export type ActionKind =
 
 export type ActionIntensity = 1 | 2 | 3;
 
+export type PackageMode = "single" | "mirv" | "mirv-decoy";
+
 export interface PlayerAction {
   kind: ActionKind;
   intensity: ActionIntensity;
@@ -109,6 +113,8 @@ export interface PlayerAction {
   notify?: boolean;
   /** Jacobsen Black Book page: A LAO · B SAO · C MAO · D countervalue/Tsar. */
   book?: "A" | "B" | "C" | "D";
+  /** RV / decoy package for nuclear employ. */
+  packageMode?: PackageMode;
 }
 
 export type DoctrineId =
@@ -133,6 +139,12 @@ export interface DeliverySystem {
   survivability: number;
   disclosure: Disclosure;
   dualCapable?: boolean;
+  /** Reentry vehicles released per successful bus. 1 = unitary. */
+  rvsPerBus?: number;
+  /** Lightweight decoys / balloon RVs released with the bus. */
+  decoys?: number;
+  /** 0–1 quality of penetration aids (chaff, cooled shrouds, maneuver). */
+  penetrationAids?: number;
   notes: string;
 }
 
@@ -205,7 +217,9 @@ export type FlashKind =
   | "machine"
   | "union"
   | "cuba"
-  | "cartel";
+  | "cartel"
+  | "himalaya"
+  | "space";
 
 export interface Flashpoint {
   id: FlashKind;
@@ -223,6 +237,8 @@ export interface GameEvent {
   heat: "low" | "med" | "high" | "critical";
   ignoreLine: string;
   tags: string[];
+  /** Causal line from last month's decision. */
+  because?: string;
 }
 
 export interface LogEntry {
@@ -236,6 +252,41 @@ export interface LogEntry {
 
 export type NuclearRung = "demo" | "tactical" | "counterforce" | "countervalue";
 
+export type StrikeOutcome = "full" | "partial" | "intercepted" | "failed";
+
+export interface StrikeLeg {
+  systemId: string;
+  systemName: string;
+  launched: number;
+  boostFailed: number;
+  busFailed: number;
+  rvsReleased: number;
+  decoysReleased: number;
+  interceptedRv: number;
+  interceptedDecoy: number;
+  reentryFailed: number;
+  arrived: number;
+}
+
+export interface StrikeReport {
+  turn: number;
+  actor: ActorId;
+  target: ActorId;
+  rung: NuclearRung;
+  outcome: StrikeOutcome;
+  packageMode: PackageMode;
+  legs: StrikeLeg[];
+  launched: number;
+  failed: number;
+  intercepted: number;
+  decoys: number;
+  arrived: number;
+  expected: number;
+  yieldKt: number;
+  deaths: number;
+  summary: string;
+}
+
 export interface NuclearUse {
   turn: number;
   actor: ActorId;
@@ -244,6 +295,13 @@ export interface NuclearUse {
   yieldKt: number;
   location: string;
   notified: boolean;
+  systemId?: string;
+  launched?: number;
+  failed?: number;
+  intercepted?: number;
+  decoys?: number;
+  arrived?: number;
+  outcome?: StrikeOutcome;
 }
 
 export interface MissileFx {
@@ -304,7 +362,48 @@ export interface NonAttackPact {
   broken: boolean;
 }
 
-export type DoctrineUpgradeId = "pal" | "sbirs" | "hotline" | "humint";
+export interface Ceasefire {
+  a: ActorId;
+  b: ActorId;
+  untilTurn: number;
+  accepted: boolean;
+  broken: boolean;
+}
+
+export interface Treaty {
+  id: string;
+  name: string;
+  parties: ActorId[];
+  status: "in-force" | "dead" | "suspended" | "strained";
+  note: string;
+}
+
+export interface RecapDelta {
+  label: string;
+  delta: number;
+}
+
+export interface TurnRecap {
+  turn: number;
+  actionLabel: string;
+  because?: string;
+  nextTitle: string;
+  deltas: RecapDelta[];
+}
+
+export type FlareClass = "quiet" | "C" | "M" | "X" | "carrington";
+
+export interface SpaceWeather {
+  kp: number;
+  flare: FlareClass;
+  cmeInbound: boolean;
+  hoursToArrival: number | null;
+  gridStress: number;
+  satStress: number;
+  lastNote: string;
+}
+
+export type DoctrineUpgradeId = "pal" | "sbirs" | "hotline" | "humint" | "mirv" | "decoys";
 
 export type SiteKind = "icbm" | "ssbn" | "bomber" | "mobile";
 
@@ -396,6 +495,8 @@ export interface World {
   hotlines: Hotline[];
   notices: LaunchNotice[];
   pacts?: NonAttackPact[];
+  ceasefire?: Ceasefire | null;
+  c2StanceTurn?: number;
   doctrinePending?: boolean;
   doctrineTaken?: DoctrineUpgradeId[];
   actionHistory?: PlayerAction[];
@@ -408,6 +509,16 @@ export interface World {
   flashpoints: Flashpoint[];
   event: GameEvent;
   usedEventIds: string[];
+  lastAction?: PlayerAction | null;
+  lastDecisionKey?: string | null;
+  recentDecisionKeys?: string[];
+  threadActor?: ActorId | null;
+  threadTag?: string | null;
+  aiLast?: Partial<Record<ActorId, PlayerAction>>;
+  lastStrike?: StrikeReport | null;
+  treaties?: Treaty[];
+  lastRecap?: TurnRecap | null;
+  spaceWeather?: SpaceWeather;
   log: LogEntry[];
   nuclearUses: NuclearUse[];
   firstUse: ActorId | null;
@@ -427,7 +538,8 @@ export type EndingKind =
   | "unforced"
   | "red-win"
   | "stalemate"
-  | "machine";
+  | "machine"
+  | "ceasefire";
 
 export interface Ending {
   kind: EndingKind;

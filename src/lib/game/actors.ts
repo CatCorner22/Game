@@ -8,7 +8,24 @@ function rel(): Record<ActorId, number> {
 }
 
 function sys(partial: DeliverySystem): DeliverySystem {
-  return partial;
+  const launchers = Math.max(1, partial.launchers);
+  const inferredRvs =
+    partial.rvsPerBus ??
+    (partial.warheads > launchers && (partial.kind === "icbm" || partial.kind === "slbm" || partial.kind === "mrbm" || partial.kind === "irbm")
+      ? Math.max(1, Math.min(12, Math.round(partial.warheads / launchers)))
+      : 1);
+  const inferredDecoys =
+    partial.decoys ??
+    ((partial.kind === "icbm" || partial.kind === "slbm") && inferredRvs >= 2 ? inferredRvs : 0);
+  const inferredAids =
+    partial.penetrationAids ??
+    (partial.kind === "hgv" ? 0.82 : inferredRvs >= 4 ? 0.5 : inferredRvs >= 2 ? 0.35 : 0);
+  return {
+    ...partial,
+    rvsPerBus: partial.rvsPerBus ?? inferredRvs,
+    decoys: partial.decoys ?? inferredDecoys,
+    penetrationAids: partial.penetrationAids ?? inferredAids,
+  };
 }
 
 function base(
@@ -116,8 +133,11 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.9,
         survivability: 0.22,
         disclosure: "acknowledged",
+        rvsPerBus: 1,
+        decoys: 0,
+        penetrationAids: 0.4,
         notes:
-          "Silos in MT, ND, WY. Downloaded to one warhead under New START. Upload to 3 (W78/W87) is available now that the treaty is dead.",
+          "Silos in MT, ND, WY. Downloaded to one warhead under New START. Upload to 3 (W78/W87) plus decoys is available now that the treaty is dead.",
       }),
       sys({
         id: "us-d5",
@@ -130,8 +150,11 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.93,
         survivability: 0.88,
         disclosure: "acknowledged",
+        rvsPerBus: 4,
+        decoys: 4,
+        penetrationAids: 0.65,
         notes:
-          "14 Ohio SSBNs, 20 tubes each. W76-1, W76-2 low-yield, W88. About 8–10 boats on patrol. The quiet backbone of second strike.",
+          "14 Ohio SSBNs, 20 tubes each. W76-1, W76-2 low-yield, W88. Mk-5 / Mk-4A buses can carry MIRV plus decoys. About 8–10 boats on patrol.",
       }),
       sys({
         id: "us-b2",
@@ -211,8 +234,11 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.93,
         survivability: 0.88,
         disclosure: "acknowledged",
+        rvsPerBus: 1,
+        decoys: 2,
+        penetrationAids: 0.55,
         notes:
-          "Subset of Trident load. Built to answer escalate-to-deescalate without a high-yield spasm. Still a strategic launch.",
+          "Subset of Trident load. Built to answer escalate-to-deescalate without a high-yield spasm. Still a strategic launch. Unitary W76-2 can ride with decoys.",
       }),
       sys({
         id: "us-lrso",
@@ -239,6 +265,34 @@ export function makeActors(): Record<ActorId, Actor> {
         survivability: 0.7,
         disclosure: "reported",
         notes: "Program of record, contested in Congress. Not a deployed force. Adversaries still plan against it.",
+      }),
+      sys({
+        id: "us-orbital-kinetic",
+        name: "Prompt strike / orbital kinetic (speculated)",
+        kind: "orbital",
+        rangeKm: 40000,
+        launchers: 0,
+        warheads: 0,
+        yieldKt: [0, 0],
+        reliability: 0.35,
+        survivability: 0.55,
+        disclosure: "unacknowledged",
+        notes:
+          "Rods-from-God / Conventional Prompt Strike from orbit is a briefing slide, not a fielded force. Adversaries still write the file. A kinetic from space is indistinguishable from a lofted bus until it is not.",
+      }),
+      sys({
+        id: "us-gmdsats",
+        name: "Space-based intercept layer (speculated)",
+        kind: "orbital",
+        rangeKm: 0,
+        launchers: 0,
+        warheads: 0,
+        yieldKt: [0, 0],
+        reliability: 0.28,
+        survivability: 0.4,
+        disclosure: "suspected",
+        notes:
+          "Brilliant Pebbles never deployed. A thin orbital intercept layer is assessed, not acknowledged. Solar storms blind it the same as SBIRS.",
       }),
     ],
   });
@@ -282,7 +336,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.86,
         survivability: 0.55,
         disclosure: "acknowledged",
-        notes: "Road-mobile MIRV. The everyday ICBM force. Flushes on strategic warning.",
+        rvsPerBus: 4,
+        decoys: 3,
+        penetrationAids: 0.55,
+        notes: "Road-mobile MIRV (3–6 RVs) plus penetration aids. The everyday ICBM force. Flushes on strategic warning.",
       }),
       sys({
         id: "ru-sarmat",
@@ -295,7 +352,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.55,
         survivability: 0.28,
         disclosure: "acknowledged",
-        notes: "Heavy silo ICBM replacing Voevoda. IOC claimed; reliability after failed tests is uncertain.",
+        rvsPerBus: 10,
+        decoys: 8,
+        penetrationAids: 0.7,
+        notes: "Heavy silo ICBM replacing Voevoda. Claimed 10–15 MIRV plus a heavy decoy cloud. IOC claimed; reliability after failed tests is uncertain.",
       }),
       sys({
         id: "ru-voevoda",
@@ -308,6 +368,9 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.8,
         survivability: 0.22,
         disclosure: "acknowledged",
+        rvsPerBus: 10,
+        decoys: 6,
+        penetrationAids: 0.45,
         notes:
           "Remaining heavy silos pending Sarmat. MIRV ~500–750 kt or a single very large warhead (older mods up to ~20 Mt). City-killing throw-weight. Vulnerable in silo.",
       }),
@@ -336,7 +399,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.6,
         survivability: 0.45,
         disclosure: "acknowledged",
-        notes: "Boost-glide on UR-100N. Built to beat missile defense. Small numbers.",
+        rvsPerBus: 1,
+        decoys: 0,
+        penetrationAids: 0.88,
+        notes: "Boost-glide on UR-100N. Built to beat missile defense. Maneuver, not decoys. Small numbers.",
       }),
       sys({
         id: "ru-bulava",
@@ -349,7 +415,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.8,
         survivability: 0.84,
         disclosure: "acknowledged",
-        notes: "Borei / Borei-A SSBNs. Primary naval second strike.",
+        rvsPerBus: 6,
+        decoys: 4,
+        penetrationAids: 0.52,
+        notes: "Borei / Borei-A SSBNs. MIRV bus (up to 6) plus decoys. Primary naval second strike.",
       }),
       sys({
         id: "ru-sineva",
@@ -362,7 +431,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.82,
         survivability: 0.7,
         disclosure: "acknowledged",
-        notes: "Delta-IV boats. Aging but quiet enough. Being replaced by Borei.",
+        rvsPerBus: 4,
+        decoys: 2,
+        penetrationAids: 0.4,
+        notes: "Delta-IV boats. Aging MIRV. Quiet enough. Being replaced by Borei.",
       }),
       sys({
         id: "ru-kh102",
@@ -460,6 +532,37 @@ export function makeActors(): Record<ActorId, Actor> {
         notes:
           "Command rocket / fail-deadly. Suspected still active. If C2 is destroyed, a residual strike may still fly. This is why decapitation is not a clean win.",
       }),
+      sys({
+        id: "ru-fobs",
+        name: "FOBS / fractional orbital (speculated)",
+        kind: "fobs",
+        rangeKm: 40000,
+        launchers: 4,
+        warheads: 4,
+        yieldKt: [200, 1000],
+        reliability: 0.48,
+        survivability: 0.42,
+        disclosure: "suspected",
+        rvsPerBus: 1,
+        decoys: 2,
+        penetrationAids: 0.55,
+        notes:
+          "Fractional Orbital Bombardment: a bus stays in low orbit, then deorbits. Radar sees a satellite until it does not. The USSR flew this. A modern reload is assessed, not confirmed.",
+      }),
+      sys({
+        id: "ru-nukesat",
+        name: "Nuclear ASAT / inspector (speculated)",
+        kind: "orbital",
+        rangeKm: 0,
+        launchers: 1,
+        warheads: 1,
+        yieldKt: [10, 40],
+        reliability: 0.4,
+        survivability: 0.35,
+        disclosure: "unacknowledged",
+        notes:
+          "A nuclear-pumped or co-orbital killer against warning birds. Kosmos-class rumors. One detonation in GEO is Starfish Prime for a hemisphere of electronics.",
+      }),
     ],
   });
 
@@ -499,7 +602,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.8,
         survivability: 0.2,
         disclosure: "acknowledged",
-        notes: "Liquid silo ICBM, MIRV. 1–5 Mt class. Largest deployed Chinese yield. Old, city-killing, vulnerable to counterforce. Not a Tsar. Still a firestorm machine.",
+        rvsPerBus: 5,
+        decoys: 4,
+        penetrationAids: 0.4,
+        notes: "Liquid silo ICBM, MIRV (up to 5) plus decoys. 1–5 Mt class. Largest deployed Chinese yield. Old, city-killing, vulnerable to counterforce. Not a Tsar. Still a firestorm machine.",
       }),
       sys({
         id: "cn-df31",
@@ -525,7 +631,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.8,
         survivability: 0.6,
         disclosure: "acknowledged",
-        notes: "Road-mobile MIRV ICBM. CONUS range with multiple RVs.",
+        rvsPerBus: 6,
+        decoys: 5,
+        penetrationAids: 0.6,
+        notes: "Road-mobile MIRV ICBM (up to 10 claimed). CONUS range. Decoys exist to soak thin GMD.",
       }),
       sys({
         id: "cn-silos",
@@ -580,7 +689,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.72,
         survivability: 0.68,
         disclosure: "acknowledged",
-        notes: "Type 094 boats, JL-2/JL-3. Quieter than Xia, noisier than Ohio. Type 096 is incoming.",
+        rvsPerBus: 3,
+        decoys: 2,
+        penetrationAids: 0.4,
+        notes: "Type 094 boats, JL-2/JL-3. MIRV emerging. Quieter than Xia, noisier than Ohio. Type 096 is incoming.",
       }),
       sys({
         id: "cn-h6n",
@@ -594,6 +706,35 @@ export function makeActors(): Record<ActorId, Actor> {
         survivability: 0.28,
         disclosure: "acknowledged",
         notes: "Air-launched ballistic missile on H-6N. The air leg of a new triad.",
+      }),
+      sys({
+        id: "cn-fobs",
+        name: "Fractional orbital HGV (speculated)",
+        kind: "fobs",
+        rangeKm: 40000,
+        launchers: 2,
+        warheads: 2,
+        yieldKt: [10, 300],
+        reliability: 0.45,
+        survivability: 0.5,
+        disclosure: "suspected",
+        dualCapable: true,
+        notes:
+          "2021 fractional-orbit HGV test is in the file. Dual-capable by design. A south-polar approach is how you miss BMEWS.",
+      }),
+      sys({
+        id: "cn-hunter",
+        name: "Co-orbital inspector / hunter (speculated)",
+        kind: "orbital",
+        rangeKm: 0,
+        launchers: 3,
+        warheads: 0,
+        yieldKt: [0, 0],
+        reliability: 0.55,
+        survivability: 0.4,
+        disclosure: "suspected",
+        notes:
+          "Shijian-class inspectors that can rendezvous with a warning bird. Soft kill or a shove. Looks like debris until the bird goes dark.",
       }),
     ],
   });
@@ -624,7 +765,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.9,
         survivability: 0.86,
         disclosure: "acknowledged",
-        notes: "Four SSBNs, one at sea. The deterrent.",
+        rvsPerBus: 6,
+        decoys: 4,
+        penetrationAids: 0.55,
+        notes: "Four SSBNs, one at sea. TN75 / TNO MIRV (up to 6) plus penetration aids. The deterrent.",
       }),
       sys({
         id: "fr-asmpa",
@@ -682,7 +826,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.92,
         survivability: 0.85,
         disclosure: "acknowledged",
-        notes: "Continuous at-sea deterrence. One boat always on patrol. Dreadnought class in build.",
+        rvsPerBus: 3,
+        decoys: 3,
+        penetrationAids: 0.6,
+        notes: "Continuous at-sea deterrence. One boat always on patrol. Holbrook-era buses can carry MIRV plus decoys. Dreadnought class in build.",
       }),
     ],
   });
@@ -767,7 +914,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.4,
         survivability: 0.5,
         disclosure: "reported",
-        notes: "Reported MIRV ICBM. Not acknowledged as deployed.",
+        rvsPerBus: 3,
+        decoys: 3,
+        penetrationAids: 0.35,
+        notes: "Reported MIRV ICBM with decoys to confuse Pakistani / Chinese defense. Not acknowledged as deployed.",
       }),
     ],
   });
@@ -859,7 +1009,10 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.45,
         survivability: 0.4,
         disclosure: "suspected",
-        notes: "Claimed MIRV to beat Indian missile defense. Capability suspected, not confirmed.",
+        rvsPerBus: 3,
+        decoys: 2,
+        penetrationAids: 0.3,
+        notes: "Claimed MIRV plus decoys to beat Indian missile defense. Capability suspected, not confirmed. Buses fail often in this model.",
       }),
     ],
   });
@@ -963,8 +1116,11 @@ export function makeActors(): Record<ActorId, Actor> {
         reliability: 0.42,
         survivability: 0.35,
         disclosure: "acknowledged",
+        rvsPerBus: 1,
+        decoys: 0,
+        penetrationAids: 0.12,
         notes:
-          "Solid and liquid ICBMs tested. CONUS range on paper. Reentry vehicle survival vs US missile defense is the open question.",
+          "Solid and liquid ICBMs tested. CONUS range on paper. Reentry vehicle survival vs US missile defense is the open question. No mature decoy bus.",
       }),
       sys({
         id: "kp-hwasong19",
