@@ -30,19 +30,26 @@
 
 @layer base {
   html {
+    min-width: 0;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-size-adjust: 100%;
   }
 
   html,
   body,
   #app {
     min-height: 100%;
+    min-width: 0;
     background: var(--color-bg);
     color: var(--color-fg);
   }
 
   body {
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
     font-family: var(--font-sans);
     line-height: 1.5;
   }
@@ -58,9 +65,32 @@
     text-wrap: pretty;
   }
 
+  button,
+  select,
+  input,
+  summary,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role="button"]:not(:disabled),
+  summary {
     cursor: pointer;
+  }
+
+  button:focus-visible,
+  select:focus-visible,
+  input:focus-visible,
+  summary:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: rgb(196 163 90 / 0.35);
+    color: var(--color-fg);
   }
 }
 
@@ -68,6 +98,7 @@
   *,
   *::before,
   *::after {
+    scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -81,7 +112,7 @@
 .scanline {
   background-image: repeating-linear-gradient(
     to bottom,
-    rgb(255 255 255 / 0.015) 0px,
+    rgb(255 255 255 / 0.015) 0,
     rgb(255 255 255 / 0.015) 1px,
     transparent 1px,
     transparent 3px

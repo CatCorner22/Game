@@ -1,5 +1,15 @@
 import { create } from "zustand";
-import type { ActionIntensity, ActionKind, ActorId, Difficulty, DoctrineUpgradeId, PlayerAction, Screen, Team, World } from "./types";
+import type {
+  ActionIntensity,
+  ActionKind,
+  ActorId,
+  Difficulty,
+  DoctrineUpgradeId,
+  PlayerAction,
+  Screen,
+  Team,
+  World,
+} from "./types";
 import { defaultBook, type BookId } from "./blackbook";
 import { createWorld } from "./world";
 import { defaultAction } from "./actions";
@@ -7,14 +17,32 @@ import { forecast, resolveTurn } from "./sim";
 import { clearSave, loadWorld, saveWorld } from "./save";
 import { unlockAudio, tone, updateAtmosphere, stinger, defconTone } from "./audio";
 import { recordTurn } from "./replay";
-import { applyScenario, type ScenarioId } from "./scenarios";
+import { applyScenario, scenarioById, type ScenarioId } from "./scenarios";
 import { recordGameEnd } from "./stats";
 import { applyDoctrine } from "./doctrine";
+import {
+  advanceStrategicSystems,
+  configureStrategicSystems,
+  ensureStrategicSystems,
+  type DeadhandMode,
+  type StrategicAIMode,
+} from "./strategicSystems";
 
 function screenForWorld(world: World): Screen {
   if (world.ended) return "end";
+  if (world.closeCall) return "play";
   if (world.phase === "nuclear" || world.defcon <= 2) return "war";
   return "play";
+}
+
+interface StartOptions {
+  difficulty: Difficulty;
+  playerId: ActorId;
+  intent: Team;
+  terminator?: boolean;
+  strategicAI?: StrategicAIMode;
+  deadhand?: DeadhandMode;
+  scenarioId?: ScenarioId;
 }
 
 interface GameState {
@@ -33,13 +61,7 @@ interface GameState {
   glossaryOpen: boolean;
   tutorialStep: number;
   scenarioId: ScenarioId | null;
-  start: (opts: {
-    difficulty: Difficulty;
-    playerId: ActorId;
-    intent: Team;
-    terminator?: boolean;
-    scenarioId?: ScenarioId;
-  }) => void;
+  start: (opts: StartOptions) => void;
   resume: () => boolean;
   setScreen: (s: Screen) => void;
   select: (id: ActorId) => void;
@@ -77,10 +99,14 @@ export const useGame = create<GameState>((set, get) => ({
   glossaryOpen: false,
   tutorialStep: -1,
   scenarioId: null,
-  start: ({ difficulty, playerId, intent, terminator, scenarioId }) => {
+  start: ({ difficulty, playerId, intent, terminator, strategicAI, deadhand, scenarioId }) => {
     unlockAudio();
-    let world = createWorld(difficulty, Date.now() | 0, playerId, intent, Boolean(terminator));
+    const scenario = scenarioById(scenarioId);
+    const aiMode = strategicAI ?? (terminator ? "skynet" : scenario?.defaultAI ?? "human");
+    const deadhandMode = deadhand ?? scenario?.defaultDeadhand ?? "off";
+    let world = createWorld(difficulty, Date.now() | 0, playerId, intent, aiMode === "skynet");
     if (scenarioId) world = applyScenario(world, scenarioId);
+    configureStrategicSystems(world, aiMode, deadhandMode);
     saveWorld(world);
     set({
       screen: screenForWorld(world),
@@ -100,6 +126,7 @@ export const useGame = create<GameState>((set, get) => ({
   resume: () => {
     const world = loadWorld();
     if (!world || world.ended) return false;
+    ensureStrategicSystems(world);
     set({
       screen: screenForWorld(world),
       world,
@@ -108,6 +135,7 @@ export const useGame = create<GameState>((set, get) => ({
       intensity: 1,
       notify: false,
       tutorialStep: -1,
+      scenarioId: (world.scenarioId as ScenarioId | null | undefined) ?? null,
     });
     return true;
   },
@@ -133,30 +161,40 @@ export const useGame = create<GameState>((set, get) => ({
   },
   execute: () => {
     const { actionKind, intensity } = get();
-    const w = get().world;
-    if (actionKind === "employ" && intensity >= 2 && w && (w.actors[w.playerId].nuclear || w.actors[w.playerId].hasDevice)) {
+    const world = get().world;
+    if (
+      actionKind === "employ" &&
+      intensity >= 2 &&
+      world &&
+      (world.actors[world.playerId].nuclear || world.actors[world.playerId].hasDevice)
+    ) {
       set({ confirmNuclear: true });
       return;
     }
     get().confirmAndExecute();
   },
   confirmAndExecute: () => {
-    const st = get();
-    if (!st.world) return;
-    const act = st.action();
-    const prev = st.world;
-    recordTurn(prev, act);
-    const next = resolveTurn(structuredClone(prev), act);
+    const state = get();
+    if (!state.world) return;
+    const action = state.action();
+    const previous = state.world;
+    recordTurn(previous, action);
+    const next = resolveTurn(structuredClone(previous), action);
+    advanceStrategicSystems(next, action);
     saveWorld(next);
     defconTone(next.defcon);
     updateAtmosphere(next.defcon, next.globalRisk);
-    if (next.nuclearUses.length > prev.nuclearUses.length) stinger("detonation");
-    if (next.brokenArrow && !prev.brokenArrow) stinger("broken-arrow");
-    if (next.trickery && (next.trickery.hotlineSpoof || next.trickery.fakeVoice) && !prev.trickery?.hotlineSpoof) {
+    if (next.nuclearUses.length > previous.nuclearUses.length) stinger("detonation");
+    if (next.brokenArrow && !previous.brokenArrow) stinger("broken-arrow");
+    if (
+      next.trickery &&
+      (next.trickery.hotlineSpoof || next.trickery.fakeVoice) &&
+      !previous.trickery?.hotlineSpoof
+    ) {
       stinger("trickery");
     }
     if (next.ended && next.ending) {
-      recordGameEnd(next, st.scenarioId);
+      recordGameEnd(next, state.scenarioId);
     }
     tone(next.defcon <= 2 ? 140 : 220, 0.08, "sine");
     set({
@@ -165,7 +203,7 @@ export const useGame = create<GameState>((set, get) => ({
       actionKind: "hold",
       intensity: 1,
       notify: false,
-      selected: next.ended ? st.selected : next.event.actor,
+      selected: next.ended ? state.selected : next.event.actor,
       screen: screenForWorld(next),
       whyId: next.log[0]?.id ?? null,
     });
@@ -179,9 +217,9 @@ export const useGame = create<GameState>((set, get) => ({
   setTutorialStep: (n) => set({ tutorialStep: n }),
   dismissTutorial: () => set({ tutorialStep: -1 }),
   pickDoctrine: (id: DoctrineUpgradeId) => {
-    const w = get().world;
-    if (!w) return;
-    const next = structuredClone(w);
+    const world = get().world;
+    if (!world) return;
+    const next = structuredClone(world);
     applyDoctrine(next, id);
     saveWorld(next);
     set({ world: next });
