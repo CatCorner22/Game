@@ -1,24 +1,52 @@
 import { create } from "zustand";
-import type { ActionIntensity, ActionKind, ActorId, Difficulty, DoctrineUpgradeId, PackageMode, PlayerAction, Screen, Team, World } from "./types";
+import type {
+  ActionIntensity,
+  ActionKind,
+  ActorId,
+  Difficulty,
+  DoctrineUpgradeId,
+  PackageMode,
+  PlayerAction,
+  Screen,
+  Team,
+  World,
+} from "./types";
 import { defaultBook, type BookId } from "./blackbook";
 import { createWorld } from "./world";
 import { defaultAction } from "./actions";
 import { forecast, resolveTurn } from "./sim";
-import { clearSave, loadWorld, saveWorld } from "./save";
+import { clearSave, loadWorld, saveWorld, migrateWorld } from "./save";
 import { unlockAudio, tone, updateAtmosphere, stinger, defconTone } from "./audio";
 import { recordTurn } from "./replay";
-import { applyScenario, type ScenarioId } from "./scenarios";
+import { applyScenario, scenarioById, type ScenarioId } from "./scenarios";
 import { recordGameEnd } from "./stats";
 import { applyDoctrine } from "./doctrine";
 import { applyC2Stance, type C2StanceId } from "./c2";
 import { replayFromCode } from "./replayRun";
-import { migrateWorld } from "./save";
 import { peekSlotWorld } from "./slots";
+import {
+  advanceStrategicSystems,
+  configureStrategicSystems,
+  ensureStrategicSystems,
+  type DeadhandMode,
+  type StrategicAIMode,
+} from "./strategicSystems";
 
 function screenForWorld(world: World): Screen {
   if (world.ended) return "end";
+  if (world.closeCall) return "play";
   if (world.phase === "nuclear" || world.defcon <= 2) return "war";
   return "play";
+}
+
+interface StartOptions {
+  difficulty: Difficulty;
+  playerId: ActorId;
+  intent: Team;
+  terminator?: boolean;
+  strategicAI?: StrategicAIMode;
+  deadhand?: DeadhandMode;
+  scenarioId?: ScenarioId;
 }
 
 interface GameState {
@@ -39,13 +67,7 @@ interface GameState {
   tutorialStep: number;
   scenarioId: ScenarioId | null;
   saveSlot: 0 | 1 | 2;
-  start: (opts: {
-    difficulty: Difficulty;
-    playerId: ActorId;
-    intent: Team;
-    terminator?: boolean;
-    scenarioId?: ScenarioId;
-  }) => void;
+  start: (opts: StartOptions) => void;
   resume: () => boolean;
   resumeSlot: (slot: 0 | 1 | 2) => boolean;
   saveToSlot: (slot: 0 | 1 | 2) => void;
@@ -93,11 +115,15 @@ export const useGame = create<GameState>((set, get) => ({
   scenarioId: null,
   saveSlot: 0,
   lastError: null,
-  start: ({ difficulty, playerId, intent, terminator, scenarioId }) => {
+  start: ({ difficulty, playerId, intent, terminator, strategicAI, deadhand, scenarioId }) => {
     unlockAudio();
     try {
-      let world = createWorld(difficulty, Date.now() | 0, playerId, intent, Boolean(terminator));
+      const scenario = scenarioById(scenarioId);
+      const aiMode = strategicAI ?? (terminator ? "skynet" : scenario?.defaultAI ?? "human");
+      const deadhandMode = deadhand ?? scenario?.defaultDeadhand ?? "off";
+      let world = createWorld(difficulty, Date.now() | 0, playerId, intent, aiMode === "skynet" || Boolean(terminator));
       if (scenarioId) world = applyScenario(world, scenarioId);
+      configureStrategicSystems(world, aiMode, deadhandMode);
       saveWorld(world, 0);
       set({
         screen: screenForWorld(world),
@@ -112,9 +138,10 @@ export const useGame = create<GameState>((set, get) => ({
         confirmNuclear: false,
         fileOpen: false,
         whyId: null,
-        tutorialStep: world.turn === 1 ? 0 : -1,
+        tutorialStep: world.turn === 1 && !scenarioId ? 0 : -1,
         scenarioId: scenarioId ?? null,
         lastError: null,
+        mobileTab: "act",
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -125,6 +152,7 @@ export const useGame = create<GameState>((set, get) => ({
   resume: () => {
     const world = loadWorld();
     if (!world || world.ended) return false;
+    ensureStrategicSystems(world);
     set({
       screen: screenForWorld(world),
       world,
@@ -133,6 +161,7 @@ export const useGame = create<GameState>((set, get) => ({
       intensity: 1,
       notify: false,
       tutorialStep: -1,
+      scenarioId: (world.scenarioId as ScenarioId | null | undefined) ?? null,
     });
     return true;
   },
@@ -140,6 +169,7 @@ export const useGame = create<GameState>((set, get) => ({
     const raw = peekSlotWorld(slot);
     if (!raw || raw.ended) return false;
     const world = migrateWorld(raw);
+    ensureStrategicSystems(world);
     saveWorld(world, slot);
     set({
       screen: screenForWorld(world),
@@ -168,6 +198,7 @@ export const useGame = create<GameState>((set, get) => ({
         set({ lastError: "Replay code did not decode." });
         return false;
       }
+      ensureStrategicSystems(run.world);
       saveWorld(run.world, get().saveSlot);
       set({
         screen: screenForWorld(run.world),
@@ -222,8 +253,13 @@ export const useGame = create<GameState>((set, get) => ({
   },
   execute: () => {
     const { actionKind, intensity } = get();
-    const w = get().world;
-    if (actionKind === "employ" && intensity >= 2 && w && (w.actors[w.playerId].nuclear || w.actors[w.playerId].hasDevice)) {
+    const world = get().world;
+    if (
+      actionKind === "employ" &&
+      intensity >= 2 &&
+      world &&
+      (world.actors[world.playerId].nuclear || world.actors[world.playerId].hasDevice)
+    ) {
       set({ confirmNuclear: true });
       return;
     }
@@ -237,6 +273,7 @@ export const useGame = create<GameState>((set, get) => ({
     try {
       recordTurn(prev, act);
       const next = resolveTurn(structuredClone(prev), act);
+      advanceStrategicSystems(next, act);
       saveWorld(next, st.saveSlot);
       defconTone(next.defcon);
       updateAtmosphere(next.defcon, next.globalRisk);
@@ -308,6 +345,7 @@ export function resetToTitle() {
     tutorialStep: -1,
     scenarioId: null,
     lastError: null,
+    mobileTab: "act",
   });
 }
 

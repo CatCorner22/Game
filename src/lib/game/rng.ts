@@ -12,7 +12,7 @@ export function mulberry32(seed: number) {
 
 export function nextUnit(world: World): number {
   if (world.rngMode === "fixed") return world.rngFixed;
-  let t = (world.rngState + 0x6d2b79f5) >>> 0;
+  const t = (world.rngState + 0x6d2b79f5) >>> 0;
   world.rngState = t;
   let r = Math.imul(t ^ (t >>> 15), 1 | t);
   r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);

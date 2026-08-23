@@ -8,6 +8,7 @@ import { emptyTrickery } from "./trickery";
 import { saveWorldToSlot } from "./slots";
 import { ensureTreaties } from "./treaties";
 import { quietWeather } from "./spaceWeather";
+import { ensureStrategicSystems } from "./strategicSystems";
 
 const KEY = "threshold.save.v2";
 const BACKUP = "threshold.save.v2.bak";
@@ -106,6 +107,7 @@ export function migrateWorld(world: World): World {
   if (world.lastRecap === undefined) world.lastRecap = null;
   ensureTreaties(world);
   if (!world.spaceWeather) world.spaceWeather = quietWeather();
+  ensureStrategicSystems(world);
   for (const a of Object.values(world.actors)) {
     for (const s of a.systems) {
       if (s.rvsPerBus === undefined) {

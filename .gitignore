@@ -1,6 +1,7 @@
 node_modules
 .tanstack
-.grok
+.grok/*
+!.grok/app-env.json
 artifacts
 dist
 .output

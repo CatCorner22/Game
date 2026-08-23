@@ -39,6 +39,8 @@
   body,
   #app {
     min-height: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     background: var(--color-bg);
     color: var(--color-fg);
   }
@@ -60,8 +62,18 @@
   }
 
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role="button"]:not(:disabled),
+  summary {
     cursor: pointer;
+  }
+
+  button:focus-visible,
+  select:focus-visible,
+  input:focus-visible,
+  summary:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
   }
 
   ::selection {

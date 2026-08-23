@@ -1,10 +1,11 @@
 import { abandonSave, useGame } from "@/lib/game/store";
 import { hasSave } from "@/lib/game/save";
 import { slotMeta } from "@/lib/game/slots";
-import { SCENARIOS, type ScenarioEra, type ScenarioId } from "@/lib/game/scenarios";
+import { SCENARIO_CATEGORIES, SCENARIOS, type ScenarioCategory, type ScenarioEra, type ScenarioId } from "@/lib/game/scenarios";
 import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
-import { useMemo, useState } from "react";
+import { DEADHAND_CONFIGS, STRATEGIC_AI_CONFIGS, type DeadhandMode, type StrategicAIMode } from "@/lib/game/strategicSystems";
+import { useMemo, useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 
@@ -28,12 +29,15 @@ export function TitleScreen() {
   const setScreen = useGame((s) => s.setScreen);
   const lastError = useGame((s) => s.lastError);
   const [save] = useState(() => hasSave());
-  const [team, setTeam] = useState<Team | null>(null);
-  const [country, setCountry] = useState<PlayableId | null>(null);
+  const [team, setTeam] = useState<Team | null>("blue");
+  const [country, setCountry] = useState<PlayableId | null>("US");
   const [scenario, setScenario] = useState<ScenarioId | null>(null);
   const [terminator, setTerminator] = useState(false);
+  const [aiMode, setAiMode] = useState<StrategicAIMode>("human");
+  const [deadhand, setDeadhand] = useState<DeadhandMode>("off");
   const [replayCode, setReplayCode] = useState("");
   const [eraFilter, setEraFilter] = useState<ScenarioEra | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | ScenarioCategory>("all");
   const [query, setQuery] = useState("");
   const [seatOnly, setSeatOnly] = useState(true);
 
@@ -43,14 +47,30 @@ export function TitleScreen() {
     const q = query.trim().toLowerCase();
     return SCENARIOS.filter((s) => {
       if (eraFilter !== "all" && s.era !== eraFilter) return false;
+      if (categoryFilter !== "all" && s.category !== categoryFilter) return false;
       if (seatOnly && country && s.playerId !== country) return false;
       if (!q) return true;
-      return `${s.title} ${s.line} ${s.playerId} ${s.id}`.toLowerCase().includes(q);
+      return `${s.title} ${s.line} ${s.playerId} ${s.id} ${s.category}`.toLowerCase().includes(q);
     });
-  }, [eraFilter, query, seatOnly, country]);
+  }, [eraFilter, categoryFilter, query, seatOnly, country]);
+
+  function launchWatch() {
+    const seatId = country ?? "US";
+    const intent = team ?? "blue";
+    const def = scenario ? SCENARIOS.find((s) => s.id === scenario) : null;
+    start({
+      difficulty: def?.difficulty ?? "standard",
+      playerId: seatId,
+      intent,
+      terminator: terminator || aiMode === "skynet",
+      strategicAI: terminator ? "skynet" : aiMode,
+      deadhand: def?.defaultDeadhand ?? deadhand,
+      scenarioId: scenario ?? undefined,
+    });
+  }
 
   return (
-    <div className="flex min-h-dvh flex-col px-4 py-6 sm:px-8 lg:px-12 lg:py-10">
+    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden px-4 py-6 sm:px-8 lg:px-12 lg:py-10">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <HudChip active>NCA · STRATEGIC WATCH</HudChip>
           <div className="flex flex-wrap gap-2">
@@ -78,7 +98,7 @@ export function TitleScreen() {
 
         <div className="mt-8 grid flex-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-10">
           <div className="max-w-xl">
-            <h1 className="font-display text-5xl font-bold tracking-[0.08em] text-glow-accent text-fg sm:text-7xl">
+            <h1 className="max-w-full font-display text-[clamp(2rem,10vw,4.5rem)] font-bold tracking-[0.04em] text-glow-accent text-fg sm:tracking-[0.08em]">
               THRESHOLD
             </h1>
             <p className="mt-2 font-display text-sm tracking-[0.32em] text-accent uppercase sm:text-base">
@@ -88,6 +108,58 @@ export function TitleScreen() {
               One event per month. One decision. The football is authentication, not a button. MIRV buses fail.
               Decoys soak interceptors. Humans refuse — and fire too soon.
             </p>
+            <p className="mt-3 rounded-lg border border-accent/20 bg-surface/60 p-3 text-xs leading-relaxed text-subtle">
+              Recommended 16+. Abstract crisis language. No real operational weapon, agent, targeting, or trigger
+              procedures. ORACLE, CHORUS, SKYNET, and DEADHAND are fictional/local decision-support puzzles.
+            </p>
+            <HudButton
+              variant="danger"
+              aria-label="Begin watch"
+              className="mt-6 min-h-14 w-full px-4 text-lg"
+              onClick={launchWatch}
+            >
+              Begin watch
+            </HudButton>
+            <label className="mt-4 block">
+              <span className="sr-only">Command seat</span>
+              <select
+                value={country ?? "US"}
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => setCountry(event.target.value as PlayableId)}
+                className="min-h-12 w-full rounded-md border border-accent/20 bg-bg/60 px-3 text-sm text-fg outline-none focus:neon-border-accent"
+              >
+                {PLAYABLE.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {p.seat}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-3 block">
+              <span className="sr-only">Choose a scenario</span>
+              <select
+                value={scenario ?? ""}
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                  const id = event.target.value ? (event.target.value as ScenarioId) : null;
+                  setScenario(id);
+                  const def = id ? SCENARIOS.find((s) => s.id === id) : null;
+                  if (def) {
+                    setCountry(def.playerId as PlayableId);
+                    setTeam(def.intent);
+                    setAiMode(def.defaultAI);
+                    setDeadhand(def.defaultDeadhand);
+                  }
+                }}
+                className="min-h-12 w-full rounded-md border border-accent/20 bg-bg/60 px-3 text-sm text-fg outline-none focus:neon-border-accent"
+              >
+                <option value="">Sandbox · March 2027</option>
+                {SCENARIOS.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title} — {item.category} — challenge {item.challenge}/5
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedDef ? <p className="mt-2 text-sm text-fg">{selectedDef.title}</p> : null}
 
             <div className="mt-8 space-y-6">
               <section>
@@ -174,6 +246,37 @@ export function TitleScreen() {
                       <span className="mt-1 block text-xs font-normal normal-case opacity-80">Rogue model on keys</span>
                     </HudButton>
                   </div>
+                  <p className="mt-3 font-mono text-[9px] tracking-wider text-subtle uppercase">Command intelligence</p>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    {STRATEGIC_AI_CONFIGS.map((cfg) => (
+                      <HudButton
+                        key={cfg.id}
+                        variant={aiMode === cfg.id ? "active" : "default"}
+                        className="min-h-12 p-2 text-left text-[11px]"
+                        onClick={() => {
+                          setAiMode(cfg.id);
+                          if (cfg.id === "skynet") setTerminator(true);
+                        }}
+                      >
+                        <span className="font-display tracking-wider uppercase">{cfg.label}</span>
+                        <span className="mt-1 block text-[10px] font-normal normal-case text-muted">{cfg.risk}</span>
+                      </HudButton>
+                    ))}
+                  </div>
+                  <p className="mt-3 font-mono text-[9px] tracking-wider text-subtle uppercase">Continuity</p>
+                  <div className="mt-2 grid grid-cols-1 gap-1.5">
+                    {DEADHAND_CONFIGS.map((cfg) => (
+                      <HudButton
+                        key={cfg.id}
+                        variant={deadhand === cfg.id ? "accent" : "default"}
+                        className="min-h-12 p-2 text-left text-[11px]"
+                        onClick={() => setDeadhand(cfg.id)}
+                      >
+                        <span className="font-display tracking-wider uppercase">{cfg.label}</span>
+                        <span className="mt-1 block text-[10px] font-normal normal-case text-muted">{cfg.line}</span>
+                      </HudButton>
+                    ))}
+                  </div>
                 </section>
               ) : null}
 
@@ -186,15 +289,18 @@ export function TitleScreen() {
                         key={d.id}
                         variant="default"
                         className="flex min-h-12 items-center justify-between gap-4 px-4 py-3 hover:neon-border-accent"
-                        onClick={() =>
+                        onClick={() => {
+                          const def = scenario ? SCENARIOS.find((s) => s.id === scenario) : null;
                           start({
-                            difficulty: scenario ? SCENARIOS.find((s) => s.id === scenario)!.difficulty : d.id,
-                            playerId: country,
-                            intent: team,
-                            terminator,
+                            difficulty: def?.difficulty ?? d.id,
+                            playerId: country ?? "US",
+                            intent: team ?? "blue",
+                            terminator: terminator || aiMode === "skynet",
+                            strategicAI: terminator ? "skynet" : aiMode,
+                            deadhand: def?.defaultDeadhand ?? deadhand,
                             scenarioId: scenario ?? undefined,
-                          })
-                        }
+                          });
+                        }}
                       >
                         <span className="font-display tracking-[0.14em]">{d.label}</span>
                         <span className="text-xs text-muted">{d.line}</span>
@@ -257,6 +363,19 @@ export function TitleScreen() {
                 className="mt-2 h-9 w-full rounded-md glass-panel px-3 font-mono text-[11px] text-fg outline-none focus:neon-border-accent"
               />
               <div className="mt-2 flex flex-wrap gap-1.5">
+                {SCENARIO_CATEGORIES.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCategoryFilter(c.id)}
+                    className={cn(
+                      "rounded-sm px-2 py-1 font-mono text-[9px] tracking-wider uppercase",
+                      categoryFilter === c.id ? "bg-accent/20 text-accent neon-border-accent" : "text-subtle hover:text-muted",
+                    )}
+                  >
+                    {c.label}
+                  </button>
+                ))}
                 {(["all", "historical", "2027", "threshold"] as const).map((e) => (
                   <button
                     key={e}
@@ -281,8 +400,10 @@ export function TitleScreen() {
                   {seatOnly ? `Seat ${country}` : "All seats"}
                 </button>
               </div>
-              {selectedDef?.briefing ? (
-                <p className="mt-2 text-xs leading-snug text-accent/80">{selectedDef.briefing}</p>
+              {selectedDef?.briefing || selectedDef?.contentNote ? (
+                <p className="mt-2 text-xs leading-snug text-accent/80">
+                  {selectedDef.briefing ?? selectedDef.contentNote}
+                </p>
               ) : null}
               <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 lg:max-h-[calc(100dvh-12rem)]">
                 <ScenarioCard
@@ -324,6 +445,7 @@ export function TitleScreen() {
                 <li>· Ceasefire · pact ledger · C2 stances</li>
                 <li>· {SCENARIOS.length} scripted scenario watches · CN / UK / FR / PK seats</li>
                 <li>· Carrington / FOBS / orbital weapons · space weather</li>
+                <li>· ORACLE / CHORUS / SKYNET · DEADHAND continuity (fictional)</li>
               </ul>
             </GlassPanel>
           )}

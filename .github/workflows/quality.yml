@@ -1,0 +1,69 @@
+name: Quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build:dev
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Mobile browser smoke
+        env:
+          MOBILE_SMOKE_OUTPUT_DIR: artifacts/mobile-smoke
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/threshold-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
+          for attempt in {1..45}; do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 45 ]; then
+              cat /tmp/threshold-preview.log
+              exit 1
+            fi
+            sleep 1
+          done
+          node scripts/mobile-game-smoke.mjs http://127.0.0.1:4173/
+
+      - name: Upload mobile smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: threshold-mobile-smoke
+          path: artifacts/mobile-smoke
+          if-no-files-found: warn
+          retention-days: 14

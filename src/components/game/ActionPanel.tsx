@@ -273,7 +273,14 @@ export function ActionPanel({ world }: { world: World }) {
 
       <HudButton
         variant={kind === "employ" && intensity >= 2 ? "danger" : "active"}
-        className="min-h-12 w-full text-lg tracking-[0.22em] uppercase"
+        className="min-h-12 w-full text-lg tracking-[0.22em]"
+        aria-label={
+          kind === "employ" && intensity >= 2
+            ? "Open Black Book"
+            : kind === "employ"
+              ? "Execute conventional"
+              : "Execute"
+        }
         onClick={execute}
       >
         {kind === "employ" && intensity >= 2
