@@ -18,6 +18,8 @@ import { StrategicSystemsPanel } from "./StrategicSystemsPanel";
 import { weatherHostile } from "@/lib/game/spaceWeather";
 import { GLOSSARY } from "@/lib/game/copy";
 import { CloseCallOverlay } from "./CloseCallOverlay";
+import { trackClockKey, useTrackClock } from "./useTrackClock";
+import { formatCountdown } from "@/lib/game/flight";
 import { updateAtmosphere } from "@/lib/game/audio";
 import { resetToTitle, useGame } from "@/lib/game/store";
 import { dateLabel, meters } from "@/lib/game/world";
@@ -80,9 +82,19 @@ export function PlayScreen() {
     updateAtmosphere(world.defcon, m.risk);
   }, [world?.defcon, world?.globalRisk, world?.turn]);
 
+  // The live decision clock for the current inbound track. It deliberately
+  // lives here rather than on the World: `forecast()` replays `resolveTurn`
+  // twice per render and replay codes must reproduce a run from (seed,
+  // actions), so nothing that moves with wall time may touch world state.
+  const clockKey = trackClockKey(world);
+  const clock = useTrackClock(clockKey, world?.closeCall?.track.minutesToImpact ?? 0);
+
+  // Keyed on the track's identity. This used to depend on `minutesToImpact`
+  // and `confidence` directly, which slams the radar shut on every change —
+  // fatal once a clock is attached to the same track.
   useEffect(() => {
     if (world?.closeCall) setRadarOpen(false);
-  }, [world?.closeCall?.track.minutesToImpact, world?.closeCall?.track.confidence]);
+  }, [clockKey]);
 
   if (!world) return null;
   const m = meters(world);
@@ -277,19 +289,30 @@ export function PlayScreen() {
         >
           <GlobeSlot />
           <div className="hidden lg:block">
-            {world.closeCall ? (
-              <CloseCallOverlay world={world} />
-            ) : (
-              <div className="pointer-events-none absolute top-3 right-3 w-[min(38vw,320px)]">
-                <RadarScreen world={world} pulse={world.defcon <= 2} />
-              </div>
-            )}
+            {/* The scope stays mounted during a close call. It used to be a
+                ternary against the alert panel, which meant the radar vanished
+                at exactly the moment it mattered. The alert takes the top of
+                the map, the scope drops to the bottom corner to clear it. */}
+            {world.closeCall ? <CloseCallOverlay world={world} clock={clock} /> : null}
+            <div
+              className={cn(
+                "pointer-events-none absolute right-3 z-10 w-[min(38vw,320px)]",
+                world.closeCall ? "bottom-3" : "top-3",
+              )}
+            >
+              <RadarScreen world={world} pulse={world.defcon <= 2} clock={clock} />
+            </div>
           </div>
           <div className="lg:hidden">
             {!radarOpen && world.closeCall ? (
               <div className="absolute inset-x-3 top-3 z-20 rounded-lg border border-danger bg-bg/92 p-4 shadow-[0_0_30px_rgb(180_35_24/0.25)] backdrop-blur-sm">
                 <p className="font-mono text-micro tracking-[0.18em] text-danger">Close call · unverified track</p>
-                <p className="mt-1 font-display text-3xl tabular text-fg">{world.closeCall.track.minutesToImpact} min</p>
+                <p className="mt-1 font-display text-3xl tabular text-fg">
+                  {clock ? formatCountdown(clock.remainingSec) : `${world.closeCall.track.minutesToImpact}:00`}
+                  <span className="ml-2 font-mono text-xs text-muted">
+                    {clock ? `${Math.ceil(clock.minutesLeft)} min` : "min"}
+                  </span>
+                </p>
                 <p className="mt-2 text-xs leading-relaxed text-muted">
                   Treat confidence and corroboration as separate variables. Open radar for the full evidence view.
                 </p>
@@ -312,7 +335,7 @@ export function PlayScreen() {
                     Close
                   </button>
                 </div>
-                <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} />
+                <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} clock={clock} />
               </div>
             ) : null}
             <button

@@ -13,6 +13,8 @@ import { proposeCeasefire } from "./ceasefire";
 import { applyC2Stance } from "./c2";
 import { majorityKind, staffAdvice } from "./staff";
 import { buildTrack, resolveCloseCallHold } from "./warning";
+import { flightProfile, isMaritimeAzimuth, unresolvedProfile, wallSecondsFor } from "./flight";
+import { distanceKm } from "./geo";
 import {
   DEFEAT_CONDITIONS,
   MIN_VICTORY_MONTH,
@@ -469,6 +471,57 @@ export function runIntegrityChecks(): IntegrityResult {
       throw new Error(`risk ${replayed.globalRisk} vs ${w.globalRisk}`);
     }
     return `${actions.length} actions replayed identically`;
+  });
+
+  check("flight-profiles-wellformed", () => {
+    // Every band a track can be sampled from has to be a usable nextInt range.
+    const km = [200, 1500, 4000, 7000, 12000];
+    const profiles = [...km.map((d) => flightProfile(d)), flightProfile(9000, true), unresolvedProfile()];
+    for (const p of profiles) {
+      if (!(p.lo >= 1 && p.hi >= p.lo)) throw new Error(`${p.id} bad range ${p.lo}-${p.hi}`);
+      if (wallSecondsFor(p.lo) <= 0) throw new Error(`${p.id} has no clock`);
+    }
+    // Bands must be monotonic in range, or the geometry means nothing.
+    const ladder = km.map((d) => flightProfile(d).lo);
+    for (let i = 1; i < ladder.length; i += 1) {
+      if (ladder[i] < ladder[i - 1]) throw new Error(`band ${i} regresses (${ladder[i]} < ${ladder[i - 1]})`);
+    }
+    return `${profiles.length} profiles · ${ladder[0]}-${ladder[ladder.length - 1]} min floor`;
+  });
+
+  check("flight-time-tracks-geometry", () => {
+    // A track sampled from a far origin must not be able to arrive sooner than
+    // a near one could at best. Sea-launched is the documented exception.
+    const w = createWorld("standard", 31, "US", "blue");
+    const near = distanceKm(w.actors.US.lat, w.actors.US.lon, w.actors.CU.lat, w.actors.CU.lon);
+    const far = distanceKm(w.actors.US.lat, w.actors.US.lon, w.actors.KP.lat, w.actors.KP.lon);
+    if (near >= far) throw new Error(`fixture broken: CU ${Math.round(near)}km >= KP ${Math.round(far)}km`);
+    const nearBand = flightProfile(near);
+    const farBand = flightProfile(far);
+    if (farBand.hi <= nearBand.lo) throw new Error(`${farBand.id} never slower than ${nearBand.id}`);
+    if (flightProfile(far, true).hi >= farBand.lo) throw new Error("sea-launched is not the shorter path");
+    return `${Math.round(near)}km ${nearBand.id} vs ${Math.round(far)}km ${farBand.id}`;
+  });
+
+  check("flight-time-costs-one-draw", () => {
+    // The whole determinism contract is draw *count*, not draw value. Building
+    // the same track twice from the same rngState must consume the same amount
+    // of stream and land on the same numbers.
+    const a = createWorld("standard", 44, "US", "blue");
+    const b = structuredClone(a);
+    const ta = buildTrack(a, "RU", "attack");
+    const tb = buildTrack(b, "RU", "attack");
+    if (a.rngState !== b.rngState) throw new Error(`rng diverged ${a.rngState} vs ${b.rngState}`);
+    if (ta.minutesToImpact !== tb.minutesToImpact) throw new Error("tti not deterministic");
+    if (ta.azimuth !== tb.azimuth) throw new Error("azimuth not deterministic");
+    const band = flightProfile(
+      distanceKm(a.actors.US.lat, a.actors.US.lon, a.actors.RU.lat, a.actors.RU.lon),
+      isMaritimeAzimuth(ta.azimuth),
+    );
+    if (ta.minutesToImpact < band.lo || ta.minutesToImpact > band.hi) {
+      throw new Error(`tti ${ta.minutesToImpact} outside ${band.id} ${band.lo}-${band.hi}`);
+    }
+    return `${ta.minutesToImpact} min in ${band.id}`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };
