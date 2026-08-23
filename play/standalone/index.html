@@ -325,7 +325,7 @@
 (() => {
     'use strict';
     const $ = (s, root=document) => root.querySelector(s);
-    const $ = (s, root=document) => [...root.querySelectorAll(s)];
+    const $$ = (s, root=document) => [...root.querySelectorAll(s)];
     const clamp = (n,min=0,max=100) => Math.max(min,Math.min(max,n));
     const names = { verify:'Verify Evidence', diplomacy:'Open Human Channel', resilience:'Reinforce Resilience', aid:'Humanitarian Surge', hold:'Hold Position' };
     const actionCatalog = [
@@ -570,15 +570,15 @@
     function render(){applySettings();const app=$('#app');app.innerHTML=state.screen==='landing'?landing():state.screen==='game'?game():endScreen();if(settingsOpen&&!state.resolution?.open)app.insertAdjacentHTML('beforeend',settingsDialog());bind();}
     function bind(){
       const dismissRecovery=$('#dismissRecovery');if(dismissRecovery)dismissRecovery.onclick=()=>{state.recoveryNotice=null;save();render();};
-      $('[data-scenario]').forEach(b=>b.onclick=()=>{state.scenario=b.dataset.scenario;render();});
-      $('[data-ai]').forEach(b=>b.onclick=()=>{state.ai=b.dataset.ai;render();});
-      $('[data-cont]').forEach(b=>b.onclick=()=>{state.continuity=b.dataset.cont;render();});
+      $$('[data-scenario]').forEach(b=>b.onclick=()=>{state.scenario=b.dataset.scenario;render();});
+      $$('[data-ai]').forEach(b=>b.onclick=()=>{state.ai=b.dataset.ai;render();});
+      $$('[data-cont]').forEach(b=>b.onclick=()=>{state.continuity=b.dataset.cont;render();});
       const diff=$('#difficulty');if(diff)diff.onchange=()=>{state.difficulty=diff.value;save();};
       const start=$('#start');if(start)start.onclick=setupGame;
       const resume=$('#resume');if(resume)resume.onclick=()=>{const restored=normalizeState(readSavedState());state=restored.screen==='game'&&validMetrics(restored.metrics)&&validEvent(restored.currentEvent)?restored:{...clone(initial),recoveryNotice:'The saved watch was incomplete, so the scenario library was restored.'};state.busy=false;save();render();};
-      $('[data-action]').forEach(b=>b.onclick=()=>{if(state.busy)return;state.selectedAction=b.dataset.action;save();render();requestAnimationFrame(()=>$('#execute')?.focus({preventScroll:true}));});
+      $$('[data-action]').forEach(b=>b.onclick=()=>{if(state.busy)return;state.selectedAction=b.dataset.action;save();render();requestAnimationFrame(()=>$('#execute')?.focus({preventScroll:true}));});
       const execute=$('#execute');if(execute)execute.onclick=resolveAction;
-      $('[data-tab]').forEach(b=>b.onclick=()=>{if(state.resolution?.open)return;state.tab=b.dataset.tab;save();render();});
+      $$('[data-tab]').forEach(b=>b.onclick=()=>{if(state.resolution?.open)return;state.tab=b.dataset.tab;save();render();});
       const goDecision=$('#goDecision');if(goDecision)goDecision.onclick=()=>{state.tab='decision';save();render();requestAnimationFrame(()=>document.querySelector('[data-action]')?.focus());};
       const reviewOutcome=$('#reviewOutcome');if(reviewOutcome)reviewOutcome.onclick=()=>{if(state.lastOutcome){state.resolution={...state.lastOutcome,open:true};render();requestAnimationFrame(()=>$('#resultTitle')?.focus({preventScroll:true}));}};
       const continueResolution=$('#continueResolution');if(continueResolution)continueResolution.onclick=()=>{state.resolution=null;state.tab='situation';save();render();requestAnimationFrame(()=>$('.event-card')?.focus());};
