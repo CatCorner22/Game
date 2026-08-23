@@ -3,6 +3,9 @@ import { ACTOR_IDS } from "./types";
 import { actionDef } from "./actions";
 import { aiChoose } from "./ai";
 import { drawEvent, eventFlash } from "./events";
+import { redObjectivesMet } from "./objectives";
+import { breakPactIfAggressive, proposePact, tickPacts } from "./pacts";
+import { markDoctrinePending } from "./doctrine";
 import {
   applyNuclearUse,
   isNuclearAction,
@@ -293,6 +296,8 @@ function applyAction(world: World, actor: ActorId, action: PlayerAction) {
 
   if (action.kind === "hold") return;
 
+  if (t) breakPactIfAggressive(world, actor, t.id, action.kind);
+
   if (action.kind === "kill" && t) {
     applyKill(world, actor, action);
   }
@@ -313,6 +318,7 @@ function applyAction(world: World, actor: ActorId, action: PlayerAction) {
         world.armsRace = clamp(world.armsRace - (t.id === "RU" || t.id === "CN" ? 6 : 2), 0, 100);
       }
       if (I === 1) queryHotline(world, t.id);
+      if (I === 3 && you && actor !== t.id) proposePact(world, actor, t.id);
       if (you) {
         log(
           world,
@@ -594,6 +600,7 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   tickTrickery(world);
   tickBrokenArrow(world);
   tickTerminator(world, action);
+  tickPacts(world);
   const expanded = machineExpandsOrder(world, action);
   if (expanded) {
     log(
@@ -637,6 +644,7 @@ export function resolveTurn(world: World, action: PlayerAction): World {
       world.month = 0;
       world.year += 1;
     }
+    if (world.turn % 6 === 0) markDoctrinePending(world);
     if (!world.ended) {
       const cc = maybeSpawnCloseCall(world);
       if (cc) {
@@ -773,17 +781,6 @@ function scoreWar(world: World): number {
   return round(250 + popLeft * 8 + second - (world.firstUse === world.playerId ? 120 : 0));
 }
 
-function redObjectives(world: World): boolean {
-  const p = world.playerId;
-  if (p === "RU") return world.allianceCohesion < 48;
-  if (p === "CN") return (world.flashpoints.find((f) => f.id === "taiwan")?.heat ?? 0) > 68 && world.allianceCohesion < 58;
-  if (p === "KP") return world.actors.KP.stockpile >= 55 && world.actors.US.hostility.KP < 78;
-  if (p === "PK") return (world.flashpoints.find((f) => f.id === "kashmir")?.heat ?? 0) < 42;
-  if (p === "IL") return !world.actors.IR.hasDevice && world.actors.IR.breakoutWeeks > 26;
-  if (p === "IN") return world.actors.PK.unrest > 48 && world.nuclearUses.length === 0;
-  if (p === "US") return ["RU", "CN", "KP"].every((id) => world.actors[id as ActorId].leadershipStability < 52);
-  return world.globalRisk < 38;
-}
 
 export function finishIfNeeded(world: World) {
   if (world.ended) return;
@@ -887,7 +884,7 @@ export function finishIfNeeded(world: World) {
       return;
     }
     if (world.intent === "red") {
-      if (redObjectives(world)) {
+      if (redObjectivesMet(world)) {
         end(world, {
           kind: "red-win",
           title: "OBJECTIVES ADVANCED",

@@ -1,6 +1,7 @@
 import type { ActorId, PlayerAction, World } from "./types";
 import { chance, nextUnit, pick } from "./rng";
 import { hostility } from "./world";
+import { aiRespectsPact } from "./pacts";
 
 function act(
   kind: PlayerAction["kind"],
@@ -38,9 +39,10 @@ export function aiChoose(world: World, id: ActorId): PlayerAction | null {
   );
   const eventTarget = world.event.actor === id;
   const notifyOften = id === "US" || id === "UK" || id === "FR" || id === "IN";
+  const pactBlocks = aiRespectsPact(world, id, rival);
 
   if (id === "US") {
-    if (heatMax > 88 && a.alert >= 4 && chance(world, 0.06)) return act("employ", 2, rival);
+    if (!pactBlocks && heatMax > 88 && a.alert >= 4 && chance(world, 0.06)) return act("employ", 2, rival);
     if (world.defcon <= 2 && chance(world, 0.5)) return act("posture", 2, rival, true);
     if (vsYou > 70 && chance(world, 0.35)) return act("posture", 1, rival, notifyOften);
     if (vsYou < 55 && chance(world, 0.3)) return act("diplomacy", 1, rival);

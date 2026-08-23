@@ -62,7 +62,7 @@ function polar(cx: number, cy: number, km: number, bearing: number, rMax: number
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-export function RadarScreen({ world }: { world: World }) {
+export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const tracks = tracksOf(world);
@@ -92,7 +92,7 @@ export function RadarScreen({ world }: { world: World }) {
       const cx = w / 2;
       const cy = h / 2 + 4;
       const rMax = Math.min(w, h) * 0.42;
-      const sweep = ((now - t0) / 2800) % 1;
+      const sweep = ((now - t0) / (pulse ? 1200 : 2800)) % 1;
       const sweepAng = sweep * Math.PI * 2;
 
       ctx.fillStyle = "#030805";
