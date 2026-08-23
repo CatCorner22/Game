@@ -142,19 +142,60 @@ function authPopupPlugin(): Plugin {
   };
 }
 
-// `0.0.0.0:8080` is the live-preview contract — don't change host/port.
+/**
+ * Hosts the dev/preview server will answer for.
+ *
+ * Vite rejects any request whose `Host` header is not on this list — its
+ * DNS-rebinding protection — with `Blocked request. This host is not allowed.`
+ * Replit serves the app through a per-repl `*.replit.dev` proxy, so without an
+ * allowlist every request from the Replit webview comes back 403 and the app
+ * looks dead even though the server is up.
+ *
+ * A leading `.` matches the domain and all of its subdomains, so `.replit.dev`
+ * already covers the regional webview hosts (`*.picard.replit.dev`,
+ * `*.janeway.replit.dev`, …). `REPLIT_DOMAINS`/`REPLIT_DEV_DOMAIN` are appended
+ * verbatim so a custom or renamed domain works without editing this file.
+ */
+function allowedHosts(): string[] {
+  const fromEnv = (process.env.REPLIT_DOMAINS ?? process.env.REPLIT_DEV_DOMAIN ?? "")
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean);
+  return ["localhost", "127.0.0.1", ".replit.dev", ".replit.app", ".repl.co", ...fromEnv];
+}
+
+/** Running inside a Replit container (workspace or deployment). */
+const onReplit = Boolean(process.env.REPL_ID || process.env.REPLIT_DEV_DOMAIN);
+
+/**
+ * `0.0.0.0:8080` is the live-preview contract — that stays the default. Replit
+ * names the port to bind in `PORT`, and an Autoscale/Reserved VM health check
+ * probes exactly that port, so a hardcoded 8080 fails to deploy there.
+ */
+const port = Number.parseInt(process.env.PORT ?? "", 10) || 8080;
+
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
 export default defineConfig(({ command, isPreview }) => ({
   server: {
     host: "0.0.0.0",
-    port: 8080,
+    port,
     strictPort: true,
+    allowedHosts: allowedHosts(),
+    // Behind Replit's proxy the page is served over HTTPS on 443 while Vite
+    // listens on `port`. The HMR client derives its socket from the page URL,
+    // which is right, but pinning it keeps a proxied non-443 origin from
+    // sending the browser to a port the proxy does not expose.
+    ...(onReplit ? { hmr: { protocol: "wss" as const, clientPort: 443 } } : {}),
   },
   preview: {
-    host: "127.0.0.1",
-    port: 8081,
+    // Loopback keeps the built-output preview off the sandbox network. On
+    // Replit the webview reaches the container from outside, so it has to bind
+    // every interface to be reachable at all.
+    host: onReplit ? "0.0.0.0" : "127.0.0.1",
+    port: onReplit ? port : 8081,
     strictPort: true,
+    allowedHosts: allowedHosts(),
   },
   resolve: { tsconfigPaths: true },
   plugins: [
@@ -170,7 +211,10 @@ export default defineConfig(({ command, isPreview }) => ({
     ...(command === "build" || isPreview
       ? [
           nitro({
-            preset: "vercel",
+            // Vercel by default (what the deployer expects); `NITRO_PRESET`
+            // switches it — `node-server` emits the standalone
+            // `.output/server/index.mjs` that Replit deployments run.
+            preset: process.env.NITRO_PRESET || "vercel",
             // Auto-registers server/middleware/* (the PWA install page +
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.

@@ -1,0 +1,36 @@
+# Replit configuration for THRESHOLD.
+#
+# `run` is the workspace Run button; `[deployment]` is what Replit publishes.
+# Both go through npm so the Vercel/CI path and the Replit path stay identical
+# apart from the Nitro preset.
+
+modules = ["nodejs-22"]
+
+# `npm install` is a sub-second no-op once node_modules is warm, so paying it
+# every Run is cheaper than a Run button that fails on a cold container.
+run = "npm install && npm run dev"
+
+entrypoint = "src/routes/index.tsx"
+
+hidden = [".config", "node_modules", "dist", ".output", ".vercel", ".nitro", ".tanstack"]
+
+# Vite binds 8080 (the app's port contract, overridable with PORT); Replit
+# serves it as the repl's public https origin.
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[nix]
+channel = "stable-24_11"
+
+[deployment]
+# Autoscale suits a stateless SSR app: saves are local to the browser, and the
+# PGLite fallback is per-instance, so there is no server state to keep warm.
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build:node"]
+run = ["npm", "run", "start"]
+
+[env]
+# Nitro's default here is the Vercel preset, which emits `.vercel/output` and no
+# runnable server. `node-server` emits `.output/server/index.mjs` instead.
+NITRO_PRESET = "node-server"

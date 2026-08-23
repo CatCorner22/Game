@@ -6,6 +6,7 @@ artifacts
 dist
 .output
 .nitro
+.vercel
 .wrangler
 .env
 .env.*

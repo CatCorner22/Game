@@ -67,6 +67,47 @@ npm run lint
 npm run build
 ```
 
+## Running on Replit
+
+Import the repository into Replit and press **Run**. `.replit` is checked in, so
+no further setup is needed: it installs dependencies, starts the dev server, and
+maps the app to the repl's public URL.
+
+Three things in the stock config had to change for that to work — worth knowing
+if you fork or host this somewhere else:
+
+| Issue | Symptom off-platform | Fix |
+| --- | --- | --- |
+| Vite's DNS-rebinding protection allows only localhost | Every request through a `*.replit.dev` proxy host returns `Blocked request. This host is not allowed.` — a blank webview over a healthy server | `server.allowedHosts` / `preview.allowedHosts` in `vite.config.ts` allow `.replit.dev`, `.replit.app`, `.repl.co`, plus whatever `REPLIT_DOMAINS`/`REPLIT_DEV_DOMAIN` names |
+| The port was hardcoded to 8080 | A deployment health check probes `$PORT` and finds nothing listening | `PORT` is honored and still falls back to 8080 |
+| Nitro built for Vercel only | `npm run build` emits `.vercel/output`, which has no server you can start | `NITRO_PRESET` selects the preset; `npm run build:node` emits `.output/server/index.mjs` and `npm start` runs it |
+
+Unrelated hosts are still rejected, so the rebinding protection stays intact.
+
+### Deploying from Replit
+
+`.replit` points Replit's deploy at the Node build:
+
+```bash
+npm run build:node   # NITRO_PRESET=node-server → .output/server/index.mjs
+npm start            # binds $PORT (default 8080) on all interfaces
+```
+
+Autoscale is the configured target — solo saves live in the browser and the
+PGLite fallback is per-instance, so there is no server-side state to keep warm.
+
+### Environment variables
+
+Nothing is required to play. The ones that change behavior:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `PORT` | `8080` | Port the dev, preview, and production servers bind |
+| `NITRO_PRESET` | `vercel` (`node-server` on Replit) | Nitro build target |
+| `DATABASE_URL` | unset | Uses Postgres instead of the embedded PGLite fallback |
+| `VITE_AUTH_ENABLED` | `false` (`.grok/app-env.json`) | Federated sign-in; solo play needs no account |
+| `GROK_EXTENSIONS` | on, off on Replit | Injects the grok.com "Created with Grok" script. Off-platform it is a third-party request that fails in the console, so Replit skips it |
+
 ## Scenario authoring
 
 Scenario definitions live in `src/lib/game/scenarios.ts`. Each scenario declares:
