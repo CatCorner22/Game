@@ -227,6 +227,25 @@ export function grokXCreatorHeadTags(creator = readXCreator(), creatorId = readX
   ];
 }
 
+/**
+ * Whether to inject the platform "Created with Grok" script.
+ *
+ * The script is served from grok.com, so on a host outside the Grok sandbox it
+ * is a third-party request that buys the page nothing and fails loudly in the
+ * console whenever grok.com is unreachable. Default off on Replit (`REPL_ID` /
+ * `REPLIT_DEV_DOMAIN`), on everywhere else so the sandbox and Vercel deploys are
+ * untouched; `GROK_EXTENSIONS=1`/`0` forces it either way.
+ */
+export function grokExtensionsEnabled(env = typeof process !== "undefined" ? process.env : {}) {
+  const source = env ?? {};
+  const explicit = String(source.GROK_EXTENSIONS ?? "")
+    .trim()
+    .toLowerCase();
+  if (explicit === "0" || explicit === "false") return false;
+  if (explicit === "1" || explicit === "true") return true;
+  return !(source.REPL_ID || source.REPLIT_DEV_DOMAIN);
+}
+
 /** Platform "Created with Grok" banner — injected into every HTML document. */
 export function grokExtensionsHeadTags(projectId = readGrokProjectId()) {
   const id = escapeHtml(projectId);
@@ -447,10 +466,12 @@ export function injectGrokPwaHead(html, ctx = {}) {
     grokOgHeadTags({ host, appName, site, documentTitle, cwd }).join(""),
   );
 
-  if (!next.includes("/grok-app-builder/extensions.js")) {
-    missing.push(...grokExtensionsHeadTags(projectId));
-  } else if (projectId && !next.includes('name="grok-project-id"')) {
-    missing.push(`<meta name="grok-project-id" content="${escapeHtml(projectId)}">`);
+  if (grokExtensionsEnabled()) {
+    if (!next.includes("/grok-app-builder/extensions.js")) {
+      missing.push(...grokExtensionsHeadTags(projectId));
+    } else if (projectId && !next.includes('name="grok-project-id"')) {
+      missing.push(`<meta name="grok-project-id" content="${escapeHtml(projectId)}">`);
+    }
   }
   if (
     projectId &&

@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   appNameFromHost,
   createHeadInjector,
+  grokExtensionsEnabled,
   grokXCreatorHeadTags,
   injectGrokPwaHead,
   isDocumentPath,
@@ -20,6 +21,39 @@ import {
 import { renderInstallPage } from "./grok-pwa-plugin.mjs";
 
 const TEMPLATE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+test("grok extensions default on, and off inside a Replit container", () => {
+  assert.equal(grokExtensionsEnabled({}), true);
+  assert.equal(grokExtensionsEnabled({ REPL_ID: "abc-123" }), false);
+  assert.equal(grokExtensionsEnabled({ REPLIT_DEV_DOMAIN: "app.picard.replit.dev" }), false);
+});
+
+test("GROK_EXTENSIONS overrides the Replit default in both directions", () => {
+  assert.equal(grokExtensionsEnabled({ REPL_ID: "abc-123", GROK_EXTENSIONS: "1" }), true);
+  assert.equal(grokExtensionsEnabled({ REPL_ID: "abc-123", GROK_EXTENSIONS: "true" }), true);
+  assert.equal(grokExtensionsEnabled({ GROK_EXTENSIONS: "0" }), false);
+  assert.equal(grokExtensionsEnabled({ GROK_EXTENSIONS: "false" }), false);
+  // An unrecognized value is not an override — fall back to the host default.
+  assert.equal(grokExtensionsEnabled({ GROK_EXTENSIONS: "maybe" }), true);
+});
+
+test("head injection skips the grok.com script when extensions are off", () => {
+  const previous = process.env.GROK_EXTENSIONS;
+  process.env.GROK_EXTENSIONS = "0";
+  try {
+    const out = injectGrokPwaHead("<html><head><title>x</title></head><body></body></html>", {
+      appName: "Demo",
+      projectId: "proj-1",
+    });
+    assert.doesNotMatch(out, /grok-app-builder\/extensions\.js/);
+    // The PWA head chrome is independent of the banner and must survive.
+    assert.match(out, /rel="manifest"/);
+    assert.match(out, /apple-touch-icon/);
+  } finally {
+    if (previous === undefined) delete process.env.GROK_EXTENSIONS;
+    else process.env.GROK_EXTENSIONS = previous;
+  }
+});
 
 test("injects before </head>", () => {
   const out = injectGrokPwaHead("<html><head><title>x</title></head><body></body></html>");
