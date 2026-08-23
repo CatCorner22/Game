@@ -7,7 +7,7 @@ import { CloseCallOverlay } from "./CloseCallOverlay";
 import { useGame } from "@/lib/game/store";
 import { dateLabel, meters } from "@/lib/game/world";
 import { fmtNum } from "@/lib/game/geo";
-import { HudButton, HudChip, HudHeader, HudLabel, HudPanel } from "./ui/Hud";
+import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudPanel } from "./ui/Hud";
 
 function GlobeSlot({ emphasized }: { emphasized?: boolean }) {
   const world = useGame((s) => s.world);
@@ -95,6 +95,9 @@ export function WarScreen() {
         {world.closeCall ? <CloseCallOverlay world={world} /> : null}
         <div className="pointer-events-none absolute top-3 right-3 w-[min(100%,360px)]">
           <RadarScreen world={world} pulse={world.defcon <= 2} />
+        </div>
+        <div className="pointer-events-none absolute bottom-3 left-3 max-w-[220px]">
+          <EscalationLadder phase={world.phase} defcon={world.defcon} winter={world.winterStage} />
         </div>
       </div>
       <div className="grid max-h-[42vh] grid-cols-1 border-t border-danger/30 lg:grid-cols-2">

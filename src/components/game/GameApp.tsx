@@ -36,7 +36,11 @@ export function GameApp() {
   }, []);
 
   const shellVariant =
-    screen === "war" ? "war" : screen === "play" || screen === "end" || screen === "briefing" || screen === "stats" ? "default" : "minimal";
+    screen === "war"
+      ? "war"
+      : screen === "title" || screen === "play" || screen === "end" || screen === "briefing" || screen === "stats" || screen === "multiplayer"
+        ? "default"
+        : "minimal";
 
   return (
     <GameErrorBoundary>

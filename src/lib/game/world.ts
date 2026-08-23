@@ -154,6 +154,20 @@ export function createWorld(
       heat: 24,
       note: "Money, ports, and colonels. A warhead is inventory if someone sells one.",
     },
+    {
+      id: "himalaya",
+      name: "Himalaya / LAC",
+      actors: ["IN", "CN"],
+      heat: 20,
+      note: "High-altitude clash. Dual-capable aircraft make a patrol nuclear-adjacent.",
+    },
+    {
+      id: "space",
+      name: "Early warning / space",
+      actors: ["US", "RU", "CN"],
+      heat: 14,
+      note: "SBIRS and missile-warning birds. An ASAT shot is a blindfold.",
+    },
   ];
 
   const opening = openingFor(playerId);

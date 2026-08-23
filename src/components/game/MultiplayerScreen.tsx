@@ -5,6 +5,7 @@ import type { PlayerAction, World } from "@/lib/game/types";
 import { resolveTurn } from "@/lib/game/sim";
 import { saveWorld } from "@/lib/game/save";
 import { recordTurn } from "@/lib/game/replay";
+import { GlassPanel, HudButton, HudChip, HudLabel } from "./ui/Hud";
 
 type MpMsg =
   | { type: "turn"; world: World; action: PlayerAction; seat: string }
@@ -43,7 +44,10 @@ export function MultiplayerScreen() {
           recordTurn(msg.world, msg.action);
           const next = resolveTurn(structuredClone(msg.world), msg.action);
           saveWorld(next);
-          useGame.setState({ world: next, screen: next.ended ? "end" : next.phase === "nuclear" || next.defcon <= 2 ? "war" : "play" });
+          useGame.setState({
+            world: next,
+            screen: next.ended ? "end" : next.phase === "nuclear" || next.defcon <= 2 ? "war" : "play",
+          });
           roomRef.current?.send({ type: "sync", world: next }, from);
         }
         if (msg.type === "sync" && msg.world) {
@@ -67,44 +71,49 @@ export function MultiplayerScreen() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 py-10">
-      <button type="button" onClick={() => setScreen("title")} className="self-start font-display text-sm text-muted uppercase">
+      <HudButton variant="ghost" className="self-start text-sm uppercase" onClick={() => setScreen("title")}>
         Back
-      </button>
-      <h1 className="mt-6 font-display text-4xl text-fg">Multiplayer</h1>
+      </HudButton>
+      <div className="mt-6 flex items-center gap-3">
+        <h1 className="font-display text-4xl tracking-[0.12em] text-glow-accent text-fg uppercase">Multiplayer</h1>
+        {connected ? <HudChip active>Link live</HudChip> : <HudChip>Offline</HudChip>}
+      </div>
       <p className="mt-3 text-sm text-muted">
         Async brinkmanship: alternate monthly turns over WebRTC. Hot-seat: pass the device between seats on one world.
       </p>
-      <label className="mt-6 block">
-        <span className="font-mono text-[10px] text-muted uppercase">Room</span>
-        <input
-          value={roomId}
-          onChange={(e) => setRoomId(e.target.value)}
-          className="mt-1 w-full rounded-md bg-elevated px-3 py-2 font-mono text-sm text-fg"
-        />
-      </label>
-      <label className="mt-4 block">
-        <span className="font-mono text-[10px] text-muted uppercase">Callsign</span>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-md bg-elevated px-3 py-2 font-mono text-sm text-fg"
-        />
-      </label>
-      <div className="mt-4 flex gap-2">
-        {(["async", "hotseat"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMode(m)}
-            className={`min-h-10 flex-1 rounded-sm font-display text-xs uppercase ${mode === m ? "bg-accent text-accent-fg" : "bg-elevated text-muted"}`}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-      <button type="button" onClick={connect} className="mt-6 min-h-12 rounded-md bg-fg font-display tracking-wider text-bg uppercase">
-        {connected ? "Reconnect" : "Join room"}
-      </button>
+      <GlassPanel glow="accent" className="mt-6 rounded-xl p-4">
+        <label className="block">
+          <HudLabel>Room</HudLabel>
+          <input
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            className="mt-1 w-full rounded-md glass-panel px-3 py-2 font-mono text-sm text-fg outline-none focus:neon-border-accent"
+          />
+        </label>
+        <label className="mt-4 block">
+          <HudLabel>Callsign</HudLabel>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-1 w-full rounded-md glass-panel px-3 py-2 font-mono text-sm text-fg outline-none focus:neon-border-accent"
+          />
+        </label>
+        <div className="mt-4 flex gap-2">
+          {(["async", "hotseat"] as const).map((m) => (
+            <HudButton
+              key={m}
+              variant={mode === m ? "active" : "default"}
+              className="min-h-10 flex-1 text-xs uppercase"
+              onClick={() => setMode(m)}
+            >
+              {m}
+            </HudButton>
+          ))}
+        </div>
+        <HudButton variant="active" className="mt-6 min-h-12 w-full tracking-wider uppercase" onClick={connect}>
+          {connected ? "Reconnect" : "Join room"}
+        </HudButton>
+      </GlassPanel>
       {connected ? (
         <ul className="mt-4 space-y-1 font-mono text-xs text-muted">
           {peers.map((p) => (
@@ -116,9 +125,9 @@ export function MultiplayerScreen() {
         </ul>
       ) : null}
       {world && mode === "async" ? (
-        <button type="button" onClick={broadcastTurn} className="mt-6 min-h-11 rounded-md bg-accent font-display text-xs text-accent-fg uppercase">
+        <HudButton variant="accent" className="mt-6 min-h-11 w-full text-xs uppercase" onClick={broadcastTurn}>
           Send turn to peer
-        </button>
+        </HudButton>
       ) : null}
       {mode === "hotseat" && world ? (
         <p className="mt-6 text-sm text-subtle">

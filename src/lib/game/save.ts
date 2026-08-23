@@ -68,6 +68,24 @@ export function migrateWorld(world: World): World {
       note: "Money, ports, colonels.",
     });
   }
+  if (!world.flashpoints.some((f) => f.id === "himalaya")) {
+    world.flashpoints.push({
+      id: "himalaya",
+      name: "Himalaya / LAC",
+      actors: ["IN", "CN"],
+      heat: 18,
+      note: "High-altitude clash. Dual-capable aircraft make a patrol nuclear-adjacent.",
+    });
+  }
+  if (!world.flashpoints.some((f) => f.id === "space")) {
+    world.flashpoints.push({
+      id: "space",
+      name: "Early warning / space",
+      actors: ["US", "RU", "CN"],
+      heat: 12,
+      note: "SBIRS and missile-warning birds. An ASAT shot is a blindfold.",
+    });
+  }
   if (world.brokenArrow === undefined) world.brokenArrow = null;
   if (!world.reactions) world.reactions = [];
   if (!world.pacts) world.pacts = [];

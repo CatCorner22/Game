@@ -530,6 +530,60 @@ const DECK: GameEvent[] = [
     ignoreLine: "Both sides keep their reading. Kashmir heat ticks.",
     tags: ["kashmir", "defense"],
   },
+  {
+    id: "asat-shot",
+    title: "Warning bird goes dark",
+    body: "A geosynchronous missile-warning satellite stopped reporting after a debris event. National technical means say a direct-ascent ASAT. Your remaining birds still see boosts — later, thinner, and with more false tracks. INTEL names the shooter. POSTURE without a notice is how a blindfold becomes a bolt.",
+    actor: "CN",
+    heat: "critical",
+    ignoreLine: "Coverage stays thin. Close-call confidence drops. Space heat ticks.",
+    tags: ["space", "warning"],
+  },
+  {
+    id: "trident-dark",
+    title: "CASD boat missed the window",
+    body: "One SSBN missed a communications window. The boat is designed to stay dark. The file is whether this is patrol discipline or a casualty. INTEL hunts. HOLD is how 1983 treated a missing boat: wait. POSTURE generates the rest of the force.",
+    actor: "UK",
+    heat: "high",
+    ignoreLine: "The boat stays dark. Continuous-at-sea deterrence is a faith until it isn't.",
+    tags: ["nato-ru", "warning"],
+  },
+  {
+    id: "frappe-split",
+    title: "Washington asks for the keys",
+    body: "NATO wants a coordinated generate. Your independent deterrent is the point of the Fifth Republic. Sharing targeting is how you cease to be a third center. DIPLOMACY with Washington keeps the alliance. HOLD keeps the force de frappe yours.",
+    actor: "US",
+    heat: "med",
+    ignoreLine: "They write you as a follower. Moscow writes a split.",
+    tags: ["nato-ru"],
+  },
+  {
+    id: "lac-clash",
+    title: "Patrol clash at the LAC",
+    body: "Troops fought at altitude with no shots that count as a war. Dual-capable aircraft are forward on both sides. A notice says exercise. No notice is how a ridge becomes a nuclear file. DIPLOMACY with Beijing. POSTURE matches generate.",
+    actor: "CN",
+    heat: "high",
+    ignoreLine: "The ridge stays occupied. Himalaya heat ticks.",
+    tags: ["himalaya"],
+  },
+  {
+    id: "df26-guam",
+    title: "DF-26 movement toward Guam",
+    body: "Rocket Force TELs associated with the Guam killer left garrison. Washington will see it. A notice keeps it an exercise. Silence is how a carrier group writes a first-strike file.",
+    actor: "CN",
+    heat: "high",
+    ignoreLine: "The TELs stay out. South China Sea and Taiwan heat both tick.",
+    tags: ["taiwan", "south-china"],
+  },
+  {
+    id: "casd-patrol",
+    title: "Vanguard on station, noisy",
+    body: "A Vanguard boat was prosecuted by a hostile SSN for six hours. The patrol is still valid. The question is whether you generate airborne and tell Washington, or keep Continuous At Sea Deterrence quiet and hope the next window is clean.",
+    actor: "RU",
+    heat: "med",
+    ignoreLine: "The boat stays on station. They have a datum.",
+    tags: ["nato-ru"],
+  },
 ];
 
 export function openingFor(player: ActorId): GameEvent {
@@ -670,9 +724,11 @@ export function openingFor(player: ActorId): GameEvent {
 
 export function drawEvent(world: World): GameEvent {
   const extra = world.terminator ? TERMINATOR_EVENTS : [];
-  const unused = [...DECK, ...extra].filter((e) => !world.usedEventIds.includes(e.id) && e.id !== world.event.id);
-  const recycle = [...DECK, ...extra].filter((e) => e.id !== world.event.id);
-  const pool = unused.length ? unused : recycle.length ? recycle : [...DECK, ...extra];
+  const deck = extra.length ? [...DECK, ...extra] : DECK;
+  const used = new Set(world.usedEventIds);
+  const unused = deck.filter((e) => !used.has(e.id) && e.id !== world.event.id);
+  const recycle = unused.length ? unused : deck.filter((e) => e.id !== world.event.id);
+  const pool = recycle.length ? recycle : deck;
   const weighted = pool.filter((e) => {
     if (e.actor === "NS" && world.terrorThreat < 12 && world.difficulty === "standard") {
       return chance(world, 0.4);

@@ -721,13 +721,15 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   return world;
 }
 
-export function cloneWorld(world: World): World {
-  return structuredClone(world);
+export function cloneWorld(world: World, slim = false): World {
+  const w = structuredClone(world);
+  if (slim && w.log.length > 12) w.log = w.log.slice(0, 12);
+  return w;
 }
 
 export function forecast(world: World, action: PlayerAction): Forecast {
   const run = (fixed: number) => {
-    const w = cloneWorld(world);
+    const w = cloneWorld(world, true);
     w.rngMode = "fixed";
     w.rngFixed = fixed;
     resolveTurn(w, action);

@@ -142,4 +142,16 @@ export const GLOSSARY = [
     term: "Disclosure labels",
     def: "Acknowledged = official. Reported = credible public reporting, not official. Suspected = intelligence assessment. Unacknowledged = exists in the file, denied or never spoken.",
   },
+  {
+    term: "ASAT",
+    def: "Anti-satellite weapon. A shot against a missile-warning bird thins coverage and raises false-track rates. Close calls look worse after you are blindfolded.",
+  },
+  {
+    term: "CASD",
+    def: "Continuous At-Sea Deterrence. The UK keeps at least one SSBN on patrol. A missed comms window is designed. It is also how you discover a casualty.",
+  },
+  {
+    term: "Force de frappe",
+    def: "France's independent deterrent. Sharing targeting with NATO is how a third center ceases to be independent.",
+  },
 ];

@@ -202,6 +202,7 @@ export function ScenarioCard({
   difficulty,
   selected,
   onClick,
+  seat,
 }: {
   title: string;
   line: string;
@@ -209,6 +210,7 @@ export function ScenarioCard({
   difficulty: string;
   selected: boolean;
   onClick: () => void;
+  seat?: string;
 }) {
   return (
     <button
@@ -224,7 +226,43 @@ export function ScenarioCard({
         <span className="font-mono text-[9px] tracking-wider text-accent/70 uppercase">{era}</span>
       </div>
       <p className="mt-1.5 text-xs leading-snug text-muted">{line}</p>
-      <p className="mt-2 font-mono text-[9px] tracking-wider text-subtle uppercase">{difficulty}</p>
+      <p className="mt-2 font-mono text-[9px] tracking-wider text-subtle uppercase">
+        {seat ? `${seat} · ` : ""}
+        {difficulty}
+      </p>
     </button>
+  );
+}
+
+const PHASES = ["peacetime", "crisis", "conventional", "nuclear", "aftermath"] as const;
+
+export function EscalationLadder({
+  phase,
+  defcon,
+  winter,
+}: {
+  phase: string;
+  defcon: number;
+  winter: number;
+}) {
+  return (
+    <HudPanel glow={defcon <= 2 || phase === "nuclear" ? "danger" : "accent"} className="pointer-events-none">
+      <HudLabel>Escalation</HudLabel>
+      <div className="mt-2 flex gap-1">
+        {PHASES.map((p) => (
+          <span
+            key={p}
+            className={cn(
+              "h-1.5 flex-1 rounded-full",
+              phase === p ? (p === "nuclear" || p === "aftermath" ? "bg-danger" : "bg-accent glow-accent-sm") : "bg-surface",
+            )}
+            title={p}
+          />
+        ))}
+      </div>
+      <p className="mt-2 font-mono text-[10px] tracking-wider text-muted uppercase">
+        {phase} · ALERT {defcon} · winter {winter}
+      </p>
+    </HudPanel>
   );
 }
