@@ -1,0 +1,127 @@
+import type { World } from "./types";
+import { createWorld } from "./world";
+import { makeActors } from "./actors";
+import { defaultHotlines, defaultSensors } from "./warning";
+import { makeOfficer, asPlayable } from "./command";
+import { makeSites, seedSpies } from "./spies";
+import { emptyTrickery } from "./trickery";
+
+const KEY = "threshold.save.v2";
+const BACKUP = "threshold.save.v2.bak";
+const SAVE_VERSION = 2;
+
+function migrate(world: World): World {
+  if (!world.playerId) world.playerId = "US";
+  if (!world.intent) world.intent = "blue";
+  if (world.footballPresent === undefined) world.footballPresent = true;
+  if (world.biscuitOnPerson === undefined) world.biscuitOnPerson = true;
+  if (!world.authCode) world.authCode = "GOLD-7";
+  if (!world.secondOfficer) world.secondOfficer = makeOfficer(asPlayable(world.playerId));
+  if (world.closeCall && world.closeCall.humint === undefined) world.closeCall.humint = null;
+  if (!world.sensors) world.sensors = defaultSensors();
+  if (!world.hotlines) world.hotlines = defaultHotlines();
+  if (!world.notices) world.notices = [];
+  if (world.winterStage === undefined) world.winterStage = 0;
+  if (world.uncontrolled === undefined) world.uncontrolled = false;
+  if (world.playerCasualties === undefined) world.playerCasualties = world.usCasualties ?? 0;
+  if (world.terminator === undefined) world.terminator = false;
+  if (world.aiTakeover === undefined) world.aiTakeover = 0;
+  if (world.machineFired === undefined) world.machineFired = false;
+  if (!world.flashpoints.some((f) => f.id === "machine")) {
+    world.flashpoints.push({
+      id: "machine",
+      name: "Machine control",
+      actors: ["US", "RU", "CN", "UK", "FR"],
+      heat: world.terminator ? 40 : 0,
+      note: "Decision-support that can write to the keys.",
+    });
+  }
+  if (!world.sites?.length) {
+    world.sites = makeSites();
+    seedSpies(world);
+  }
+  if (!world.flashpoints.some((f) => f.id === "union")) {
+    world.flashpoints.push({
+      id: "union",
+      name: "Soviet restoration",
+      actors: ["RU", "SU", "US"],
+      heat: 20,
+      note: "Two commands claiming one arsenal.",
+    });
+  }
+  if (!world.flashpoints.some((f) => f.id === "cuba")) {
+    world.flashpoints.push({
+      id: "cuba",
+      name: "Caribbean / Cuba",
+      actors: ["US", "CU", "RU", "SU"],
+      heat: 12,
+      note: "Hosted dual-capable and cartel ports.",
+    });
+  }
+  if (!world.flashpoints.some((f) => f.id === "cartel")) {
+    world.flashpoints.push({
+      id: "cartel",
+      name: "Cartel corridors",
+      actors: ["US", "CR", "CU", "NS"],
+      heat: 16,
+      note: "Money, ports, colonels.",
+    });
+  }
+  if (world.brokenArrow === undefined) world.brokenArrow = null;
+  if (!world.reactions) world.reactions = [];
+  const fresh = makeActors();
+  for (const id of Object.keys(fresh) as (keyof typeof fresh)[]) {
+    if (!world.actors[id]) world.actors[id] = fresh[id];
+  }
+  for (const a of Object.values(world.actors)) {
+    if (a.warning === undefined) a.warning = 50;
+    if (a.aiInC2 === undefined) a.aiInC2 = 0;
+    if (a.internet === undefined) a.internet = 100;
+    if (a.grid === undefined) a.grid = 100;
+    if (a.nerve === undefined) a.nerve = a.riskTolerance ?? 50;
+  }
+  return world;
+}
+
+export function saveWorld(world: World) {
+  try {
+    const prev = localStorage.getItem(KEY);
+    if (prev) localStorage.setItem(BACKUP, prev);
+    localStorage.setItem(KEY, JSON.stringify({ version: SAVE_VERSION, world }));
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+export function loadWorld(): World | null {
+  try {
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem("threshold.save.v1");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { version?: number; world?: World };
+    if (!parsed.world) return null;
+    return migrate(parsed.world);
+  } catch {
+    return null;
+  }
+}
+
+export function clearSave() {
+  try {
+    localStorage.removeItem(KEY);
+    localStorage.removeItem("threshold.save.v1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function hasSave(): boolean {
+  try {
+    return Boolean(localStorage.getItem(KEY) || localStorage.getItem("threshold.save.v1"));
+  } catch {
+    return false;
+  }
+}
+
+export function newGameFallback(): World {
+  return createWorld("standard", 1, "US", "blue");
+}
