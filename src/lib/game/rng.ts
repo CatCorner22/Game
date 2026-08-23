@@ -12,7 +12,7 @@ export function mulberry32(seed: number) {
 
 export function nextUnit(world: World): number {
   if (world.rngMode === "fixed") return world.rngFixed;
-  let t = (world.rngState + 0x6d2b79f5) >>> 0;
+  const t = (world.rngState + 0x6d2b79f5) >>> 0;
   world.rngState = t;
   let r = Math.imul(t ^ (t >>> 15), 1 | t);
   r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
@@ -37,12 +37,4 @@ export function jitter(world: World, value: number, spread: number): number {
 
 export function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
-}
-
-export function clamp01(n: number): number {
-  return clamp(n, 0, 1);
-}
-
-export function round(n: number): number {
-  return Math.round(n);
 }
