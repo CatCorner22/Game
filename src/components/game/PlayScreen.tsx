@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { winterLabel } from "@/lib/game/warning";
 import { COMMAND, asPlayable, stanceLine } from "@/lib/game/command";
 import { fusionName } from "@/lib/game/terminator";
-import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudModalOverlay, HudPanel } from "./ui/Hud";
+import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudMeter, HudModalOverlay, HudPanel } from "./ui/Hud";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
 
 const MOBILE_TABS = [
@@ -35,39 +35,6 @@ const MOBILE_TABS = [
   { id: "act", label: "Act" },
 ] as const;
 
-function Meter({
-  label,
-  value,
-  max,
-  invert,
-  help,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  invert?: boolean;
-  help: string;
-}) {
-  const pct = Math.max(0, Math.min(100, (value / max) * 100));
-  const hot = label === "ALERT" ? value <= 2 : invert ? pct > 55 : pct < 40;
-  return (
-    <div className="mb-3">
-      <div className="flex items-baseline justify-between">
-        <HudLabel className="tracking-[0.18em]">{label}</HudLabel>
-        <span className={cn("font-mono text-sm tabular", hot ? "text-danger text-glow-danger" : "text-accent")}>
-          {label === "ALERT" ? value : Math.round(value)}
-        </span>
-      </div>
-      <div className="mt-1 h-1 overflow-hidden rounded-full bg-surface/80">
-        <div
-          className={cn("h-1 rounded-full transition-all duration-500", hot ? "bg-danger glow-accent-sm" : "bg-accent glow-accent-sm")}
-          style={{ width: `${label === "ALERT" ? ((5 - value) / 4) * 100 : pct}%` }}
-        />
-      </div>
-      <p className="mt-1 text-xs leading-snug text-subtle">{help}</p>
-    </div>
-  );
-}
 
 function GlobeSlot() {
   const world = useGame((s) => s.world);
@@ -136,8 +103,13 @@ export function PlayScreen() {
     resetToTitle();
   }
 
+  // `lg:h-dvh` bounds this flex container so the three columns can finally scroll
+  // internally — which is what the `min-h-0 flex-1` grid and its `overflow-y-auto`
+  // columns were already written for. Without a height bound the act rail grew to
+  // ~4900px and the document scrolled instead, pushing Execute off screen entirely.
+  // Mobile keeps `min-h-dvh`: the tab layout is one column and must stay scrollable.
   return (
-    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden pt-[env(safe-area-inset-top)]">
+    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden pt-[env(safe-area-inset-top)] lg:h-dvh lg:min-h-0">
       <HudHeader
         title="Threshold"
         subtitle={`${dateLabel(world)} · ${world.phase} · ${world.actors[world.playerId].name} ${world.intent}${world.terminator ? " · TERMINATOR" : ""}`}
@@ -230,21 +202,21 @@ export function PlayScreen() {
             {dateLabel(world)} · turn {world.turn}
           </HudLabel>
           <div className="mt-4">
-            <Meter label="ALERT" value={m.defcon} max={5} invert help={METER_HELP.defcon} />
-            <Meter label="Stability" value={m.stability} max={100} help={METER_HELP.stability} />
-            <Meter label="Partners" value={m.alliances} max={100} help={METER_HELP.alliances} />
-            <Meter label="Global risk" value={m.risk} max={100} invert help={METER_HELP.risk} />
-            <Meter label="Economy" value={m.economy} max={100} help={METER_HELP.economy} />
-            <Meter
+            <HudMeter label="ALERT" value={m.defcon} max={5} alertScale help={METER_HELP.defcon} />
+            <HudMeter label="Stability" value={m.stability} max={100} help={METER_HELP.stability} />
+            <HudMeter label="Partners" value={m.alliances} max={100} help={METER_HELP.alliances} />
+            <HudMeter label="Global risk" value={m.risk} max={100} invert help={METER_HELP.risk} />
+            <HudMeter label="Economy" value={m.economy} max={100} help={METER_HELP.economy} />
+            <HudMeter
               label="Winter"
               value={m.winter}
               max={100}
               invert
               help={`${METER_HELP.winter} Now: ${winterLabel(world.nuclearWinter)}.`}
             />
-            {world.terminator ? <Meter label="Machine" value={m.ai} max={100} invert help={METER_HELP.ai} /> : null}
-            <Meter label="Net" value={m.net} max={100} help={METER_HELP.net} />
-            <Meter label="Grid" value={m.grid} max={100} help={METER_HELP.grid} />
+            {world.terminator ? <HudMeter label="Machine" value={m.ai} max={100} invert help={METER_HELP.ai} /> : null}
+            <HudMeter label="Net" value={m.net} max={100} help={METER_HELP.net} />
+            <HudMeter label="Grid" value={m.grid} max={100} help={METER_HELP.grid} />
           </div>
           <HudPanel className="mt-2">
             <HudLabel>{c2.satchel}</HudLabel>

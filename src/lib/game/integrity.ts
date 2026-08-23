@@ -13,6 +13,20 @@ import { proposeCeasefire } from "./ceasefire";
 import { applyC2Stance } from "./c2";
 import { majorityKind, staffAdvice } from "./staff";
 import { buildTrack, resolveCloseCallHold } from "./warning";
+import {
+  DEFEAT_CONDITIONS,
+  MIN_VICTORY_MONTH,
+  VICTORY_CONDITIONS,
+  ensureMandate,
+  tickMandate,
+} from "./mandate";
+import { isWin } from "./stats";
+import {
+  FIRST_DECISION_TURN,
+  availableOptions,
+  currentDecision,
+  openDecisionIfWarranted,
+} from "./decisions";
 
 export interface IntegrityResult {
   ok: boolean;
@@ -304,6 +318,157 @@ export function runIntegrityChecks(): IntegrityResult {
     if (!d5 || (d5.rvsPerBus ?? 0) < 2) throw new Error("Trident not MIRV");
     if (!yars || (yars.decoys ?? 0) < 1) throw new Error("Yars missing decoys");
     return `D5 MIRV ×${d5.rvsPerBus} decoys ${d5.decoys}`;
+  });
+
+  check("mandate-pool-wellformed", () => {
+    const all = [...VICTORY_CONDITIONS, ...DEFEAT_CONDITIONS];
+    const ids = new Set<string>();
+    for (const c of all) {
+      if (ids.has(c.id)) throw new Error(`duplicate condition id ${c.id}`);
+      ids.add(c.id);
+      if (c.sustain < 1) throw new Error(`${c.id} sustain ${c.sustain}`);
+      if (!c.label || !c.detail) throw new Error(`${c.id} missing copy`);
+    }
+    // Every condition must evaluate without throwing on a fresh world of each
+    // intent, and report progress inside 0-100.
+    for (const intent of ["blue", "red"] as const) {
+      const w = createWorld("standard", 11, "US", intent);
+      for (const c of all) {
+        const p = c.progress(w);
+        if (!Number.isFinite(p) || p < 0 || p > 100) throw new Error(`${c.id} progress ${p}`);
+        c.holds(w);
+      }
+    }
+    return `${VICTORY_CONDITIONS.length} victory · ${DEFEAT_CONDITIONS.length} defeat`;
+  });
+
+  check("mandate-issued-and-deterministic", () => {
+    const a = ensureMandate(createWorld("standard", 21, "US", "blue"));
+    const b = ensureMandate(createWorld("standard", 21, "US", "blue"));
+    if (!a.mandate || !b.mandate) throw new Error("no mandate issued");
+    if (a.mandate.victoryId !== b.mandate.victoryId || a.mandate.defeatId !== b.mandate.defeatId) {
+      throw new Error("mandate selection is not deterministic for a seed");
+    }
+    // A mandate must also reach the player: it leads the objectives list.
+    const objs = seatObjectives(a);
+    if (!objs.some((o) => o.id.startsWith("mandate-victory-"))) throw new Error("victory not in objectives");
+    if (!objs.some((o) => o.id.startsWith("mandate-defeat-"))) throw new Error("loss point not in objectives");
+    return `${a.mandate.victoryId} / ${a.mandate.defeatId}`;
+  });
+
+  check("mandate-resolves-one-way-only", () => {
+    // Across many seeds a mandate must never report both outcomes, and a
+    // resolved watch must map to exactly one side of isWin().
+    let wins = 0;
+    let losses = 0;
+    for (let seed = 1; seed <= 24; seed += 1) {
+      let w = createWorld("standard", seed, "US", "blue");
+      for (let i = 0; i < 26 && !w.ended; i += 1) {
+        w = resolveTurn(structuredClone(w), i % 3 === 0 ? diplomacy(w.event.actor) : hold());
+      }
+      const m = w.mandate;
+      if (m?.resolved === "victory" && m.victoryStreak < 1) throw new Error("victory with no streak");
+      if (w.ending?.kind === "mandate-win") {
+        wins += 1;
+        if (!isWin("mandate-win")) throw new Error("mandate-win is not a win");
+        if (w.turn < MIN_VICTORY_MONTH) throw new Error(`won at month ${w.turn}, before the floor`);
+      }
+      if (w.ending?.kind === "mandate-loss") {
+        losses += 1;
+        if (isWin("mandate-loss")) throw new Error("mandate-loss counted as a win");
+      }
+    }
+    return `win ${wins} · loss ${losses} across 24 seeds`;
+  });
+
+  check("mandate-tick-counts-one-month-once", () => {
+    // finishIfNeeded can run twice in a turn; the streak must not double-count.
+    const w = ensureMandate(createWorld("standard", 33, "US", "blue"));
+    w.turn = 5;
+    tickMandate(w);
+    const first = (w.mandate!.victoryStreak ?? 0) + (w.mandate!.defeatStreak ?? 0);
+    tickMandate(w);
+    const second = (w.mandate!.victoryStreak ?? 0) + (w.mandate!.defeatStreak ?? 0);
+    if (first !== second) throw new Error(`streak advanced twice in one turn: ${first} -> ${second}`);
+    return `stable at ${second}`;
+  });
+
+  check("decision-not-on-opening-turn", () => {
+    // HARD CI CONTRACT. scripts/mobile-game-smoke.mjs walks turn 1 of these two
+    // scenarios and requires a button named exactly "Execute". The decision
+    // branch in ActionPanel replaces that button, and signal-window seeds a
+    // close call on turn 1 — so a card here would break the mobile gate.
+    for (const id of ["signal-window", "deadhand-dilemma"] as const) {
+      const w = applyScenario(createWorld("standard", 4, "US", "blue"), id);
+      openDecisionIfWarranted(w);
+      if (w.decision) throw new Error(`${id} opened a decision on turn ${w.turn}`);
+      if (currentDecision(w)) throw new Error(`${id} exposed a card on turn ${w.turn}`);
+    }
+    return `no card before turn ${FIRST_DECISION_TURN}`;
+  });
+
+  check("decision-world-stays-cloneable", () => {
+    // Regression guard: DecisionOption carries functions. If the live card ever
+    // gets stored on the world again, structuredClone throws here and saves die.
+    let w = createWorld("standard", 9, "US", "blue");
+    let opened = 0;
+    for (let i = 0; i < 14 && !w.ended; i += 1) {
+      w = resolveTurn(structuredClone(w), hold());
+      if (w.decision) opened += 1;
+      structuredClone(w);
+      JSON.parse(JSON.stringify(w));
+    }
+    return `cloned ${opened} turn(s) with a card open`;
+  });
+
+  check("decision-window-always-resolves", () => {
+    // Stalling must terminate. Repeatedly take a window-spending option and the
+    // card has to come off the desk rather than sitting there forever.
+    let w = createWorld("standard", 15, "US", "blue");
+    let sawCard = false;
+    for (let i = 0; i < 24 && !w.ended; i += 1) {
+      const card = currentDecision(w);
+      if (card) {
+        sawCard = true;
+        const opts = availableOptions(w);
+        const staller = opts.find((o) => o.costsWindow) ?? opts[0];
+        const openedAt = w.decision?.openedTurn ?? w.turn;
+        w = resolveTurn(structuredClone(w), { ...staller.action, decisionOptionId: staller.id });
+        const windowSize = card.windowTurns ?? 1;
+        if (w.decision && w.turn - openedAt > windowSize + 1) {
+          throw new Error(`card ${card.id} outlived its ${windowSize}-month window`);
+        }
+      } else {
+        w = resolveTurn(structuredClone(w), hold());
+      }
+    }
+    return sawCard ? "window closed on schedule" : "no card raised in 24 turns";
+  });
+
+  check("decision-choice-replays", () => {
+    // The chosen option rides on the PlayerAction, so a recorded run must
+    // reproduce exactly — this is what keeps replay codes honest.
+    let w = createWorld("standard", 15, "US", "blue");
+    const actions: PlayerAction[] = [];
+    for (let i = 0; i < 12 && !w.ended; i += 1) {
+      const opts = availableOptions(w);
+      const act: PlayerAction = opts.length
+        ? { ...opts[0].action, decisionOptionId: opts[0].id }
+        : hold();
+      actions.push(act);
+      w = resolveTurn(structuredClone(w), act);
+    }
+    let replayed = createWorld("standard", 15, "US", "blue");
+    for (const act of actions) {
+      if (replayed.ended) break;
+      replayed = resolveTurn(structuredClone(replayed), act);
+    }
+    if (replayed.turn !== w.turn) throw new Error(`turn ${replayed.turn} vs ${w.turn}`);
+    if (replayed.ended !== w.ended) throw new Error("ended mismatch");
+    if (Math.round(replayed.globalRisk) !== Math.round(w.globalRisk)) {
+      throw new Error(`risk ${replayed.globalRisk} vs ${w.globalRisk}`);
+    }
+    return `${actions.length} actions replayed identically`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };

@@ -1,5 +1,6 @@
 import type { ActorId, Team, World } from "./types";
 import { meters } from "./world";
+import { mandateObjectives } from "./mandate";
 
 export interface Objective {
   id: string;
@@ -8,6 +9,12 @@ export interface Objective {
   progress: number;
   met: boolean;
   detail: string;
+  /**
+   * "goal" fills toward something you want; "hazard" fills toward something you
+   * do not. Without this a loss point renders exactly like an objective — a
+   * cyan bar filling to 80% — which reads as progress when it means danger.
+   */
+  tone?: "goal" | "hazard";
 }
 
 function redObjectivesMet(world: World): boolean {
@@ -183,7 +190,10 @@ function seatRedDetail(p: ActorId, world: World): string {
 }
 
 export function seatObjectives(world: World): Objective[] {
-  return world.intent === "blue" ? blueObjectives(world) : redObjectives(world);
+  const seat = world.intent === "blue" ? blueObjectives(world) : redObjectives(world);
+  // The mandate leads: it is the one thing that can end this watch early, in
+  // either direction, so it belongs above the standing seat objectives.
+  return [...mandateObjectives(world), ...seat];
 }
 
 export { redObjectivesMet };

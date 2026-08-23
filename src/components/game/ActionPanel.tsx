@@ -10,6 +10,7 @@ import { blackBook, footballContents } from "@/lib/game/blackbook";
 import { hotlineBetween, warningLine, winterLabel } from "@/lib/game/warning";
 import { pinnedLogEntry } from "./SituationLog";
 import { doctrineOptions } from "@/lib/game/doctrine";
+import { availableOptions, currentDecision } from "@/lib/game/decisions";
 import { loadSettings } from "@/lib/game/settings";
 import { pactHint } from "./DiplomacyPanel";
 import { StaffPanel } from "./StaffPanel";
@@ -28,6 +29,7 @@ export function ActionPanel({ world }: { world: World }) {
   const setNotify = useGame((s) => s.setNotify);
   const setPackageMode = useGame((s) => s.setPackageMode);
   const execute = useGame((s) => s.execute);
+  const chooseDecision = useGame((s) => s.chooseDecision);
   const pickDoctrine = useGame((s) => s.pickDoctrine);
   const def = ACTIONS.find((a) => a.kind === kind)!;
   const action = {
@@ -56,6 +58,43 @@ export function ActionPanel({ world }: { world: World }) {
   const forecastSummary = loadSettings().forecastDetail === "summary";
   const doctrineChoices = world.doctrinePending ? doctrineOptions(world) : [];
   const recommended = majorityKind(staffAdvice(world));
+
+  const decision = currentDecision(world);
+  const decisionOptions = decision ? availableOptions(world) : [];
+  const windowLeft = world.decision?.remaining ?? 0;
+
+  if (decision && decisionOptions.length) {
+    return (
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <HudLabel>Decision · turn {world.turn}</HudLabel>
+          {decision.windowTurns ? (
+            <HudChip danger={windowLeft <= 1}>
+              {windowLeft > 0 ? `${windowLeft} month${windowLeft === 1 ? "" : "s"} of window` : "window closing"}
+            </HudChip>
+          ) : null}
+        </div>
+        <h2 className="font-display text-lg leading-tight tracking-wide text-fg uppercase">{decision.prompt}</h2>
+        <p className="text-sm leading-relaxed text-muted">{decision.frame}</p>
+        {decision.windowTurns ? (
+          <p className="text-xs text-subtle">
+            Options that buy time spend a month of the window. If it runs out, standing procedure runs without you.
+          </p>
+        ) : null}
+        {decisionOptions.map((o) => (
+          <HudButton
+            key={o.id}
+            variant="default"
+            className="min-h-14 w-full p-3 text-left"
+            onClick={() => chooseDecision(o.id)}
+          >
+            <span className="font-display text-sm tracking-wide text-fg uppercase">{o.label}</span>
+            <span className="mt-1 block text-xs text-subtle">{o.detail}</span>
+          </HudButton>
+        ))}
+      </section>
+    );
+  }
 
   if (world.doctrinePending && doctrineChoices.length) {
     return (
@@ -271,24 +310,36 @@ export function ActionPanel({ world }: { world: World }) {
         </p>
       </HudPanel>
 
-      <HudButton
-        variant={kind === "employ" && intensity >= 2 ? "danger" : "active"}
-        className="min-h-12 w-full text-lg tracking-[0.22em]"
-        aria-label={
-          kind === "employ" && intensity >= 2
+      {/*
+        Pin the commit control to the bottom of the act rail on desktop. At
+        1280x900 the panel is taller than the viewport — event body, verb grid,
+        blurb, intensity, staff split and forecast all sit above it — so the one
+        button that commits the turn was scrolled off screen entirely.
+
+        Desktop only. Mobile keeps the button in normal flow, because
+        scripts/mobile-game-smoke.mjs asserts Execute sits ABOVE the bottom nav,
+        and the parent already reserves padding for exactly that.
+      */}
+      <div className="lg:sticky lg:bottom-0 lg:z-10 lg:-mx-4 lg:mt-1 lg:border-t lg:border-accent/15 lg:bg-bg/95 lg:px-4 lg:py-3 lg:backdrop-blur-md">
+        <HudButton
+          variant={kind === "employ" && intensity >= 2 ? "danger" : "active"}
+          className="min-h-12 w-full text-lg tracking-[0.22em]"
+          aria-label={
+            kind === "employ" && intensity >= 2
+              ? "Open Black Book"
+              : kind === "employ"
+                ? "Execute conventional"
+                : "Execute"
+          }
+          onClick={execute}
+        >
+          {kind === "employ" && intensity >= 2
             ? "Open Black Book"
             : kind === "employ"
               ? "Execute conventional"
-              : "Execute"
-        }
-        onClick={execute}
-      >
-        {kind === "employ" && intensity >= 2
-          ? "Open Black Book"
-          : kind === "employ"
-            ? "Execute conventional"
-            : "Execute"}
-      </HudButton>
+              : "Execute"}
+        </HudButton>
+      </div>
     </section>
   );
 }

@@ -539,7 +539,9 @@ export type EndingKind =
   | "red-win"
   | "stalemate"
   | "machine"
-  | "ceasefire";
+  | "ceasefire"
+  | "mandate-win"
+  | "mandate-loss";
 
 export interface Ending {
   kind: EndingKind;

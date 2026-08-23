@@ -1,7 +1,7 @@
 import { getAchievements, getCareerStats } from "@/lib/game/stats";
 import { useGame } from "@/lib/game/store";
 import { cn } from "@/lib/utils";
-import { GlassPanel, HudButton, HudChip, HudLabel } from "./ui/Hud";
+import { GlassPanel, HudButton, HudChip, HudLabel, HudRow } from "./ui/Hud";
 
 export function StatsScreen() {
   const setScreen = useGame((s) => s.setScreen);
@@ -16,9 +16,9 @@ export function StatsScreen() {
       <h1 className="mt-8 font-display text-4xl tracking-wide text-glow-accent text-fg">Career record</h1>
       <GlassPanel glow="accent" className="mt-8 rounded-xl p-4">
         <dl className="space-y-2">
-          <Row k="Watches completed" v={String(stats.games)} />
-          <Row k="Wins" v={String(stats.wins)} />
-          <Row k="Achievements" v={`${stats.achievements.length}/${achievements.length}`} />
+          <HudRow k="Watches completed" v={String(stats.games)} />
+          <HudRow k="Wins" v={String(stats.wins)} />
+          <HudRow k="Achievements" v={`${stats.achievements.length}/${achievements.length}`} />
         </dl>
       </GlassPanel>
       <div className="mt-8">
@@ -69,11 +69,4 @@ export function StatsScreen() {
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between border-b border-accent/15 py-2">
-      <dt className="text-xs tracking-wide text-muted uppercase">{k}</dt>
-      <dd className="font-mono text-sm text-fg tabular">{v}</dd>
-    </div>
-  );
-}
+

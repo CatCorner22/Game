@@ -67,14 +67,29 @@ function saveStats(s: CareerStats) {
   localStorage.setItem(KEY, JSON.stringify(s));
 }
 
-const WIN_KINDS: EndingKind[] = ["peace", "war-win", "red-win", "ceasefire"];
+export const WIN_KINDS: EndingKind[] = [
+  "peace",
+  "war-win",
+  "red-win",
+  "ceasefire",
+  "mandate-win",
+];
+
+/**
+ * Whether an ending counts as a win. Exported because `EndScreen` needs to say
+ * VICTORY or DEFEAT out loud — it previously rendered `ending.title` and never
+ * read `ending.kind` at all, so the game never actually told you if you won.
+ */
+export function isWin(kind: EndingKind): boolean {
+  return WIN_KINDS.includes(kind);
+}
 
 export function recordGameEnd(world: World, scenarioId: ScenarioId | null) {
   if (!world.ending) return;
   saveReplaySnapshot(world);
   const s = loadStats();
   s.games += 1;
-  if (WIN_KINDS.includes(world.ending.kind)) s.wins += 1;
+  if (isWin(world.ending.kind)) s.wins += 1;
   s.endings[world.ending.kind] = (s.endings[world.ending.kind] ?? 0) + 1;
   const seatKey = world.playerId;
   s.bestScore[seatKey] = Math.max(s.bestScore[seatKey] ?? 0, world.ending.score);
