@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -15,6 +15,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+          fetch-depth: 0
 
       - name: Use Node.js 22
         uses: actions/setup-node@v4
@@ -25,10 +28,25 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Verify standalone artifact is current
+      - name: Regenerate standalone artifact
+        run: node scripts/build-playable-standalone.mjs
+
+      - name: Commit regenerated artifact to pull-request branch
+        if: github.event_name == 'pull_request'
         run: |
-          node scripts/build-playable-standalone.mjs
-          git diff --exit-code -- play/standalone/index.html
+          git add play/standalone/index.html
+          if git diff --cached --quiet; then
+            echo "Standalone artifact is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Regenerate self-contained playable preview"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Verify standalone artifact is current on main
+        if: github.event_name != 'pull_request'
+        run: git diff --exit-code -- play/standalone/index.html
 
       - name: Typecheck
         run: npm run typecheck
