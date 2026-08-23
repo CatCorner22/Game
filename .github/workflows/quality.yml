@@ -25,6 +25,11 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Verify standalone artifact is current
+        run: |
+          node scripts/build-playable-standalone.mjs
+          git diff --exit-code -- play/standalone/index.html
+
       - name: Typecheck
         run: npm run typecheck
 
