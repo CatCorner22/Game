@@ -38,3 +38,11 @@ export function jitter(world: World, value: number, spread: number): number {
 export function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
+
+export function clamp01(n: number): number {
+  return clamp(n, 0, 1);
+}
+
+export function round(n: number): number {
+  return Math.round(n);
+}
