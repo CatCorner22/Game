@@ -15,7 +15,9 @@
       document.getElementById('resetAndReload')?.addEventListener('click', () => {
         try {
           for (const key of Object.keys(localStorage)) if (key.startsWith('threshold.portable.')) localStorage.removeItem(key);
-        } catch {}
+        } catch (storageError) {
+          console.warn('[THRESHOLD] local state could not be cleared', storageError);
+        }
         location.reload();
       });
     });
