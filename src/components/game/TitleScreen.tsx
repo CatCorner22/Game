@@ -1,6 +1,6 @@
 import { useGame } from "@/lib/game/store";
-import { hasSave, loadWorld, saveWorld } from "@/lib/game/save";
-import { slotMeta, loadWorldFromSlot } from "@/lib/game/slots";
+import { hasSave, migrateWorld, saveWorld } from "@/lib/game/save";
+import { slotMeta, peekSlotWorld } from "@/lib/game/slots";
 import { SCENARIOS, type ScenarioId } from "@/lib/game/scenarios";
 import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
@@ -33,7 +33,6 @@ export function TitleScreen() {
   const [team, setTeam] = useState<Team | null>(null);
   const [country, setCountry] = useState<PlayableId | null>(null);
   const [scenario, setScenario] = useState<ScenarioId | null>(null);
-  const [slotPick, setSlotPick] = useState<0 | 1 | 2 | null>(null);
   const [terminator, setTerminator] = useState(false);
 
   const seat = PLAYABLE.find((p) => p.id === country);
@@ -259,12 +258,10 @@ export function TitleScreen() {
                     key={slot}
                     type="button"
                     onClick={() => {
-                      const w = loadWorldFromSlot(slot);
-                      if (w && !w.ended) {
-                        saveWorld(w);
+                      const raw = peekSlotWorld(slot);
+                      if (raw && !raw.ended) {
+                        saveWorld(migrateWorld(raw));
                         resume();
-                      } else {
-                        setSlotPick(slot);
                       }
                     }}
                     className="min-h-14 rounded-md bg-elevated px-2 py-2 text-left shadow-[var(--shadow-border)]"

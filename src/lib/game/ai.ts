@@ -12,6 +12,25 @@ function act(
   return { kind, intensity, target, notify };
 }
 
+export function rememberAi(world: World, id: ActorId, action: PlayerAction): PlayerAction {
+  if (!world.aiLast) world.aiLast = {};
+  const last = world.aiLast[id];
+  if (last && last.kind === action.kind && last.intensity === action.intensity && last.target === action.target) {
+    if (action.kind !== "hold") {
+      const alt: PlayerAction = { kind: "hold", intensity: 1, target: null };
+      world.aiLast[id] = alt;
+      return alt;
+    }
+    if (action.kind === "hold" && chance(world, 0.45)) {
+      const alt = act("diplomacy", 1, world.playerId);
+      world.aiLast[id] = alt;
+      return alt;
+    }
+  }
+  world.aiLast[id] = { ...action };
+  return action;
+}
+
 export function aiChoose(world: World, id: ActorId): PlayerAction | null {
   const a = world.actors[id];
   if (id === world.playerId) return null;

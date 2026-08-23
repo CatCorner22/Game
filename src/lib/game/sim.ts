@@ -1,8 +1,9 @@
 import type { ActorId, Ending, Forecast, PlayerAction, World } from "./types";
 import { ACTOR_IDS } from "./types";
 import { actionDef } from "./actions";
-import { aiChoose } from "./ai";
+import { aiChoose, rememberAi } from "./ai";
 import { drawEvent, eventFlash } from "./events";
+import { followUpEvent, rememberDecision, sameFollowBeat, shouldFollowUp } from "./consequences";
 import { redObjectivesMet } from "./objectives";
 import { breakPactIfAggressive, proposePact, tickPacts } from "./pacts";
 import { markDoctrinePending } from "./doctrine";
@@ -146,6 +147,16 @@ function applyIgnore(world: World, action: PlayerAction) {
   }
   if (ev.id === "notice-ru") fileNotice(world, "RU", "test");
   if (ev.id === "notice-us") fileNotice(world, "US", "test");
+  if (ev.id === "upload-mirv" && (action.kind === "posture" || action.kind === "pressure")) {
+    for (const s of world.actors[you].systems) {
+      if (s.kind === "icbm" || s.kind === "slbm") {
+        s.rvsPerBus = clamp((s.rvsPerBus ?? 1) + 1, 1, 14);
+        s.decoys = (s.decoys ?? 0) + 1;
+      }
+    }
+    world.armsRace = clamp(world.armsRace + 6, 0, 100);
+    log(world, "warn", "Buses uploaded. Extra RVs and decoys. NTM will see the work.", ev.ignoreLine);
+  }
   if (ev.id === "broken-arrow" || ev.id === "empty-quiver") {
     if (action.kind === "hold") ignoreBrokenArrow(world);
   }
@@ -280,7 +291,7 @@ function applyIgnore(world: World, action: PlayerAction) {
 }
 
 function hostility(world: World, a: ActorId, b: ActorId): number {
-  return world.actors[a].hostility[b];
+  return world.actors[a]?.hostility[b] ?? 50;
 }
 
 function applyAction(world: World, actor: ActorId, action: PlayerAction) {
@@ -573,6 +584,8 @@ function tickCasual(world: World) {
 }
 
 export function resolveTurn(world: World, action: PlayerAction): World {
+  const prevEvent = world.event;
+  rememberDecision(world, action);
   applyIgnore(world, action);
   applyAction(world, world.playerId, action);
   reactToAction(world, action);
@@ -580,7 +593,7 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   for (const id of ACTOR_IDS) {
     if (id === world.playerId) continue;
     const ai = aiChoose(world, id);
-    if (ai) applyAction(world, id, ai);
+    if (ai) applyAction(world, id, rememberAi(world, id, ai));
     if (panicMayFire(world, id)) {
       const rival = world.playerId;
       applyNuclearUse(world, id, rival, "tactical", `${world.actors[rival].shortName} (panic / pre-delegated)`);
@@ -646,12 +659,23 @@ export function resolveTurn(world: World, action: PlayerAction): World {
     }
     if (world.turn % 6 === 0) markDoctrinePending(world);
     if (!world.ended) {
-      const cc = maybeSpawnCloseCall(world);
+      const skipClose =
+        prevEvent.id === "close-call" ||
+        prevEvent.id.startsWith("follow-petrov") ||
+        (prevEvent.tags.includes("warning") && action.kind === "hold");
+      const cc = skipClose ? null : maybeSpawnCloseCall(world);
       if (cc) {
         world.closeCall = cc;
         world.event = closeCallEvent(world, cc);
       } else {
-        world.event = drawEvent(world);
+        const follow = shouldFollowUp(world, action) ? followUpEvent(world, action) : null;
+        if (follow && !sameFollowBeat(prevEvent, follow)) {
+          world.event = follow;
+          world.usedEventIds.push(follow.id);
+          if (world.usedEventIds.length > 40) world.usedEventIds.shift();
+        } else {
+          world.event = drawEvent(world);
+        }
         armTrickFromEvent(world, world.event.id);
         if (world.event.id === "broken-arrow") {
           world.event = { ...world.event, actor: world.playerId };
@@ -747,7 +771,7 @@ export function forecast(world: World, action: PlayerAction): Forecast {
       : world.terminator && action.kind === "hold"
       ? "HOLD lets the model keep the keys. INTEL on your capital maps it. COVERT on yourself is the air-gap."
       : irreversible
-      ? "Irreversible. Nuclear employment ends the taboo even if the yield is small. The football is authentication, not a toy."
+      ? `Irreversible. The shot leaves; particular buses fail; decoys soak interceptors. Package ${action.packageMode ?? "auto"}. What arrives is what burns.`
       : action.kind === "posture"
         ? "Raises survival against surprise. Raises the chance of war. A launch notice only changes how they read the heat."
         : action.kind === "hold"

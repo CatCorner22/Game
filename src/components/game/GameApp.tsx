@@ -10,6 +10,8 @@ import { EndScreen } from "./EndScreen";
 import { StatsScreen } from "./StatsScreen";
 import { MultiplayerScreen } from "./MultiplayerScreen";
 import { TutorialOverlay, useKeyboardShortcuts } from "./TutorialOverlay";
+import { GameErrorBoundary } from "./GameErrorBoundary";
+import { ErrorBanner } from "./ErrorBanner";
 
 export function GameApp() {
   const screen = useGame((s) => s.screen);
@@ -33,15 +35,18 @@ export function GameApp() {
   }, []);
 
   return (
-    <div className="min-h-dvh bg-bg text-fg">
-      {screen === "title" ? <TitleScreen /> : null}
-      {screen === "briefing" ? <Briefing /> : null}
-      {screen === "play" ? <PlayScreen /> : null}
-      {screen === "war" ? <WarScreen /> : null}
-      {screen === "end" ? <EndScreen /> : null}
-      {screen === "stats" ? <StatsScreen /> : null}
-      {screen === "multiplayer" ? <MultiplayerScreen /> : null}
-      <TutorialOverlay />
-    </div>
+    <GameErrorBoundary>
+      <div className="min-h-dvh bg-bg text-fg">
+        <ErrorBanner />
+        {screen === "title" ? <TitleScreen /> : null}
+        {screen === "briefing" ? <Briefing /> : null}
+        {screen === "play" ? <PlayScreen /> : null}
+        {screen === "war" ? <WarScreen /> : null}
+        {screen === "end" ? <EndScreen /> : null}
+        {screen === "stats" ? <StatsScreen /> : null}
+        {screen === "multiplayer" ? <MultiplayerScreen /> : null}
+        <TutorialOverlay />
+      </div>
+    </GameErrorBoundary>
   );
 }

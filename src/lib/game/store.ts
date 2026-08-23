@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ActionIntensity, ActionKind, ActorId, Difficulty, DoctrineUpgradeId, PlayerAction, Screen, Team, World } from "./types";
+import type { ActionIntensity, ActionKind, ActorId, Difficulty, DoctrineUpgradeId, PackageMode, PlayerAction, Screen, Team, World } from "./types";
 import { defaultBook, type BookId } from "./blackbook";
 import { createWorld } from "./world";
 import { defaultAction } from "./actions";
@@ -25,6 +25,7 @@ interface GameState {
   intensity: ActionIntensity;
   notify: boolean;
   book: BookId;
+  packageMode: PackageMode;
   briefingPage: number;
   mobileTab: "map" | "status" | "act";
   whyId: string | null;
@@ -47,6 +48,7 @@ interface GameState {
   setIntensity: (i: ActionIntensity) => void;
   setNotify: (n: boolean) => void;
   setBook: (b: BookId) => void;
+  setPackageMode: (m: PackageMode) => void;
   execute: () => void;
   confirmAndExecute: () => void;
   cancelConfirm: () => void;
@@ -58,6 +60,8 @@ interface GameState {
   setTutorialStep: (n: number) => void;
   dismissTutorial: () => void;
   pickDoctrine: (id: DoctrineUpgradeId) => void;
+  lastError: string | null;
+  clearError: () => void;
   action: () => PlayerAction;
 }
 
@@ -69,6 +73,7 @@ export const useGame = create<GameState>((set, get) => ({
   intensity: 1,
   notify: false,
   book: "A",
+  packageMode: "mirv-decoy",
   briefingPage: 0,
   mobileTab: "act",
   whyId: null,
@@ -77,25 +82,34 @@ export const useGame = create<GameState>((set, get) => ({
   glossaryOpen: false,
   tutorialStep: -1,
   scenarioId: null,
+  lastError: null,
   start: ({ difficulty, playerId, intent, terminator, scenarioId }) => {
     unlockAudio();
-    let world = createWorld(difficulty, Date.now() | 0, playerId, intent, Boolean(terminator));
-    if (scenarioId) world = applyScenario(world, scenarioId);
-    saveWorld(world);
-    set({
-      screen: screenForWorld(world),
-      world,
-      selected: world.event.actor === playerId ? "KP" : world.event.actor,
-      actionKind: "hold",
-      intensity: 1,
-      notify: false,
-      book: "A",
-      confirmNuclear: false,
-      fileOpen: false,
-      whyId: null,
-      tutorialStep: world.turn === 1 ? 0 : -1,
-      scenarioId: scenarioId ?? null,
-    });
+    try {
+      let world = createWorld(difficulty, Date.now() | 0, playerId, intent, Boolean(terminator));
+      if (scenarioId) world = applyScenario(world, scenarioId);
+      saveWorld(world);
+      set({
+        screen: screenForWorld(world),
+        world,
+        selected: world.event.actor === playerId ? "KP" : world.event.actor,
+        actionKind: "hold",
+        intensity: 1,
+        notify: false,
+        book: "A",
+        packageMode: "mirv-decoy",
+        confirmNuclear: false,
+        fileOpen: false,
+        whyId: null,
+        tutorialStep: world.turn === 1 ? 0 : -1,
+        scenarioId: scenarioId ?? null,
+        lastError: null,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[THRESHOLD] start", err);
+      set({ lastError: message, screen: "title" });
+    }
   },
   resume: () => {
     const world = loadWorld();
@@ -121,14 +135,16 @@ export const useGame = create<GameState>((set, get) => ({
   setIntensity: (i) => set({ intensity: i, book: defaultBook(i) }),
   setNotify: (n) => set({ notify: n }),
   setBook: (b) => set({ book: b }),
+  setPackageMode: (m) => set({ packageMode: m }),
   action: () => {
-    const { actionKind, intensity, selected, notify, book } = get();
+    const { actionKind, intensity, selected, notify, book, packageMode } = get();
     return {
       kind: actionKind,
       intensity,
       target: actionKind === "hold" ? null : selected,
       notify: actionKind === "hold" ? false : notify,
       book: actionKind === "employ" ? book : undefined,
+      packageMode: actionKind === "employ" ? packageMode : undefined,
     };
   },
   execute: () => {
@@ -145,30 +161,37 @@ export const useGame = create<GameState>((set, get) => ({
     if (!st.world) return;
     const act = st.action();
     const prev = st.world;
-    recordTurn(prev, act);
-    const next = resolveTurn(structuredClone(prev), act);
-    saveWorld(next);
-    defconTone(next.defcon);
-    updateAtmosphere(next.defcon, next.globalRisk);
-    if (next.nuclearUses.length > prev.nuclearUses.length) stinger("detonation");
-    if (next.brokenArrow && !prev.brokenArrow) stinger("broken-arrow");
-    if (next.trickery && (next.trickery.hotlineSpoof || next.trickery.fakeVoice) && !prev.trickery?.hotlineSpoof) {
-      stinger("trickery");
+    try {
+      recordTurn(prev, act);
+      const next = resolveTurn(structuredClone(prev), act);
+      saveWorld(next);
+      defconTone(next.defcon);
+      updateAtmosphere(next.defcon, next.globalRisk);
+      if (next.nuclearUses.length > prev.nuclearUses.length) stinger("detonation");
+      if (next.brokenArrow && !prev.brokenArrow) stinger("broken-arrow");
+      if (next.trickery && (next.trickery.hotlineSpoof || next.trickery.fakeVoice) && !prev.trickery?.hotlineSpoof) {
+        stinger("trickery");
+      }
+      if (next.ended && next.ending) {
+        recordGameEnd(next, st.scenarioId);
+      }
+      tone(next.defcon <= 2 ? 140 : 220, 0.08, "sine");
+      set({
+        world: next,
+        confirmNuclear: false,
+        actionKind: "hold",
+        intensity: 1,
+        notify: false,
+        selected: next.ended ? st.selected : next.event.actor,
+        screen: screenForWorld(next),
+        whyId: next.log[0]?.id ?? null,
+        lastError: null,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[THRESHOLD] resolveTurn", err);
+      set({ lastError: message, confirmNuclear: false });
     }
-    if (next.ended && next.ending) {
-      recordGameEnd(next, st.scenarioId);
-    }
-    tone(next.defcon <= 2 ? 140 : 220, 0.08, "sine");
-    set({
-      world: next,
-      confirmNuclear: false,
-      actionKind: "hold",
-      intensity: 1,
-      notify: false,
-      selected: next.ended ? st.selected : next.event.actor,
-      screen: screenForWorld(next),
-      whyId: next.log[0]?.id ?? null,
-    });
   },
   cancelConfirm: () => set({ confirmNuclear: false }),
   setTab: (t) => set({ mobileTab: t }),
@@ -181,11 +204,17 @@ export const useGame = create<GameState>((set, get) => ({
   pickDoctrine: (id: DoctrineUpgradeId) => {
     const w = get().world;
     if (!w) return;
-    const next = structuredClone(w);
-    applyDoctrine(next, id);
-    saveWorld(next);
-    set({ world: next });
+    try {
+      const next = structuredClone(w);
+      applyDoctrine(next, id);
+      saveWorld(next);
+      set({ world: next, lastError: null });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      set({ lastError: message });
+    }
   },
+  clearError: () => set({ lastError: null }),
 }));
 
 export function currentForecast() {
@@ -205,6 +234,7 @@ export function resetToTitle() {
     briefingPage: 0,
     tutorialStep: -1,
     scenarioId: null,
+    lastError: null,
   });
 }
 

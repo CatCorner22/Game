@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { ACTIONS } from "@/lib/game/actions";
 import { forecast } from "@/lib/game/sim";
 import { useGame } from "@/lib/game/store";
-import type { World } from "@/lib/game/types";
+import type { PackageMode, World } from "@/lib/game/types";
 import { cn } from "@/lib/utils";
 import { fmtRange } from "@/lib/game/geo";
 import { COMMAND, asPlayable, biscuitsMatch, concurrenceOutlook, isFirstUse, stanceLine } from "@/lib/game/command";
@@ -18,9 +18,11 @@ export function ActionPanel({ world }: { world: World }) {
   const selected = useGame((s) => s.selected);
   const notify = useGame((s) => s.notify);
   const book = useGame((s) => s.book);
+  const packageMode = useGame((s) => s.packageMode);
   const setKind = useGame((s) => s.setKind);
   const setIntensity = useGame((s) => s.setIntensity);
   const setNotify = useGame((s) => s.setNotify);
+  const setPackageMode = useGame((s) => s.setPackageMode);
   const execute = useGame((s) => s.execute);
   const pickDoctrine = useGame((s) => s.pickDoctrine);
   const def = ACTIONS.find((a) => a.kind === kind)!;
@@ -30,8 +32,20 @@ export function ActionPanel({ world }: { world: World }) {
     target: kind === "hold" ? null : selected,
     notify: kind === "hold" ? false : notify,
     book: kind === "employ" ? book : undefined,
+    packageMode: kind === "employ" ? packageMode : undefined,
   };
-  const fc = useMemo(() => forecast(world, action), [world, kind, intensity, selected, notify, book]);
+  const fc = useMemo(() => {
+    try {
+      return forecast(world, action);
+    } catch (err) {
+      return {
+        summary: "Forecast fault — model could not dry-run this month.",
+        riskLine: err instanceof Error ? err.message : "unknown",
+        deltas: [],
+        irreversible: action.kind === "employ" && intensity >= 2,
+      };
+    }
+  }, [world, kind, intensity, selected, notify, book, packageMode]);
   const line = hotlineBetween(world, world.playerId, selected);
   const showNotice = kind === "posture" || kind === "employ" || kind === "diplomacy";
   const pinned = pinnedLogEntry(world);
@@ -69,6 +83,9 @@ export function ActionPanel({ world }: { world: World }) {
       <div>
         <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">This month</p>
         <h2 className="mt-1 font-display text-2xl tracking-[0.06em] text-fg">{world.event.title}</h2>
+        {world.event.because ? (
+          <p className="mt-2 font-mono text-[11px] tracking-wide text-accent uppercase">{world.event.because}</p>
+        ) : null}
         <p className="mt-2 text-sm leading-relaxed text-muted">{world.event.body}</p>
         <p className="mt-2 text-xs leading-relaxed text-subtle">{world.event.ignoreLine}</p>
         {world.brokenArrow && !world.brokenArrow.recovered ? (
@@ -168,6 +185,34 @@ export function ActionPanel({ world }: { world: World }) {
         </div>
       ) : null}
 
+      {kind === "employ" && intensity >= 2 ? (
+        <div>
+          <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Package · RV / decoys</p>
+          <div className="mt-2 grid grid-cols-3 gap-1.5">
+            {(
+              [
+                ["single", "Unitary", "One RV. Easier to intercept."],
+                ["mirv", "MIRV", "Multiple RVs. Saturates defense."],
+                ["mirv-decoy", "MIRV+decoy", "RVs plus balloons. Interceptors spend on ghosts."],
+              ] as const
+            ).map(([id, label, hint]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPackageMode(id as PackageMode)}
+                className={cn(
+                  "min-h-14 rounded-sm px-2 py-2 text-left",
+                  packageMode === id ? "bg-accent text-accent-fg" : "bg-elevated text-muted",
+                )}
+              >
+                <span className="block font-display text-xs tracking-[0.08em] uppercase">{label}</span>
+                <span className="mt-0.5 block text-[10px] leading-snug opacity-80">{hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {showNotice ? (
         <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md bg-elevated px-3 shadow-[var(--shadow-border)]">
           <input
@@ -234,7 +279,9 @@ export function NuclearConfirm() {
   const world = useGame((s) => s.world);
   const selected = useGame((s) => s.selected);
   const book = useGame((s) => s.book);
+  const packageMode = useGame((s) => s.packageMode);
   const setBook = useGame((s) => s.setBook);
+  const setPackageMode = useGame((s) => s.setPackageMode);
   const cancel = useGame((s) => s.cancelConfirm);
   const commit = useGame((s) => s.confirmAndExecute);
   const [typed, setTyped] = useState("");
@@ -320,6 +367,36 @@ export function NuclearConfirm() {
             </button>
           ))}
         </div>
+        <p className="mt-3 font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Bus · decoys</p>
+        <div className="mt-2 grid grid-cols-3 gap-1.5">
+          {(
+            [
+              ["single", "Unitary"],
+              ["mirv", "MIRV"],
+              ["mirv-decoy", "MIRV+decoy"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setPackageMode(id)}
+              className={cn(
+                "min-h-10 rounded-sm px-2 font-display text-[11px] tracking-[0.08em] uppercase",
+                packageMode === id ? "bg-danger text-fg" : "bg-elevated text-muted",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] leading-snug text-subtle">
+          {packageMode === "single"
+            ? "One RV. A thin defense may still catch it. Buses still fail."
+            : packageMode === "mirv"
+              ? "Multiple RVs per bus. Defense has more objects than interceptors."
+              : "RVs plus decoys. Interceptors spend on balloons. Particular weapons still fail in boost or reentry."}
+        </p>
+
         <div className="mt-3 rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
           <p className="font-display text-lg tracking-wide text-fg">
             {page.letter} · {page.name}

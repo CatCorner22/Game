@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { loadSettings, saveSettings, type GameSettings } from "@/lib/game/settings";
 import { setMuted } from "@/lib/game/audio";
+import { runIntegrityChecks, type IntegrityResult } from "@/lib/game/integrity";
 import { cn } from "@/lib/utils";
 
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [s, setS] = useState<GameSettings>(() => loadSettings());
+  const [probe, setProbe] = useState<IntegrityResult | null>(null);
 
   useEffect(() => {
     if (open) setS(loadSettings());
@@ -56,6 +58,23 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           >
             Reset first-watch tutorial
           </button>
+          <button
+            type="button"
+            onClick={() => setProbe(runIntegrityChecks())}
+            className="min-h-10 w-full rounded-sm bg-elevated font-display text-xs tracking-wider text-accent uppercase"
+          >
+            Run integrity check
+          </button>
+          {probe ? (
+            <ul className="max-h-40 space-y-1 overflow-y-auto font-mono text-[10px]">
+              <li className={probe.ok ? "text-olive" : "text-danger"}>{probe.ok ? "All checks passed" : "Faults found"}</li>
+              {probe.checks.map((c) => (
+                <li key={c.name} className={c.ok ? "text-muted" : "text-danger"}>
+                  {c.ok ? "ok" : "fail"} {c.name} · {c.detail}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </div>
     </div>

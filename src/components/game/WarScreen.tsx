@@ -3,6 +3,7 @@ import type { GlobeCanvasProps } from "./GlobeCanvas";
 import { RadarScreen } from "./RadarScreen";
 import { ActionPanel, NuclearConfirm } from "./ActionPanel";
 import { SituationLog } from "./SituationLog";
+import { CloseCallOverlay } from "./CloseCallOverlay";
 import { resetToTitle, useGame } from "@/lib/game/store";
 import { dateLabel, meters } from "@/lib/game/world";
 import { fmtNum } from "@/lib/game/geo";
@@ -47,10 +48,14 @@ function NuclearTimeline({ world }: { world: NonNullable<ReturnType<typeof useGa
   return (
     <div className="border-t border-border px-4 py-3">
       <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Nuclear timeline</p>
+      {world.lastStrike ? (
+        <p className="mt-2 text-xs leading-snug text-fg">{world.lastStrike.summary}</p>
+      ) : null}
       <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto">
         {[...world.nuclearUses].reverse().slice(0, 12).map((u, i) => (
           <li key={`${u.turn}-${u.actor}-${i}`} className="font-mono text-[10px] text-subtle">
-            T{u.turn}: {world.actors[u.actor].shortName} → {world.actors[u.target].shortName} · {u.rung} · {u.location}
+            T{u.turn}: {world.actors[u.actor].shortName} → {world.actors[u.target].shortName} · {u.rung}
+            {u.outcome ? ` · ${u.outcome}` : ""} · {u.arrived != null ? `${u.arrived} arrived` : u.location}
           </li>
         ))}
       </ul>
@@ -83,6 +88,7 @@ export function WarScreen() {
       <CasualtyTicker world={world} />
       <div className="relative min-h-[45vh] flex-1">
         <GlobeSlot emphasized />
+        {world.closeCall ? <CloseCallOverlay world={world} /> : null}
         <div className="pointer-events-none absolute top-3 right-3 w-[min(100%,360px)]">
           <RadarScreen world={world} pulse={world.defcon <= 2} />
         </div>

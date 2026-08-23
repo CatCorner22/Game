@@ -100,7 +100,10 @@ export function IntelPanel({ world, selected }: { world: World; selected: ActorI
             <li key={s.id} className="rounded-md bg-elevated p-3 shadow-[var(--shadow-border)]">
               <p className="font-display text-sm tracking-wide text-fg">{s.name}</p>
               <p className="mt-1 font-mono text-[11px] text-muted uppercase">
-                {KIND_LABEL[s.kind]} · {s.rangeKm ? `${s.rangeKm} km` : "n/a"} · WH {s.warheads} ·{" "}
+                {KIND_LABEL[s.kind]} · {s.rangeKm ? `${s.rangeKm} km` : "n/a"} · WH {s.warheads}
+                {(s.rvsPerBus ?? 1) > 1 ? ` · MIRV ×${s.rvsPerBus}` : ""}
+                {(s.decoys ?? 0) > 0 ? ` · decoys ${s.decoys}` : ""}
+                {" · "}
                 {DISCLOSURE_LABEL[s.disclosure]}
               </p>
               <p className="mt-2 text-xs leading-relaxed text-muted">{s.notes}</p>
