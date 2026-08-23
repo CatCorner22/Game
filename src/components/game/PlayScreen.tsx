@@ -1,8 +1,17 @@
 import { useEffect, useState, type ComponentType } from "react";
 import type { GlobeCanvasProps } from "./GlobeCanvas";
+import { loadSettings } from "@/lib/game/settings";
+import { isMuted, setMuted } from "@/lib/game/audio";
 import { IntelPanel } from "./IntelPanel";
 import { ActionPanel, NuclearConfirm } from "./ActionPanel";
 import { RadarScreen } from "./RadarScreen";
+import { FlashpointBoard } from "./FlashpointBoard";
+import { SituationLog } from "./SituationLog";
+import { ObjectivesPanel } from "./ObjectivesPanel";
+import { HotlinePanel } from "./HotlinePanel";
+import { SettingsPanel } from "./SettingsPanel";
+import { CloseCallOverlay } from "./CloseCallOverlay";
+import { updateAtmosphere } from "@/lib/game/audio";
 import { resetToTitle, useGame } from "@/lib/game/store";
 import { dateLabel, meters } from "@/lib/game/world";
 import { METER_HELP } from "@/lib/game/copy";
@@ -62,6 +71,7 @@ function GlobeSlot() {
       onSelect={select}
       missiles={world.missiles}
       sites={world.sites ?? []}
+      world={world}
     />
   );
 }
@@ -71,14 +81,26 @@ export function PlayScreen() {
   const tab = useGame((s) => s.mobileTab);
   const setTab = useGame((s) => s.setTab);
   const confirm = useGame((s) => s.confirmNuclear);
-  const whyId = useGame((s) => s.whyId);
-  const setWhy = useGame((s) => s.setWhy);
   const setScreen = useGame((s) => s.setScreen);
   const selected = useGame((s) => s.selected);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [muted, setMutedLocal] = useState(() => loadSettings().muted);
+
+  useEffect(() => {
+    if (!world) return;
+    const m = meters(world);
+    updateAtmosphere(world.defcon, m.risk);
+  }, [world?.defcon, world?.globalRisk, world?.turn]);
+
   if (!world) return null;
   const m = meters(world);
-  const why = world.log.find((l) => l.id === whyId) ?? world.log[0];
   const c2 = COMMAND[asPlayable(world.playerId)];
+
+  function toggleMute() {
+    const next = !isMuted();
+    setMuted(next);
+    setMutedLocal(next);
+  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
@@ -119,6 +141,21 @@ export function PlayScreen() {
           {world.brokenArrow && !world.brokenArrow.recovered ? (
             <span className="hidden font-mono text-[10px] tracking-wider text-danger uppercase sm:inline">BROKEN ARROW</span>
           ) : null}
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
+            aria-label={muted ? "Unmute" : "Mute"}
+          >
+            {muted ? "Unmute" : "Mute"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
+          >
+            Settings
+          </button>
           <button
             onClick={() => setScreen("briefing")}
             className="min-h-10 px-2 font-display text-xs tracking-[0.16em] text-muted uppercase"
@@ -199,6 +236,10 @@ export function PlayScreen() {
               {world.terminator ? ` ${fusionName(world)} takeover ${Math.round(world.aiTakeover)}.` : ""}
             </p>
           </div>
+          <ObjectivesPanel world={world} />
+          <FlashpointBoard world={world} />
+          <HotlinePanel world={world} />
+          <SituationLog world={world} />
           <div className="mt-6">
             <IntelPanel world={world} selected={selected} />
           </div>
@@ -211,8 +252,9 @@ export function PlayScreen() {
           )}
         >
           <GlobeSlot />
+          {world.closeCall ? <CloseCallOverlay world={world} /> : null}
           <div className="pointer-events-none absolute top-3 right-3 w-[min(100%,320px)]">
-            <RadarScreen world={world} />
+            <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} />
           </div>
           <div className="pointer-events-none absolute bottom-3 left-3 font-mono text-xs tracking-[0.18em] text-muted uppercase">
             Drag to orbit · click a marker
@@ -226,23 +268,10 @@ export function PlayScreen() {
           )}
         >
           <ActionPanel world={world} />
-          {why ? (
-            <button
-              onClick={() => setWhy(whyId === why.id ? null : why.id)}
-              className="mt-6 w-full rounded-md bg-elevated p-3 text-left shadow-[var(--shadow-border)]"
-            >
-              <p className="font-mono text-xs tracking-[0.2em] text-muted uppercase">Why</p>
-              <p className="mt-1 text-sm text-fg">{why.text}</p>
-              {whyId === why.id ? (
-                <p className="mt-2 text-xs leading-relaxed text-muted">{why.why}</p>
-              ) : (
-                <p className="mt-2 text-xs text-subtle">Open the causal line</p>
-              )}
-            </button>
-          ) : null}
         </aside>
       </div>
       {confirm ? <NuclearConfirm /> : null}
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

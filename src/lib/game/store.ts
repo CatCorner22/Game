@@ -1,11 +1,21 @@
 import { create } from "zustand";
-import type { ActionIntensity, ActionKind, ActorId, Difficulty, PlayerAction, Screen, Team, World } from "./types";
+import type { ActionIntensity, ActionKind, ActorId, Difficulty, DoctrineUpgradeId, PlayerAction, Screen, Team, World } from "./types";
 import { defaultBook, type BookId } from "./blackbook";
 import { createWorld } from "./world";
 import { defaultAction } from "./actions";
 import { forecast, resolveTurn } from "./sim";
 import { clearSave, loadWorld, saveWorld } from "./save";
-import { unlockAudio, tone } from "./audio";
+import { unlockAudio, tone, updateAtmosphere, stinger, defconTone } from "./audio";
+import { recordTurn } from "./replay";
+import { applyScenario, type ScenarioId } from "./scenarios";
+import { recordGameEnd } from "./stats";
+import { applyDoctrine } from "./doctrine";
+
+function screenForWorld(world: World): Screen {
+  if (world.ended) return "end";
+  if (world.phase === "nuclear" || world.defcon <= 2) return "war";
+  return "play";
+}
 
 interface GameState {
   screen: Screen;
@@ -21,7 +31,15 @@ interface GameState {
   confirmNuclear: boolean;
   fileOpen: boolean;
   glossaryOpen: boolean;
-  start: (opts: { difficulty: Difficulty; playerId: ActorId; intent: Team; terminator?: boolean }) => void;
+  tutorialStep: number;
+  scenarioId: ScenarioId | null;
+  start: (opts: {
+    difficulty: Difficulty;
+    playerId: ActorId;
+    intent: Team;
+    terminator?: boolean;
+    scenarioId?: ScenarioId;
+  }) => void;
   resume: () => boolean;
   setScreen: (s: Screen) => void;
   select: (id: ActorId) => void;
@@ -37,6 +55,9 @@ interface GameState {
   setWhy: (id: string | null) => void;
   toggleFile: () => void;
   toggleGlossary: () => void;
+  setTutorialStep: (n: number) => void;
+  dismissTutorial: () => void;
+  pickDoctrine: (id: DoctrineUpgradeId) => void;
   action: () => PlayerAction;
 }
 
@@ -54,12 +75,15 @@ export const useGame = create<GameState>((set, get) => ({
   confirmNuclear: false,
   fileOpen: false,
   glossaryOpen: false,
-  start: ({ difficulty, playerId, intent, terminator }) => {
+  tutorialStep: -1,
+  scenarioId: null,
+  start: ({ difficulty, playerId, intent, terminator, scenarioId }) => {
     unlockAudio();
-    const world = createWorld(difficulty, Date.now() | 0, playerId, intent, Boolean(terminator));
+    let world = createWorld(difficulty, Date.now() | 0, playerId, intent, Boolean(terminator));
+    if (scenarioId) world = applyScenario(world, scenarioId);
     saveWorld(world);
     set({
-      screen: "play",
+      screen: screenForWorld(world),
       world,
       selected: world.event.actor === playerId ? "KP" : world.event.actor,
       actionKind: "hold",
@@ -69,18 +93,21 @@ export const useGame = create<GameState>((set, get) => ({
       confirmNuclear: false,
       fileOpen: false,
       whyId: null,
+      tutorialStep: world.turn === 1 ? 0 : -1,
+      scenarioId: scenarioId ?? null,
     });
   },
   resume: () => {
     const world = loadWorld();
     if (!world || world.ended) return false;
     set({
-      screen: "play",
+      screen: screenForWorld(world),
       world,
       selected: world.event.actor,
       actionKind: "hold",
       intensity: 1,
       notify: false,
+      tutorialStep: -1,
     });
     return true;
   },
@@ -117,8 +144,20 @@ export const useGame = create<GameState>((set, get) => ({
     const st = get();
     if (!st.world) return;
     const act = st.action();
-    const next = resolveTurn(structuredClone(st.world), act);
+    const prev = st.world;
+    recordTurn(prev, act);
+    const next = resolveTurn(structuredClone(prev), act);
     saveWorld(next);
+    defconTone(next.defcon);
+    updateAtmosphere(next.defcon, next.globalRisk);
+    if (next.nuclearUses.length > prev.nuclearUses.length) stinger("detonation");
+    if (next.brokenArrow && !prev.brokenArrow) stinger("broken-arrow");
+    if (next.trickery && (next.trickery.hotlineSpoof || next.trickery.fakeVoice) && !prev.trickery?.hotlineSpoof) {
+      stinger("trickery");
+    }
+    if (next.ended && next.ending) {
+      recordGameEnd(next, st.scenarioId);
+    }
     tone(next.defcon <= 2 ? 140 : 220, 0.08, "sine");
     set({
       world: next,
@@ -127,7 +166,7 @@ export const useGame = create<GameState>((set, get) => ({
       intensity: 1,
       notify: false,
       selected: next.ended ? st.selected : next.event.actor,
-      screen: next.ended ? "end" : "play",
+      screen: screenForWorld(next),
       whyId: next.log[0]?.id ?? null,
     });
   },
@@ -137,6 +176,16 @@ export const useGame = create<GameState>((set, get) => ({
   setWhy: (id) => set({ whyId: id }),
   toggleFile: () => set({ fileOpen: !get().fileOpen }),
   toggleGlossary: () => set({ glossaryOpen: !get().glossaryOpen }),
+  setTutorialStep: (n) => set({ tutorialStep: n }),
+  dismissTutorial: () => set({ tutorialStep: -1 }),
+  pickDoctrine: (id: DoctrineUpgradeId) => {
+    const w = get().world;
+    if (!w) return;
+    const next = structuredClone(w);
+    applyDoctrine(next, id);
+    saveWorld(next);
+    set({ world: next });
+  },
 }));
 
 export function currentForecast() {
@@ -154,6 +203,8 @@ export function resetToTitle() {
     notify: false,
     confirmNuclear: false,
     briefingPage: 0,
+    tutorialStep: -1,
+    scenarioId: null,
   });
 }
 

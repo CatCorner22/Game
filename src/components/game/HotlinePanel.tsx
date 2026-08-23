@@ -1,0 +1,65 @@
+import type { ActorId, World } from "@/lib/game/types";
+import { hotlineBetween } from "@/lib/game/warning";
+import { useGame } from "@/lib/game/store";
+import { cn } from "@/lib/utils";
+
+function playerHotlines(world: World) {
+  const pid = world.playerId;
+  return world.hotlines.filter((h) => h.a === pid || h.b === pid);
+}
+
+export function HotlinePanel({ world }: { world: World }) {
+  const selected = useGame((s) => s.selected);
+  const select = useGame((s) => s.select);
+  const lines = playerHotlines(world);
+  const toSelected = hotlineBetween(world, world.playerId, selected);
+  const recent = [...world.notices].reverse().slice(0, 4);
+
+  return (
+    <section className="mt-4">
+      <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Hotlines & notices</p>
+      {toSelected ? (
+        <div className="mt-2 rounded-md bg-accent/10 p-2.5 shadow-[var(--shadow-border)]">
+          <p className="font-mono text-[9px] tracking-wider text-accent uppercase">Selected target</p>
+          <p className="mt-1 text-xs text-fg">{toSelected.name}</p>
+          <p className="mt-0.5 font-mono text-[10px] text-muted">Reliability {toSelected.reliability}%</p>
+        </div>
+      ) : (
+        <p className="mt-2 text-xs text-subtle">No dedicated line to {selected}. Third party. Hours, not minutes.</p>
+      )}
+      <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto pr-1">
+        {lines.map((h) => {
+          const other: ActorId = h.a === world.playerId ? h.b : h.a;
+          const active = other === selected;
+          return (
+            <li key={`${h.a}-${h.b}`}>
+              <button
+                type="button"
+                onClick={() => select(other)}
+                className={cn(
+                  "w-full rounded-sm px-2 py-1.5 text-left font-mono text-[10px]",
+                  active ? "bg-fg text-bg" : "text-muted hover:text-fg",
+                )}
+              >
+                <span className="tracking-wider uppercase">{world.actors[other].shortName}</span>
+                <span className="ml-2 tabular">{h.reliability}%</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {recent.length ? (
+        <div className="mt-3">
+          <p className="font-mono text-[9px] tracking-wider text-muted uppercase">Launch notices on file</p>
+          <ul className="mt-1 space-y-1">
+            {recent.map((n, i) => (
+              <li key={`${n.turn}-${n.actor}-${i}`} className="text-[10px] leading-snug text-subtle">
+                {world.actors[n.actor].shortName}: {n.claimed} · {n.window}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
+  );
+}

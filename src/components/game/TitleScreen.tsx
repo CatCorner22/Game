@@ -1,5 +1,7 @@
 import { useGame } from "@/lib/game/store";
-import { hasSave } from "@/lib/game/save";
+import { hasSave, loadWorld, saveWorld } from "@/lib/game/save";
+import { slotMeta, loadWorldFromSlot } from "@/lib/game/slots";
+import { SCENARIOS, type ScenarioId } from "@/lib/game/scenarios";
 import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
 import { useState } from "react";
@@ -30,17 +32,26 @@ export function TitleScreen() {
   const [save] = useState(() => hasSave());
   const [team, setTeam] = useState<Team | null>(null);
   const [country, setCountry] = useState<PlayableId | null>(null);
+  const [scenario, setScenario] = useState<ScenarioId | null>(null);
+  const [slotPick, setSlotPick] = useState<0 | 1 | 2 | null>(null);
   const [terminator, setTerminator] = useState(false);
 
   const seat = PLAYABLE.find((p) => p.id === country);
 
+  const [bgOk, setBgOk] = useState(true);
+
   return (
     <div className="relative min-h-dvh overflow-hidden bg-bg">
-      <img
-        src="/textures/command-room.jpg"
-        alt=""
-        className="absolute inset-0 size-full object-cover opacity-55"
-      />
+      {bgOk ? (
+        <img
+          src="/textures/command-room.jpg"
+          alt=""
+          className="absolute inset-0 size-full object-cover opacity-55"
+          onError={() => setBgOk(false)}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-linear-to-br from-bg via-elevated to-bg opacity-90" />
+      )}
       <div className="absolute inset-0 bg-linear-to-r from-bg via-bg/80 to-bg/30" />
       <div className="scanline absolute inset-0 opacity-40" />
       <div className="relative z-10 flex min-h-dvh flex-col justify-between px-5 py-8 sm:px-10 sm:py-12">
@@ -144,6 +155,42 @@ export function TitleScreen() {
 
           {team && country ? (
             <div className="mt-6">
+              <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Scenarios (optional)</p>
+              <div className="mt-2 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setScenario(null)}
+                  className={cn(
+                    "min-h-10 rounded-md px-4 text-left text-sm",
+                    scenario === null ? "bg-fg text-bg" : "bg-elevated text-muted",
+                  )}
+                >
+                  Sandbox · March 2027
+                </button>
+                {SCENARIOS.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      setScenario(s.id);
+                      setCountry(s.playerId as PlayableId);
+                      setTeam(s.intent);
+                    }}
+                    className={cn(
+                      "min-h-12 rounded-md px-4 py-2 text-left shadow-[var(--shadow-border)]",
+                      scenario === s.id ? "bg-accent text-accent-fg" : "bg-elevated text-fg",
+                    )}
+                  >
+                    <span className="font-display text-sm tracking-wide">{s.title}</span>
+                    <span className="mt-0.5 block text-xs opacity-80">{s.line}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {team && country ? (
+            <div className="mt-6">
               <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">3 · C2</p>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <button
@@ -182,7 +229,13 @@ export function TitleScreen() {
                   <button
                     key={d.id}
                     onClick={() =>
-                      start({ difficulty: d.id, playerId: country, intent: team, terminator })
+                      start({
+                        difficulty: scenario ? SCENARIOS.find((s) => s.id === scenario)!.difficulty : d.id,
+                        playerId: country,
+                        intent: team,
+                        terminator,
+                        scenarioId: scenario ?? undefined,
+                      })
                     }
                     className="group flex min-h-12 items-center justify-between gap-4 rounded-md bg-elevated px-4 py-3 text-left shadow-[var(--shadow-border)] transition-[box-shadow,transform] duration-150 hover:shadow-[var(--shadow-border-hover)] active:scale-[0.99]"
                   >
@@ -196,6 +249,36 @@ export function TitleScreen() {
             </div>
           ) : null}
 
+          <div className="mt-4">
+            <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Save slots</p>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {([0, 1, 2] as const).map((slot) => {
+                const meta = slotMeta(slot);
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => {
+                      const w = loadWorldFromSlot(slot);
+                      if (w && !w.ended) {
+                        saveWorld(w);
+                        resume();
+                      } else {
+                        setSlotPick(slot);
+                      }
+                    }}
+                    className="min-h-14 rounded-md bg-elevated px-2 py-2 text-left shadow-[var(--shadow-border)]"
+                  >
+                    <span className="font-display text-xs text-fg">Slot {slot + 1}</span>
+                    <span className="mt-1 block font-mono text-[10px] text-subtle">
+                      {meta ? `${meta.seat} · T${meta.turn}` : "Empty"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="mt-4 flex flex-wrap gap-3">
             {save ? (
               <button
@@ -205,6 +288,18 @@ export function TitleScreen() {
                 Continue watch
               </button>
             ) : null}
+            <button
+              onClick={() => setScreen("stats")}
+              className="min-h-11 px-3 font-display tracking-[0.16em] text-muted uppercase hover:text-fg"
+            >
+              Career
+            </button>
+            <button
+              onClick={() => setScreen("multiplayer")}
+              className="min-h-11 px-3 font-display tracking-[0.16em] text-muted uppercase hover:text-fg"
+            >
+              Multiplayer
+            </button>
             <button
               onClick={() => setScreen("briefing")}
               className="min-h-11 px-3 font-display tracking-[0.16em] text-muted uppercase hover:text-fg"

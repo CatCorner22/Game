@@ -44,6 +44,7 @@ export type PlayableId =
   | "PK"
   | "IL"
   | "KP"
+  | "IR"
   | "CU"
   | "NS"
   | "CR";
@@ -58,6 +59,7 @@ export const PLAYABLE_IDS: PlayableId[] = [
   "PK",
   "IL",
   "KP",
+  "IR",
   "CU",
   "NS",
   "CR",
@@ -69,7 +71,7 @@ export type OfficerStance = "professional" | "eager" | "shaken" | "loyalist" | "
 export type Phase = "peacetime" | "crisis" | "conventional" | "nuclear" | "aftermath";
 export type Difficulty = "standard" | "hard" | "extreme";
 export type Disclosure = "acknowledged" | "reported" | "suspected" | "unacknowledged";
-export type Screen = "title" | "briefing" | "play" | "war" | "end";
+export type Screen = "title" | "briefing" | "play" | "war" | "end" | "stats" | "multiplayer";
 
 export type DeliveryKind =
   | "icbm"
@@ -295,6 +297,15 @@ export interface LaunchNotice {
   claimed: "test" | "exercise";
 }
 
+export interface NonAttackPact {
+  a: ActorId;
+  b: ActorId;
+  untilTurn: number;
+  broken: boolean;
+}
+
+export type DoctrineUpgradeId = "pal" | "sbirs" | "hotline" | "humint";
+
 export type SiteKind = "icbm" | "ssbn" | "bomber" | "mobile";
 
 export interface SpyCell {
@@ -384,6 +395,11 @@ export interface World {
   sensors: SensorNet[];
   hotlines: Hotline[];
   notices: LaunchNotice[];
+  pacts?: NonAttackPact[];
+  doctrinePending?: boolean;
+  doctrineTaken?: DoctrineUpgradeId[];
+  actionHistory?: PlayerAction[];
+  scenarioId?: string | null;
   sites: LaunchSite[];
   trickery: Trickery;
   brokenArrow: BrokenArrow | null;

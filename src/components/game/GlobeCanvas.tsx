@@ -1,20 +1,78 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
-import type { Actor, ActorId, LaunchSite, MissileFx } from "@/lib/game/types";
+import type { Actor, ActorId, LaunchSite, MissileFx, World } from "@/lib/game/types";
 import { ACTOR_IDS } from "@/lib/game/types";
 import { latLonToVec3 } from "@/lib/game/geo";
+import { actorFlashHeat } from "./FlashpointBoard";
 
 const R = 1.62;
 
+function useEarthTextures() {
+  const [failed, setFailed] = useState(false);
+  const dark = useMemo(() => {
+    const t = new THREE.TextureLoader().load(
+      "/textures/earth-dark.jpg",
+      undefined,
+      undefined,
+      () => setFailed(true),
+    );
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    return t;
+  }, []);
+  const night = useMemo(() => {
+    const t = new THREE.TextureLoader().load(
+      "/textures/earth-night.jpg",
+      undefined,
+      undefined,
+      () => setFailed(true),
+    );
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    return t;
+  }, []);
+  return { dark, night, failed };
+}
+
+function EarthFallback() {
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: `
+          varying vec3 vNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vNormal;
+          void main() {
+            float lat = vNormal.y * 0.5 + 0.5;
+            vec3 ocean = vec3(0.04, 0.06, 0.12);
+            vec3 land = vec3(0.12, 0.14, 0.10);
+            float landMask = step(0.52, sin(vNormal.x * 8.0) * cos(vNormal.z * 6.0) + 0.15 * sin(lat * 20.0));
+            vec3 base = mix(ocean, land, landMask);
+            float rim = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+            gl_FragColor = vec4(base + rim * 0.08, 1.0);
+          }
+        `,
+      }),
+    [],
+  );
+  return (
+    <mesh>
+      <sphereGeometry args={[R, 64, 64]} />
+      <primitive object={mat} attach="material" />
+    </mesh>
+  );
+}
+
 function Earth() {
-  const dark = useMemo(() => new THREE.TextureLoader().load("/textures/earth-dark.jpg"), []);
-  const night = useMemo(() => new THREE.TextureLoader().load("/textures/earth-night.jpg"), []);
-  dark.colorSpace = THREE.SRGBColorSpace;
-  night.colorSpace = THREE.SRGBColorSpace;
-  dark.anisotropy = 8;
-  night.anisotropy = 8;
+  const { dark, night, failed } = useEarthTextures();
+  if (failed) return <EarthFallback />;
   return (
     <mesh>
       <sphereGeometry args={[R, 64, 64]} />
@@ -63,8 +121,10 @@ function Atmosphere() {
   );
 }
 
-function markerColor(actor: Actor, selected: boolean): string {
+function markerColor(actor: Actor, selected: boolean, flashHeat: number): string {
   if (selected) return "#f2f0ea";
+  if (flashHeat >= 70) return "#b42318";
+  if (flashHeat >= 45) return "#c4a35a";
   if (actor.id === "US") return "#c4a35a";
   if (actor.hostility.US >= 70) return "#b42318";
   if (actor.hostility.US <= 28) return "#6b7f5a";
@@ -92,76 +152,103 @@ function SiteMarks({ sites, selected }: { sites: LaunchSite[]; selected: ActorId
   );
 }
 
+function HeatRing({ lat, lon, heat }: { lat: number; lon: number; heat: number }) {
+  if (heat < 25) return null;
+  const [x, y, z] = latLonToVec3(lat, lon, R + 0.06);
+  const scale = 0.08 + (heat / 100) * 0.12;
+  const opacity = 0.15 + (heat / 100) * 0.35;
+  return (
+    <mesh position={[x, y, z]} scale={scale}>
+      <ringGeometry args={[0.6, 1, 24]} />
+      <meshBasicMaterial color={heat >= 70 ? "#b42318" : "#c4a35a"} transparent opacity={opacity} side={THREE.DoubleSide} />
+    </mesh>
+  );
+}
+
 function Markers({
   actors,
   selected,
   onSelect,
+  flashHeat,
 }: {
   actors: Record<ActorId, Actor>;
   selected: ActorId;
   onSelect: (id: ActorId) => void;
+  flashHeat: Record<ActorId, number>;
 }) {
   return (
     <group>
       {ACTOR_IDS.map((id) => {
         const a = actors[id];
         if (a.nonstate && !a.hasDevice && a.intel < 40) return null;
+        const heat = flashHeat[id] ?? 0;
         const [x, y, z] = latLonToVec3(a.lat, a.lon, R + 0.04);
         const sel = id === selected;
         return (
-          <mesh
-            key={id}
-            position={[x, y, z]}
-            scale={sel ? 1.45 : 1}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect(id);
-            }}
-          >
-            <octahedronGeometry args={[sel ? 0.045 : 0.032, 0]} />
-            <meshBasicMaterial color={markerColor(a, sel)} />
-          </mesh>
+          <group key={id}>
+            <HeatRing lat={a.lat} lon={a.lon} heat={heat} />
+            <mesh
+              position={[x, y, z]}
+              scale={sel ? 1.45 : 1}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(id);
+              }}
+            >
+              <octahedronGeometry args={[sel ? 0.045 : 0.032, 0]} />
+              <meshBasicMaterial color={markerColor(a, sel, heat)} />
+            </mesh>
+          </group>
         );
       })}
     </group>
   );
 }
 
-function ArcPrimitive({ points }: { points: THREE.Vector3[] }) {
+function ArcPrimitive({ points, emphasized }: { points: THREE.Vector3[]; emphasized?: boolean }) {
   const obj = useMemo(() => {
     const geo = new THREE.BufferGeometry().setFromPoints(points);
     const mat = new THREE.LineBasicMaterial({
-      color: 0xb42318,
+      color: emphasized ? 0xff4444 : 0xb42318,
       transparent: true,
-      opacity: 0.85,
+      opacity: emphasized ? 1 : 0.85,
+      linewidth: emphasized ? 2 : 1,
     });
     return new THREE.Line(geo, mat);
-  }, [points]);
+  }, [points, emphasized]);
   return <primitive object={obj} />;
 }
 
-function Arcs({ missiles, actors }: { missiles: MissileFx[]; actors: Record<ActorId, Actor> }) {
+function Arcs({
+  missiles,
+  actors,
+  emphasized,
+}: {
+  missiles: MissileFx[];
+  actors: Record<ActorId, Actor>;
+  emphasized?: boolean;
+}) {
   const curves = useMemo(() => {
     return missiles.map((m) => {
       const from = actors[m.from];
       const to = actors[m.to];
       const a = new THREE.Vector3(...latLonToVec3(from.lat, from.lon, R + 0.02));
       const b = new THREE.Vector3(...latLonToVec3(to.lat, to.lon, R + 0.02));
-      const mid = a.clone().add(b).multiplyScalar(0.5).normalize().multiplyScalar(R + 0.55);
+      const mid = a.clone().add(b).multiplyScalar(0.5).normalize().multiplyScalar(R + (emphasized ? 0.75 : 0.55));
       const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
       return { id: m.id, pts: curve.getPoints(48), toPos: b };
     });
-  }, [missiles, actors]);
+  }, [missiles, actors, emphasized]);
 
   return (
     <group>
       {curves.map((c) => (
-        <ArcPrimitive key={c.id} points={c.pts} />
+        <ArcPrimitive key={c.id} points={c.pts} emphasized={emphasized} />
       ))}
       {curves.map((c) => (
         <mesh key={`${c.id}-flash`} position={c.toPos}>
-          <sphereGeometry args={[0.05, 12, 12]} />
-          <meshBasicMaterial color="#f2f0ea" transparent opacity={0.7} />
+          <sphereGeometry args={[emphasized ? 0.08 : 0.05, 12, 12]} />
+          <meshBasicMaterial color="#f2f0ea" transparent opacity={0.85} />
         </mesh>
       ))}
     </group>
@@ -174,12 +261,16 @@ function Scene({
   onSelect,
   missiles,
   sites,
+  flashHeat,
+  emphasizedArcs,
 }: {
   actors: Record<ActorId, Actor>;
   selected: ActorId;
   onSelect: (id: ActorId) => void;
   missiles: MissileFx[];
   sites: LaunchSite[];
+  flashHeat: Record<ActorId, number>;
+  emphasizedArcs?: boolean;
 }) {
   return (
     <>
@@ -190,12 +281,12 @@ function Scene({
       <Stars radius={40} depth={20} count={1200} factor={2.2} fade speed={0.3} />
       <Earth />
       <Atmosphere />
-      <Markers actors={actors} selected={selected} onSelect={onSelect} />
+      <Markers actors={actors} selected={selected} onSelect={onSelect} flashHeat={flashHeat} />
       <SiteMarks sites={sites} selected={selected} />
-      <Arcs missiles={missiles} actors={actors} />
+      <Arcs missiles={missiles} actors={actors} emphasized={emphasizedArcs} />
       <OrbitControls
         enablePan={false}
-        autoRotate
+        autoRotate={!emphasizedArcs}
         autoRotateSpeed={0.28}
         minDistance={2.35}
         maxDistance={5.4}
@@ -212,9 +303,18 @@ export type GlobeCanvasProps = {
   onSelect: (id: ActorId) => void;
   missiles: MissileFx[];
   sites: LaunchSite[];
+  world?: World;
+  emphasizedArcs?: boolean;
 };
 
-export function GlobeCanvas(props: GlobeCanvasProps) {
+export function GlobeCanvas({ world, emphasizedArcs, ...props }: GlobeCanvasProps) {
+  const flashHeat = useMemo(() => {
+    if (!world) return {} as Record<ActorId, number>;
+    const out = {} as Record<ActorId, number>;
+    for (const id of ACTOR_IDS) out[id] = actorFlashHeat(world, id);
+    return out;
+  }, [world]);
+
   return (
     <Canvas
       dpr={[1, 1.75]}
@@ -222,7 +322,7 @@ export function GlobeCanvas(props: GlobeCanvasProps) {
       camera={{ position: [-0.4, 1.1, 3.35], fov: 38 }}
       style={{ width: "100%", height: "100%", touchAction: "none" }}
     >
-      <Scene {...props} />
+      <Scene {...props} flashHeat={flashHeat} emphasizedArcs={emphasizedArcs} />
     </Canvas>
   );
 }

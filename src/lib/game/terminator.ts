@@ -13,6 +13,7 @@ export const FUSION: Record<PlayableId, string> = {
   PK: "SPD targeting aid",
   IL: "Assessed C4I fusion (unacknowledged)",
   KP: "Imported Chinese fusion stack (suspected)",
+  IR: "Assessed IRGC targeting aid (suspected)",
   SU: "Kazbek claimant · PERIMETR-M",
   CU: "Havana air-defense fusion (thin)",
   CR: "No model · phones and a ledger",

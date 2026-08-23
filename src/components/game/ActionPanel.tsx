@@ -8,6 +8,9 @@ import { fmtRange } from "@/lib/game/geo";
 import { COMMAND, asPlayable, biscuitsMatch, concurrenceOutlook, isFirstUse, stanceLine } from "@/lib/game/command";
 import { blackBook, footballContents } from "@/lib/game/blackbook";
 import { hotlineBetween, warningLine, winterLabel } from "@/lib/game/warning";
+import { pinnedLogEntry } from "./SituationLog";
+import { doctrineOptions } from "@/lib/game/doctrine";
+import { loadSettings } from "@/lib/game/settings";
 
 export function ActionPanel({ world }: { world: World }) {
   const kind = useGame((s) => s.actionKind);
@@ -19,6 +22,7 @@ export function ActionPanel({ world }: { world: World }) {
   const setIntensity = useGame((s) => s.setIntensity);
   const setNotify = useGame((s) => s.setNotify);
   const execute = useGame((s) => s.execute);
+  const pickDoctrine = useGame((s) => s.pickDoctrine);
   const def = ACTIONS.find((a) => a.kind === kind)!;
   const action = {
     kind,
@@ -30,9 +34,38 @@ export function ActionPanel({ world }: { world: World }) {
   const fc = useMemo(() => forecast(world, action), [world, kind, intensity, selected, notify, book]);
   const line = hotlineBetween(world, world.playerId, selected);
   const showNotice = kind === "posture" || kind === "employ" || kind === "diplomacy";
+  const pinned = pinnedLogEntry(world);
+  const forecastSummary = loadSettings().forecastDetail === "summary";
+  const doctrineChoices = world.doctrinePending ? doctrineOptions(world) : [];
+
+  if (world.doctrinePending && doctrineChoices.length) {
+    return (
+      <section className="flex flex-col gap-3">
+        <p className="font-mono text-[10px] tracking-[0.22em] text-accent uppercase">Doctrine investment · turn {world.turn}</p>
+        <p className="text-sm text-muted">Pick one upgrade before this month&apos;s action. Every six months the file offers a choice.</p>
+        {doctrineChoices.map((d) => (
+          <button
+            key={d.id}
+            type="button"
+            onClick={() => pickDoctrine(d.id)}
+            className="min-h-14 rounded-md bg-elevated p-3 text-left shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]"
+          >
+            <span className="font-display text-sm tracking-wide text-fg uppercase">{d.label}</span>
+            <span className="mt-1 block text-xs text-subtle">{d.detail}</span>
+          </button>
+        ))}
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-4">
+      {pinned && (pinned.kind === "critical" || pinned.kind === "you") ? (
+        <div className="rounded-md border border-danger/30 bg-danger/10 p-3">
+          <p className="font-mono text-[10px] tracking-[0.22em] text-danger uppercase">Priority</p>
+          <p className="mt-1 text-sm text-fg">{pinned.text}</p>
+        </div>
+      ) : null}
       <div>
         <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">This month</p>
         <h2 className="mt-1 font-display text-2xl tracking-[0.06em] text-fg">{world.event.title}</h2>
@@ -156,14 +189,16 @@ export function ActionPanel({ world }: { world: World }) {
         <p className="font-mono text-[10px] tracking-[0.22em] text-muted uppercase">Forecast</p>
         <p className="mt-2 text-sm text-fg">{fc.summary}</p>
         <p className="mt-1 text-xs text-subtle">{fc.riskLine}</p>
-        <ul className="mt-3 space-y-1">
-          {fc.deltas.map((d) => (
-            <li key={d.label} className="flex justify-between font-mono text-xs tabular text-muted">
-              <span>{d.label}</span>
-              <span className="text-fg">{fmtRange(d.low, d.high)}</span>
-            </li>
-          ))}
-        </ul>
+        {!forecastSummary ? (
+          <ul className="mt-3 space-y-1">
+            {fc.deltas.map((d) => (
+              <li key={d.label} className="flex justify-between font-mono text-xs tabular text-muted">
+                <span>{d.label}</span>
+                <span className="text-fg">{fmtRange(d.low, d.high)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <p className="mt-2 text-[11px] text-subtle">
           {warningLine(world)} · winter {winterLabel(world.nuclearWinter)}
         </p>

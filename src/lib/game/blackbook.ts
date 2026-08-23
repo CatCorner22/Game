@@ -245,6 +245,7 @@ const PAGES: Record<PlayableId, BlackBookPage[]> = {
       body: "Jacobsen’s scenario includes an EMP pulse. Physics is real. Their ability to loft and fuse a warhead at the right altitude is the unknown.",
     },
   ],
+  IR: defaultRegional("Assessed device / Shahab-3", 60),
   SU: [
     {
       id: "A",

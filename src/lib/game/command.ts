@@ -100,6 +100,14 @@ export const PLAYABLE: { id: PlayableId; name: string; seat: string; blue: strin
     group: "nuclear",
   },
   {
+    id: "IR",
+    name: "Iran",
+    seat: "Supreme Leader · breakout clock",
+    blue: "Assemble quietly. Break out before the strike. NFU is not your doctrine — survival is.",
+    red: "Weaponize the clock. Force concessions. Israel and the US are watching every centrifuge.",
+    group: "nuclear",
+  },
+  {
     id: "CU",
     name: "Cuba",
     seat: "First Secretary · Havana",
@@ -282,6 +290,21 @@ export const COMMAND: Record<PlayableId, CommandProfile> = {
     preDel: 0.22,
     officers: ["General Staff (USSR)", "RVSN claimant", "Perimeter watch", "Minsk duty"],
   },
+  IR: {
+    satchel: "Breakout authority",
+    satchelLine:
+      "No public football. The Supreme Leader holds release through the IRGC and atomic energy organization. Breakout is the weapon until assembly. Opacity is mandatory.",
+    secondTitle: "IRGC commander",
+    pal: true,
+    twoMan: true,
+    positiveControl: true,
+    perimeter: false,
+    letters: false,
+    refusal: 0.2,
+    eager: 0.24,
+    preDel: 0.15,
+    officers: ["Fordow duty", "Natanz watch", "IRGC aerospace", "Atomic energy liaison"],
+  },
   CU: {
     satchel: "No football — host nation",
     satchelLine:
@@ -384,8 +407,7 @@ export function tickOfficers(world: World) {
 }
 
 export function asPlayable(id: ActorId): PlayableId {
-  if (id === "IR") return "PK";
-  if ((["US", "RU", "SU", "CN", "FR", "UK", "IN", "PK", "IL", "KP", "CU", "NS", "CR"] as string[]).includes(id)) {
+  if ((["US", "RU", "SU", "CN", "FR", "UK", "IN", "PK", "IL", "KP", "IR", "CU", "NS", "CR"] as string[]).includes(id)) {
     return id as PlayableId;
   }
   return "US";

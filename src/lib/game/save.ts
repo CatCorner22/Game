@@ -5,6 +5,7 @@ import { defaultHotlines, defaultSensors } from "./warning";
 import { makeOfficer, asPlayable } from "./command";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
+import { saveWorldToSlot } from "./slots";
 
 const KEY = "threshold.save.v2";
 const BACKUP = "threshold.save.v2.bak";
@@ -69,6 +70,10 @@ function migrate(world: World): World {
   }
   if (world.brokenArrow === undefined) world.brokenArrow = null;
   if (!world.reactions) world.reactions = [];
+  if (!world.pacts) world.pacts = [];
+  if (world.doctrinePending === undefined) world.doctrinePending = false;
+  if (!world.doctrineTaken) world.doctrineTaken = [];
+  if (!world.actionHistory) world.actionHistory = [];
   const fresh = makeActors();
   for (const id of Object.keys(fresh) as (keyof typeof fresh)[]) {
     if (!world.actors[id]) world.actors[id] = fresh[id];
@@ -88,6 +93,7 @@ export function saveWorld(world: World) {
     const prev = localStorage.getItem(KEY);
     if (prev) localStorage.setItem(BACKUP, prev);
     localStorage.setItem(KEY, JSON.stringify({ version: SAVE_VERSION, world }));
+    saveWorldToSlot(world, 0);
   } catch {
     /* private mode / quota */
   }
