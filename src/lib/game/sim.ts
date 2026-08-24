@@ -604,14 +604,18 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   const prevMeters = meters(world);
   const prevEvent = world.event;
   rememberDecision(world, action);
+  // The room's reaction to what you chose, BEFORE applyDecision runs. That call
+  // clears `world.decision` for any option that closes the card, and
+  // recordDecision reads the card to work out who advised what -- so with the
+  // order reversed, every decisive choice recorded nothing and only the
+  // stalling options ever cost anyone's trust. Exactly backwards.
+  // Reads `decisionOptionId`, which is already on the action, so it replays.
+  if (action.decisionOptionId) recordDecision(world, action.decisionOptionId);
   applyDecision(world, action);
   applyIgnore(world, action);
   // Relocation rides alongside the turn's action, so it lands before anything
   // reads warning quality or release integrity this turn. Deterministic.
   if (action.relocateTo) beginRelocation(world, action.relocateTo);
-  // The room's reaction to what you chose. Reads `decisionOptionId`, which is
-  // already on the action, so it replays from a code with no extra state.
-  if (action.decisionOptionId) recordDecision(world, action.decisionOptionId);
   applyAction(world, world.playerId, action);
   reactToAction(world, action);
 

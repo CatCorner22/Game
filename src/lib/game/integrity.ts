@@ -883,5 +883,33 @@ export function runIntegrityChecks(): IntegrityResult {
     return `${sampled} lines checked across 0/1/2/7 boosts`;
   });
 
+  check("every-decision-records-the-room", () => {
+    // The bug this pins: applyDecision clears `world.decision` for any option
+    // that closes the card, and recordDecision reads the card to work out who
+    // advised what. With recordDecision second, the decisive options recorded
+    // nothing and only the stalling ones ever cost anyone's trust -- exactly
+    // backwards, since the committing choices are the ones that should.
+    const staged = (): World => {
+      const w = applyScenario(createWorld("extreme", 25, "US", "blue"), "petrov-1983");
+      w.playerId = "US";
+      w.turn = Math.max(w.turn, FIRST_DECISION_TURN);
+      openDecisionIfWarranted(w);
+      convene(w, 3);
+      return w;
+    };
+    const options = availableOptions(staged());
+    if (options.length < 2) throw new Error(`only ${options.length} options to test`);
+    let closing = 0;
+    for (const opt of options) {
+      const before = staged();
+      const after = resolveTurn(structuredClone(before), { ...opt.action, decisionOptionId: opt.id });
+      const entries = Object.keys(after.advisorTrust ?? {}).length;
+      if (!entries) throw new Error(`${opt.id} recorded no reaction from the room`);
+      if (!opt.costsWindow) closing += 1;
+    }
+    if (!closing) throw new Error("fixture only covered stalling options, which is the passing case");
+    return `${options.length} options, ${closing} of them card-closing, all recorded`;
+  });
+
   return { ok: checks.every((c) => c.ok), checks };
 }
