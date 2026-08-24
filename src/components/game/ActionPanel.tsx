@@ -151,6 +151,11 @@ export function ActionPanel({ world }: { world: World }) {
           <p className="mt-2 font-mono text-micro tracking-wide text-accent uppercase">{world.event.because}</p>
         ) : null}
         <p className="mt-2 text-sm leading-relaxed text-muted">{world.event.body}</p>
+        {world.event.background ? (
+          <p className="mt-2 border-l-2 border-border pl-2 text-xs leading-relaxed text-subtle">
+            {world.event.background}
+          </p>
+        ) : null}
         <p className="mt-2 text-xs leading-relaxed text-subtle">{world.event.ignoreLine}</p>
         {world.brokenArrow && !world.brokenArrow.recovered ? (
           <p className="mt-2 text-xs text-danger">

@@ -8,6 +8,7 @@ import {
 } from "@/lib/game/world";
 import { GEN_LABEL, SITE_KIND, spySummary } from "@/lib/game/spies";
 import { useGame } from "@/lib/game/store";
+import { dossierFor } from "@/lib/game/dossiers";
 import { GlassPanel, HudButton, HudLabel, HudPanel } from "./ui/Hud";
 
 function visibleSystems(actor: Actor, playerId: ActorId) {
@@ -62,6 +63,7 @@ export function IntelPanel({ world, selected }: { world: World; selected: ActorI
       <div>
         <h2 className="font-display text-2xl tracking-[0.08em] text-fg uppercase">{a.name}</h2>
         <p className="mt-1 text-sm leading-snug text-muted">{a.doctrineLine}</p>
+        <ActorDossierBlock id={a.id} />
       </div>
       <dl>
         <Fact k={`Hostility to ${world.actors[world.playerId].shortName}`} v={`${Math.round(a.hostility[world.playerId] ?? 0)}`} />
@@ -168,5 +170,43 @@ function SiteBoard({ world, selected }: { world: World; selected: ActorId }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+/**
+ * Who this actor is, in words.
+ *
+ * The File used to be one sentence of doctrine followed by nine numbers, which
+ * told a player the state of a relationship and never what the other side was
+ * trying to achieve. Collapsed by default because the numbers are the glance
+ * and this is the read.
+ */
+function ActorDossierBlock({ id }: { id: ActorId }) {
+  const d = dossierFor(id);
+  if (!d) return null;
+  const rows: [string, string][] = [
+    ["Wants", d.wants],
+    ["Fears", d.fears],
+    ["Limited by", d.constraint],
+    ["Answers to", d.answersTo],
+    ["Red line", d.redLine],
+    ["Reads a crisis", d.reads],
+  ];
+  return (
+    <details className="group mt-2 border-t border-border pt-2">
+      <summary className="cursor-pointer list-none font-mono text-micro tracking-wider text-subtle uppercase hover:text-accent">
+        <span className="group-open:hidden">\u25b8 </span>
+        <span className="hidden group-open:inline">\u25be </span>
+        The file behind the numbers
+      </summary>
+      <dl className="mt-1.5 space-y-1.5">
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt className="font-mono text-micro tracking-wider text-subtle uppercase">{k}</dt>
+            <dd className="mt-0.5 text-xs leading-relaxed text-muted">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
   );
 }

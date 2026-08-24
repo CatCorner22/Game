@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 import { DEFAULT_LEADER, LEADERS, leaderById } from "@/lib/game/leaders";
 import { briefFor, type ScenarioBrief } from "@/lib/game/scenarioBriefs";
+import { actionDef } from "@/lib/game/actions";
 import { dailyWatch, type DailyWatch } from "@/lib/game/daily";
 import { getCareerStats, type DailyRecord } from "@/lib/game/stats";
 
@@ -194,6 +195,7 @@ export function TitleScreen() {
                       <BriefRow label="If you get it wrong" value={briefFor(selectedDef.id)!.stakes} />
                     </dl>
                     <BriefRecord brief={briefFor(selectedDef.id)!} />
+                    <BriefDossier brief={briefFor(selectedDef.id)!} />
                   </>
                 ) : null}
               </div>
@@ -562,6 +564,80 @@ function BriefRecord({ brief }: { brief: ScenarioBrief }) {
           {brief.precedent}
         </p>
       ) : null}
+    </details>
+  );
+}
+
+/**
+ * The dossier: who else is in this, what breaks, and what you cannot know.
+ *
+ * Three separate collapsed sections rather than one, because they answer
+ * different questions and a player usually wants exactly one of them. Collapsed
+ * for the same reason `BriefRecord` is: the headline sells the evening and this
+ * is depth for whoever wants it. Blake's own constraint was that extensive
+ * detail would be overwhelming, so none of it is forced on anybody.
+ */
+function BriefDossier({ brief }: { brief: ScenarioBrief }) {
+  return (
+    <>
+      <DossierSection label={`Who else is in this · ${brief.actors.length}`}>
+        <ul className="mt-1.5 space-y-2">
+          {brief.actors.map((a) => (
+            <li key={a.id}>
+              <p className="font-mono text-micro tracking-wider text-fg uppercase">{a.id}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                <span className="text-subtle">Wants </span>
+                {a.wants}
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                <span className="text-subtle">Fears </span>
+                {a.fears}
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-subtle">{a.constraint}</p>
+            </li>
+          ))}
+        </ul>
+      </DossierSection>
+
+      <DossierSection label="If this goes wrong">
+        <ul className="mt-1.5 space-y-1.5">
+          {brief.consequences.map((c) => (
+            <li key={c.line} className="text-xs leading-relaxed text-muted">
+              <span className="font-mono text-micro tracking-wider text-subtle uppercase">{c.horizon} </span>
+              {c.line}
+            </li>
+          ))}
+        </ul>
+      </DossierSection>
+
+      <DossierSection label={`What you cannot know · ${brief.unknowns.length}`}>
+        <ul className="mt-1.5 space-y-2">
+          {brief.unknowns.map((u) => (
+            <li key={u.question}>
+              <p className="text-xs leading-snug text-fg">{u.question}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted">{u.whyItMatters}</p>
+              <p className="mt-0.5 font-mono text-micro tracking-wider text-accent uppercase">
+                {actionDef(u.settledBy).label} would settle it
+              </p>
+            </li>
+          ))}
+        </ul>
+      </DossierSection>
+
+      <p className="mt-2 text-xs leading-relaxed text-warn">{brief.theTrap}</p>
+    </>
+  );
+}
+
+function DossierSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <details className="group mt-2 border-t border-border pt-2">
+      <summary className="cursor-pointer list-none font-mono text-micro tracking-wider text-subtle uppercase hover:text-accent">
+        <span className="group-open:hidden">\u25b8 </span>
+        <span className="hidden group-open:inline">\u25be </span>
+        {label}
+      </summary>
+      {children}
     </details>
   );
 }

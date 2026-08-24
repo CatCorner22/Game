@@ -145,6 +145,19 @@ function FileRow({
             ))}
           </ul>
 
+          <p className="mt-3 font-mono text-micro tracking-wider text-subtle uppercase">Who was in it</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {entry.brief.actors.map((a) => (
+              <li key={a.id} className="text-xs leading-relaxed text-muted">
+                <span className="font-mono text-micro tracking-wider text-fg uppercase">{a.id} </span>
+                {a.wants}
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-3 font-mono text-micro tracking-wider text-subtle uppercase">The trap</p>
+          <p className="mt-1 text-xs leading-relaxed text-warn">{entry.brief.theTrap}</p>
+
           {entry.brief.whatHappened ? (
             <>
               <p className="mt-3 font-mono text-micro tracking-wider text-accent uppercase">

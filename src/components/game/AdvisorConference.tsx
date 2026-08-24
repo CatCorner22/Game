@@ -29,6 +29,17 @@ import { elaborate, modelKnownUnavailable } from "@/lib/advisor/client";
 interface Turn extends ConferenceLine {
   key: string;
   mine?: boolean;
+  /**
+   * The player's question, when this line is an answer to one.
+   *
+   * `elaborate` has always accepted a `playerMessage` and the route has always
+   * handled it -- there is even a test asserting player text arrives as user
+   * content and never as a system instruction. But the one call site passed
+   * three arguments, so the question was dropped on the floor: even with a key
+   * configured, the model re-voiced a regex-routed scripted answer without ever
+   * being shown what was asked. Carrying it on the reply is what closes that.
+   */
+  askedAbout?: string;
 }
 
 /**
@@ -58,6 +69,16 @@ export function AdvisorConference() {
   // on the network to be usable.
   const [voiced, setVoiced] = useState<Record<string, string>>({});
   const [modelOn, setModelOn] = useState(false);
+  /**
+   * Whether we know the model is off, as opposed to not yet knowing.
+   *
+   * The only signal used to be positive -- the header said "voices generated"
+   * when a key was configured and nothing at all when one was not. Since no key
+   * is the default and what almost everybody runs, the shallow scripted answers
+   * read as bad writing rather than as a configuration state nobody had been
+   * told about.
+   */
+  const [modelOff, setModelOff] = useState(false);
   const attemptedRef = useRef<Set<string>>(new Set());
   const railRef = useRef<HTMLDivElement>(null);
 
@@ -138,12 +159,13 @@ export function AdvisorConference() {
         const advisor = room.find((a) => a.id === turn.advisorId);
         if (!advisor) continue;
         attemptedRef.current.add(turn.key);
-        const reply = await elaborate(world, advisor, turn);
+        const reply = await elaborate(world, advisor, turn, turn.askedAbout);
         if (!live) return;
         if (reply.mode === "model") {
           setModelOn(true);
           setVoiced((prev) => (prev[turn.key] ? prev : { ...prev, [turn.key]: reply.text }));
         } else if (reply.note?.includes("ADVISOR_API_KEY")) {
+          setModelOff(true);
           return;
         }
       }
@@ -179,6 +201,7 @@ export function AdvisorConference() {
       ? {
           ...replyLine(world, target, stances.get(target.id) ?? null, text),
           key: `re:${target.id}:${Date.now()}`,
+          askedAbout: text,
         }
       : null;
     setSaid((prev) => [...prev, mine, ...(reply ? [reply] : [])]);
@@ -216,7 +239,7 @@ export function AdvisorConference() {
             {post.short}
             {inTransit(world) ? " · in transit · degraded" : ""} · {room.length} on the call
             {missing.length ? ` · ${missing.length} unreachable` : ""}
-            {modelOn ? " · voices generated" : ""}
+            {modelOn ? " · voices generated" : modelOff ? " · scripted voices" : ""}
           </p>
         </div>
         {remaining !== null ? (
@@ -237,12 +260,27 @@ export function AdvisorConference() {
         </button>
       </header>
 
+      {modelOff ? (
+        <p className="border-b border-border bg-surface/40 px-3 py-2 text-micro leading-snug text-subtle sm:px-5">
+          These advisors are speaking their written lines. They still read the situation, still
+          recommend, and still disagree \u2014 but they cannot answer a question nobody wrote for
+          them. Set <span className="font-mono text-muted">ADVISOR_API_KEY</span> on the server to let
+          them speak freely; the key stays server-side and never reaches this browser.
+        </p>
+      ) : null}
+
       {rung === 0 ? (
         <ConveneGate onConvene={() => conveneAt(1)} />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           {/* ── Participant grid ──────────────────────────────────── */}
-          <div className="min-h-0 shrink-0 overflow-y-auto border-b border-border p-3 lg:w-[42%] lg:border-r lg:border-b-0">
+          {/* `shrink-0` with no height cap meant nine tiles at US rung three
+              pushed the transcript, the composer and the decide tray off a
+              667px screen entirely -- the room was unusable on a phone at
+              exactly the rung you convene it for. Capped to roughly a third of
+              the viewport on mobile and allowed to scroll; unchanged on
+              desktop, where the column is a fixed 42% and has the room. */}
+          <div className="max-h-[34dvh] min-h-0 shrink-0 overflow-y-auto border-b border-border p-3 lg:max-h-none lg:w-[42%] lg:border-r lg:border-b-0">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {room.map((a) => (
                 <ParticipantTile
