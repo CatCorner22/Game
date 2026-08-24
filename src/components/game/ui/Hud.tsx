@@ -218,6 +218,7 @@ export function ScenarioCard({
   selected,
   onClick,
   seat,
+  headline,
 }: {
   title: string;
   line: string;
@@ -226,6 +227,7 @@ export function ScenarioCard({
   selected: boolean;
   onClick: () => void;
   seat?: string;
+  headline?: string;
 }) {
   return (
     <button
@@ -239,7 +241,13 @@ export function ScenarioCard({
       <div className="flex items-start justify-between gap-2">
         <span className="font-display text-sm tracking-[0.12em] text-fg uppercase">{`${title} · ${era}`}</span>
       </div>
-      <p className="mt-1.5 text-xs leading-snug text-muted">{line}</p>
+      {/* A sentence about something that happened. The old telegraphic `line`
+          ("Blockade heat", "Nasr batteries flushed") is deliberately NOT shown
+          underneath: it told a player nothing unless they already knew the
+          domain, which was the whole complaint, and for the newer scenarios it
+          simply repeated the headline. It stays on ScenarioDef as the short
+          searchable summary and is not the thing anyone reads. */}
+      <p className="mt-1.5 text-sm leading-snug text-fg">{headline ?? line}</p>
       <p className="mt-2 font-mono text-micro tracking-wider text-subtle uppercase">
         {seat ? `${seat} · ` : ""}
         {difficulty}

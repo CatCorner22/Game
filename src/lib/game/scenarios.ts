@@ -60,7 +60,11 @@ export type ScenarioId =
   | "vela-flash-1979"
   | "yom-kippur-scare-1973"
   | "november-uap-1975"
-  | "phenomenology-window-2027";
+  | "phenomenology-window-2027"
+  | "alaska-drones-2027"
+  | "airliner-down-2027"
+  | "carrier-collision-2027"
+  | "boomer-collision-2027";
 
 export type ScenarioEra = "historical" | "2027" | "threshold";
 
@@ -117,6 +121,74 @@ function puzzle(
 }
 
 export const SCENARIOS: ScenarioDef[] = [
+  {
+    id: "alaska-drones-2027",
+    title: "Drones over Alaska",
+    line: "Russian long-range drones have crossed into Alaskan airspace and are still flying.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "standard",
+    era: "2027",
+    ...puzzle("crisis", "copilot", {
+      duration: "short",
+      challenge: 3,
+      variables: ["attribution", "airspace", "domestic pressure"],
+      dependencies: ["air defence", "hotline", "public statement"],
+      learningGoal: "A probe is designed to make you answer. What you answer with is the information they came for.",
+    }),
+    defaultAI: "copilot",
+  },
+  {
+    id: "airliner-down-2027",
+    title: "Airliner down",
+    line: "A civilian airliner has been destroyed near your border and nobody can yet say by whom.",
+    playerId: "RU",
+    intent: "blue",
+    difficulty: "hard",
+    era: "2027",
+    ...puzzle("crisis", "human", {
+      duration: "short",
+      challenge: 4,
+      variables: ["attribution", "legitimacy", "alliance cohesion"],
+      dependencies: ["air defence records", "hotline", "public statement"],
+      learningGoal: "Attribution takes days. The story takes an afternoon. You will have to speak before you know.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "carrier-collision-2027",
+    title: "Collision at sea",
+    line: "An American destroyer and a Chinese warship have collided. There are dead on both sides.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "2027",
+    ...puzzle("crisis", "copilot", {
+      duration: "short",
+      challenge: 4,
+      variables: ["accident vs intent", "domestic pressure", "escalation"],
+      dependencies: ["hotline", "naval reporting", "alliance"],
+      learningGoal: "Accidents between armed forces are only accidents until somebody decides they were not.",
+    }),
+    defaultAI: "copilot",
+  },
+  {
+    id: "boomer-collision-2027",
+    title: "Two boats, one patrol box",
+    line: "A British and a French ballistic missile submarine have collided while submerged.",
+    playerId: "UK",
+    intent: "blue",
+    difficulty: "hard",
+    era: "2027",
+    ...puzzle("crisis", "human", {
+      duration: "short",
+      challenge: 4,
+      variables: ["deterrent availability", "secrecy", "alliance"],
+      dependencies: ["at-sea deterrent", "allied consultation", "public statement"],
+      learningGoal: "Two allies hiding from everyone including each other is a safety property until it is a collision.",
+    }),
+    defaultAI: "human",
+  },
   {
     id: "petrov-1983",
     title: "Petrov 1983",
@@ -1227,6 +1299,97 @@ export function applyScenario(world: World, id: ScenarioId): World {
   }
 
   if (!def) return w;
+
+  if (id === "alaska-drones-2027") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.defcon = 4;
+    w.globalRisk = 46;
+    const natoRu = w.flashpoints.find((f) => f.id === "nato-ru");
+    if (natoRu) natoRu.heat = clamp(natoRu.heat + 16, 0, 100);
+    w.actors.US.hostility.RU = clamp(w.actors.US.hostility.RU + 6, 0, 100);
+    w.actors.US.alert = 2;
+    setEvent(
+      w,
+      def,
+      "RU",
+      "Four Russian drones are inside Alaskan airspace",
+      "They crossed the identification zone forty minutes ago, subsonic, on a track that does not obviously go anywhere. Moscow has said nothing. Fighters are airborne alongside them. Navigation failure, a probe to time your response, or the front edge of something — the first hour cannot tell those apart.",
+      "POSTURE answers the probe with the information they came for. DIPLOMACY asks Moscow directly and accepts whatever they say. INTELLIGENCE spends the window establishing what the drones actually are.",
+      "high",
+      ["airspace", "probe"],
+    );
+  }
+
+  if (id === "airliner-down-2027") {
+    w.playerId = "RU";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    w.defcon = 3;
+    w.globalRisk = 62;
+    const ukr = w.flashpoints.find((f) => f.id === "ukraine");
+    if (ukr) ukr.heat = clamp(ukr.heat + 22, 0, 100);
+    w.actors.RU.legitimacy = clamp(w.actors.RU.legitimacy - 12, 0, 100);
+    for (const other of ["US", "UK", "FR"] as ActorId[]) {
+      w.actors[other].hostility.RU = clamp(w.actors[other].hostility.RU + 10, 0, 100);
+    }
+    setEvent(
+      w,
+      def,
+      "US",
+      "A civilian airliner has come down near your border",
+      "Nearly three hundred dead. Your own air defence units were active in that sector and their first reports contradict each other, which is what first reports do. You do not yet know whether it was one of yours, one you supply, or neither — and every hour spent finding out is an hour the other explanation hardens.",
+      "DIPLOMACY opens the investigation before the story closes. PRESSURE denies and dares them to prove it. INTELLIGENCE finds out what your own units did before you say anything at all.",
+      "critical",
+      ["attribution", "legitimacy"],
+    );
+  }
+
+  if (id === "carrier-collision-2027") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    w.defcon = 3;
+    w.globalRisk = 58;
+    const scs = w.flashpoints.find((f) => f.id === "south-china");
+    if (scs) scs.heat = clamp(scs.heat + 24, 0, 100);
+    const tw2 = w.flashpoints.find((f) => f.id === "taiwan");
+    if (tw2) tw2.heat = clamp(tw2.heat + 12, 0, 100);
+    w.actors.US.hostility.CN = clamp(w.actors.US.hostility.CN + 12, 0, 100);
+    w.actors.US.alert = 3;
+    setEvent(
+      w,
+      def,
+      "CN",
+      "An American destroyer and a Chinese warship have collided",
+      "The two had been shadowing each other for days. Each navy blames the other's helm and both accounts are internally consistent. There are dead on both sides, both publics have seen the pictures, and neither government wants a war over a steering error.",
+      "PRESSURE demands accountability in public and forecloses the quiet route. DIPLOMACY takes it to the hotline while both navies are still armed and angry. HOLD leaves the same two crews in the same water.",
+      "critical",
+      ["accident", "maritime"],
+    );
+  }
+
+  if (id === "boomer-collision-2027") {
+    w.playerId = "UK";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    w.defcon = 3;
+    w.globalRisk = 54;
+    w.actors.UK.warning = clamp(w.actors.UK.warning - 8, 5, 100);
+    w.actors.FR.warning = clamp(w.actors.FR.warning - 8, 5, 100);
+    w.allianceCohesion = clamp(w.allianceCohesion - 10, 0, 100);
+    setEvent(
+      w,
+      def,
+      "FR",
+      "A British and a French missile submarine have collided submerged",
+      "Both boats are damaged and surfacing. They were hiding from everyone, which includes each other: the patrol areas are among the most closely held secrets either country keeps, and that secrecy is exactly why neither knew the other was there. Nothing has leaked yet.",
+      "DIPLOMACY coordinates the disclosure with Paris before anyone else sets the terms. HOLD keeps it quiet while both boats recover, for as long as that holds. Two allied deterrents are unavailable at the same time and that fact is worth a great deal to anyone who learns it.",
+      "high",
+      ["alliance", "deterrent"],
+    );
+  }
+
 
   if (id === "signal-window") {
     w.defcon = 3;

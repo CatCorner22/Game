@@ -155,10 +155,15 @@ function reactionFor(world: World, id: ActorId, action: PlayerAction): HumanReac
       action.kind === "hold"
         ? `${a.shortName} ${desk}: reads your hold as weakness. Generating.`
         : action.kind === "diplomacy"
-          ? `${a.shortName} ${desk}: talks are time. They generate while you speak.`
+          ? `${a.shortName} ${desk}: talks are time. They generate while you speak — but they take the call.`
           : `${a.shortName} ${desk}: matching you, plus one. Aggression is the policy.`;
     why = "Hawks want the shot. HOLD and DIPLOMACY both look like openings unless you are already hotter than they are.";
-    a.hostility[world.playerId] = clamp(vs + 7, 0, 100);
+    // Scaled by remaining headroom rather than flat. A hawk with room to move
+    // escalates hard; a hawk who already hates you as much as it is possible to
+    // hate you cannot get much angrier. Flat +7 every turn regardless pinned
+    // every relationship at 100 within three turns and took the board away from
+    // the player entirely.
+    a.hostility[world.playerId] = clamp(vs + escalationRoom(vs) * 7, 0, 100);
     a.alert = clamp(a.alert + (action.kind === "posture" || action.kind === "employ" ? 2 : 1), 0, 5);
     a.nationalism = clamp(a.nationalism + 4, 0, 100);
   } else {
@@ -167,7 +172,7 @@ function reactionFor(world: World, id: ActorId, action: PlayerAction): HumanReac
       "Cowardice that fires. They are not eager for war. They are eager not to be the one who waited. Nasr, DPRK law, Perimeter — this is that person.";
     a.preDelegation = true;
     a.alert = clamp(a.alert + 2, 0, 5);
-    a.hostility[world.playerId] = clamp(vs + 10, 0, 100);
+    a.hostility[world.playerId] = clamp(vs + escalationRoom(vs) * 10, 0, 100);
   }
 
   void you;
@@ -205,11 +210,36 @@ export function syncPlayerDesk(world: World) {
   world.secondOfficer.stance = stanceFromNerve(me.nerve ?? 50, false);
 }
 
+/**
+ * How much room is left to escalate, 1 at neutral and approaching 0 at maximum
+ * hostility. Escalation scaled by this asymptotes instead of pinning.
+ */
+function escalationRoom(current: number): number {
+  return clamp((100 - current) / 50, 0, 1);
+}
+
+/**
+ * Forces stand down when nothing is happening.
+ *
+ * Alert was raised from eleven places and lowered from exactly one (an actor
+ * losing its nerve), so a single hot month pinned an actor at maximum readiness
+ * for the rest of the run -- and maximum readiness is one of the three gates on
+ * an adversary deciding to fire. Quiet has to be able to undo that.
+ */
+function relaxAlert(world: World, a: World["actors"][ActorId]) {
+  if (a.alert <= 1) return;
+  if (world.defcon <= 2) return;
+  const heat = Math.max(0, ...world.flashpoints.filter((f) => f.actors.includes(a.id)).map((f) => f.heat));
+  if (heat > 55) return;
+  a.alert = clamp(a.alert - 1, 0, 5);
+}
+
 export function tickNerve(world: World) {
   for (const a of Object.values(world.actors)) {
     const base = a.riskTolerance ?? 50;
     const n = a.nerve ?? base;
     a.nerve = clamp(n + (base - n) * 0.08, 0, 100);
+    relaxAlert(world, a);
     if (world.defcon <= 2) a.nerve = clamp(a.nerve + 3, 0, 100);
     if (a.casualties > 100_000) a.nerve = clamp(a.nerve + 6, 0, 100);
     if (a.unrest > 70) a.nerve = clamp(a.nerve + (a.nerve > 55 ? 4 : -4), 0, 100);
