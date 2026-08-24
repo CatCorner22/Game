@@ -5,6 +5,8 @@ import { SCENARIO_BRIEFS, briefFor } from "./scenarioBriefs";
 import { buildArchive, lockedLine } from "./archive";
 import { TUTORIAL_STEPS, shouldShowTutorial } from "./tutorial";
 import { dailyWatch, defconSpark, shareText } from "./daily";
+import { ARCS, arcById } from "./arcs";
+import { DECK, drawEvent } from "./events";
 import { foldDaily } from "./stats";
 import { makeActors } from "./actors";
 import { seatObjectives } from "./objectives";
@@ -1133,6 +1135,124 @@ export function runIntegrityChecks(): IntegrityResult {
     const headlines = new Set(SCENARIOS.map((d) => briefFor(d.id)?.headline));
     if (headlines.size !== SCENARIOS.length) throw new Error("two scenarios share a headline");
     return `${SCENARIOS.length} scenarios, all briefed`;
+  });
+
+  check("arcs-add-no-rng-draws", () => {
+    // The load-bearing claim of the whole feature, stated precisely.
+    //
+    // Arcs bias the score `scoreCandidate` already computes, and `pickWeighted`
+    // makes exactly one `pick()` call whatever the numbers are. So the arc may
+    // change WHICH event is drawn -- that is the entire point -- but it must
+    // never change HOW MANY draws the deck consumes. If it did, forecast()
+    // would stop replaying and every fixed-seed check here would be downstream
+    // of the damage.
+    //
+    // Note what this deliberately does NOT assert: that a run with arcs has the
+    // same RNG cursor as a run without. It does not, and it should not. A
+    // different event leads down a different turn, which legitimately spends a
+    // different number of draws later. Comparing whole runs would be testing
+    // that arcs do nothing.
+    let sampled = 0;
+    let steered = 0;
+    for (let seed = 1; seed <= 12; seed += 1) {
+      let w = createWorld("standard", seed, "US", "blue");
+      for (let i = 0; i < 20 && !w.ended; i += 1) {
+        w = resolveTurn(structuredClone(w), hold());
+        if (!w.arc) continue;
+        const withArc = structuredClone(w);
+        const before = withArc.rngState;
+        const chosenWith = drawEvent(withArc);
+        const costWith = withArc.rngState - before;
+
+        const without = structuredClone(w);
+        without.arc = null;
+        const chosenWithout = drawEvent(without);
+        const costWithout = without.rngState - before;
+
+        sampled += 1;
+        if (costWith !== costWithout) {
+          throw new Error(`turn ${w.turn} seed ${seed}: arc cost ${costWith} draws, no-arc cost ${costWithout}`);
+        }
+        if (chosenWith.id !== chosenWithout.id) steered += 1;
+      }
+    }
+    if (sampled < 40) throw new Error(`only ${sampled} turns had an arc running to sample`);
+    // And the bias has to actually do something, or the check above is vacuous.
+    if (steered === 0) throw new Error("the arc never changed which event was drawn");
+    return `${sampled} sampled turns, ${steered} steered, 0 extra draws`;
+  });
+
+  check("arcs-run-and-resolve", () => {
+    // An arc that never resolves is worse than no arc: it is a promise the game
+    // does not keep. The first draft of arcs.ts invented event tags the deck
+    // does not carry and measured 0 resolutions in 40 runs, which is exactly
+    // the failure this catches.
+    let started = 0;
+    let resolved = 0;
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 24; seed += 1) {
+      let w = createWorld("standard", seed, "US", "blue");
+      let openId: string | null = null;
+      let lastBeat = -1;
+      for (let i = 0; i < 30 && !w.ended; i += 1) {
+        w = resolveTurn(structuredClone(w), hold());
+        const id = w.arc?.id ?? null;
+        if (openId && id !== openId) {
+          const total = arcById(openId)?.beats.length ?? 0;
+          if (lastBeat >= total - 1) resolved += 1;
+          openId = null;
+          lastBeat = -1;
+        }
+        if (id && id !== openId) {
+          started += 1;
+          openId = id;
+          lastBeat = w.arc?.beat ?? 0;
+          seen.add(id);
+        } else if (id && w.arc) {
+          lastBeat = Math.max(lastBeat, w.arc.beat);
+        }
+      }
+    }
+    if (started < 12) throw new Error(`only ${started} arcs started across 24 runs`);
+    if (resolved < 4) throw new Error(`${started} arcs started and only ${resolved} resolved`);
+    if (seen.size < 3) throw new Error(`only ${seen.size} distinct arcs ever ran`);
+    // Every beat of every arc has to be reachable at all: a beat asking for a
+    // tag the deck does not carry can never land, and the arc stalls on it.
+    const deckTags = new Set<string>();
+    for (const ev of DECK) for (const tag of ev.tags) deckTags.add(tag);
+    const followTags = ["silence", "talks", "backlash", "posture", "intel", "covert", "war", "intercept"];
+    for (const arc of ARCS) {
+      for (const beat of arc.beats) {
+        const reachable = beat.wants.some((tag) => deckTags.has(tag) || followTags.includes(tag));
+        if (!reachable) throw new Error(`${arc.id} beat "${beat.label}" wants tags no event carries`);
+      }
+    }
+    return `${started} started, ${resolved} resolved, ${seen.size} distinct across 24 runs`;
+  });
+
+  check("arc-world-stays-cloneable-and-replays", () => {
+    // World holds an id and three numbers, never a function -- structuredClone
+    // throws on those and save.ts silently JSON-drops them, which is how the
+    // Stage 1 decision cards broke.
+    let w = createWorld("standard", 9, "US", "blue");
+    for (let i = 0; i < 14 && !w.ended; i += 1) {
+      recordTurn(w, hold());
+      w = resolveTurn(structuredClone(w), hold());
+    }
+    structuredClone(w);
+    const roundTrip = JSON.parse(JSON.stringify(w)) as World;
+    if (JSON.stringify(roundTrip.arc ?? null) !== JSON.stringify(w.arc ?? null)) {
+      throw new Error("arc state did not survive serialisation");
+    }
+    const run = replayFromCode(encodeReplay(w));
+    if (!run) throw new Error("replay decode failed");
+    if (JSON.stringify(run.world.arc ?? null) !== JSON.stringify(w.arc ?? null)) {
+      throw new Error(`replay produced a different arc: ${JSON.stringify(run.world.arc)} vs ${JSON.stringify(w.arc)}`);
+    }
+    if ((run.world.arcsSeen ?? []).join() !== (w.arcsSeen ?? []).join()) {
+      throw new Error("replay saw a different set of arcs");
+    }
+    return `arc ${w.arc?.id ?? "none"} · seen ${(w.arcsSeen ?? []).join(",") || "none"} · replays`;
   });
 
   check("daily-watch-is-stable-for-a-date", () => {

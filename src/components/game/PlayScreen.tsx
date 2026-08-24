@@ -7,6 +7,7 @@ import { ActionPanel, NuclearConfirm } from "./ActionPanel";
 import { RadarScreen } from "./RadarScreen";
 import { FlashpointBoard } from "./FlashpointBoard";
 import { SituationLog } from "./SituationLog";
+import { ArcStrip } from "./ArcStrip";
 import { ObjectivesPanel } from "./ObjectivesPanel";
 import { HotlinePanel } from "./HotlinePanel";
 import { SettingsPanel } from "./SettingsPanel";
@@ -293,6 +294,7 @@ export function PlayScreen() {
           <SpaceWeatherPanel world={world} />
           <PatrolPanel world={world} />
           <DiplomacyPanel world={world} />
+          <ArcStrip world={world} />
           <ObjectivesPanel world={world} />
           <FlashpointBoard world={world} />
           <HotlinePanel world={world} />

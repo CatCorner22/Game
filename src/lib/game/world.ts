@@ -233,6 +233,8 @@ export function createWorld(
     leadersKnown: [],
     scenarioId: null,
     defconHistory: [],
+    arc: null,
+    arcsSeen: [],
     sites: makeSites(),
     trickery: emptyTrickery(),
     brokenArrow: null,
