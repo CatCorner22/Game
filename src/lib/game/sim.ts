@@ -23,6 +23,7 @@ import {
 } from "./nuclear";
 import { chance, clamp, jitter, nextUnit, round } from "./rng";
 import { log } from "./simLog";
+import { advanceArc, arcById, maybeStartArc } from "./arcs";
 import {
   addHostility,
   addTrust,
@@ -756,6 +757,11 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   world.closeCall = null;
   world.authCode = nextAuthCode(world);
 
+  // The shape of the run, one number a turn, for the Daily Watch share block.
+  // Pure bookkeeping -- no draw, no branch on it -- so replay is unaffected.
+  // Capped because a very long watch should not grow the save without bound.
+  world.defconHistory = [...(world.defconHistory ?? []), world.defcon].slice(-120);
+
   if (strategicSpasm(world)) {
     finishIfNeeded(world);
   } else {
@@ -766,6 +772,10 @@ export function resolveTurn(world: World, action: PlayerAction): World {
       world.year += 1;
     }
     if (world.turn % 6 === 0) markDoctrinePending(world);
+    // An arc may open here, before the deck draws, so it can bias this turn.
+    // Deterministic and draw-free: the first arc whose entry condition holds
+    // and which this watch has not already run.
+    maybeStartArc(world);
     if (!world.ended) {
       const skipClose =
         prevEvent.id === "close-call" ||
@@ -808,6 +818,16 @@ export function resolveTurn(world: World, action: PlayerAction): World {
         if (world.event.tags.includes("machine")) bumpFlash(world, "machine", world.event.heat === "critical" ? 8 : 4);
         const fp = eventFlash(world.event.actor);
         if (fp) bumpFlash(world, fp, world.event.heat === "critical" ? 6 : 3);
+      }
+      // The arc reacts to what actually happened rather than deciding it, so
+      // this runs after the deck has chosen and after every rewrite of the
+      // event above. Close calls can land a beat too.
+      const beat = advanceArc(world, world.event);
+      if (beat.resolved) {
+        log(world, "warn", `Arc resolved: ${arcById(world.arcsSeen?.[world.arcsSeen.length - 1])?.name ?? "—"}.`,
+          "A storyline the run had been building toward has played out.");
+      } else if (beat.lapsed) {
+        log(world, "info", "The thread went cold.", "The crisis moved on without resolving what it started.");
       }
     }
     finishIfNeeded(world);

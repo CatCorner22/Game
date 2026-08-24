@@ -5,11 +5,13 @@ import { SCENARIO_CATEGORIES, SCENARIOS, type ScenarioCategory, type ScenarioEra
 import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
 import { DEADHAND_CONFIGS, STRATEGIC_AI_CONFIGS, type DeadhandMode, type StrategicAIMode } from "@/lib/game/strategicSystems";
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 import { DEFAULT_LEADER, LEADERS, leaderById } from "@/lib/game/leaders";
-import { briefFor } from "@/lib/game/scenarioBriefs";
+import { briefFor, type ScenarioBrief } from "@/lib/game/scenarioBriefs";
+import { dailyWatch, type DailyWatch } from "@/lib/game/daily";
+import { getCareerStats, type DailyRecord } from "@/lib/game/stats";
 
 const DIFFS: { id: Difficulty; label: string; line: string }[] = [
   { id: "standard", label: "STANDARD", line: "Readable files. Hostile world." },
@@ -99,6 +101,9 @@ export function TitleScreen() {
             <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("multiplayer")}>
               Multiplayer
             </HudButton>
+            <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("archive")}>
+              Archive
+            </HudButton>
             <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("briefing")}>
               Briefing
             </HudButton>
@@ -129,6 +134,9 @@ export function TitleScreen() {
             >
               Begin watch
             </HudButton>
+
+            <DailyWatchPanel />
+
             <label className="mt-4 block">
               <span className="sr-only">Command seat</span>
               <select
@@ -178,12 +186,15 @@ export function TitleScreen() {
                   {briefFor(selectedDef.id)?.headline ?? selectedDef.title}
                 </p>
                 {briefFor(selectedDef.id) ? (
-                  <dl className="mt-2 space-y-1.5">
-                    <BriefRow label="Situation" value={briefFor(selectedDef.id)!.situation} />
-                    <BriefRow label="You are" value={briefFor(selectedDef.id)!.youAre} />
-                    <BriefRow label="You decide" value={briefFor(selectedDef.id)!.decision} />
-                    <BriefRow label="If you get it wrong" value={briefFor(selectedDef.id)!.stakes} />
-                  </dl>
+                  <>
+                    <dl className="mt-2 space-y-1.5">
+                      <BriefRow label="Situation" value={briefFor(selectedDef.id)!.situation} />
+                      <BriefRow label="You are" value={briefFor(selectedDef.id)!.youAre} />
+                      <BriefRow label="You decide" value={briefFor(selectedDef.id)!.decision} />
+                      <BriefRow label="If you get it wrong" value={briefFor(selectedDef.id)!.stakes} />
+                    </dl>
+                    <BriefRecord brief={briefFor(selectedDef.id)!} />
+                  </>
                 ) : null}
               </div>
             ) : null}
@@ -516,6 +527,112 @@ export function TitleScreen() {
 }
 
 /** One labelled line of a scenario brief. */
+/**
+ * The record behind the scenario, collapsed by default.
+ *
+ * The repository carries a 1,584-line corpus of a hundred real incidents and
+ * until now not one line of it reached a player. This is where it arrives: the
+ * dates, counts and distances that make a scenario something you can check
+ * rather than something you have to take on trust.
+ *
+ * Collapsed because it is depth, not the pitch -- the headline sells the
+ * evening and this is for the player who wants to know whether any of it is
+ * true. `whatHappened` and `afterward` are deliberately NOT here: those are the
+ * ending, and they belong on the after-action screen.
+ */
+function BriefRecord({ brief }: { brief: ScenarioBrief }) {
+  return (
+    <details className="group mt-2 border-t border-border pt-2">
+      <summary className="cursor-pointer list-none font-mono text-micro tracking-wider text-subtle uppercase hover:text-accent">
+        <span className="group-open:hidden">▸ </span>
+        <span className="hidden group-open:inline">▾ </span>
+        The record · {brief.facts.length} facts
+      </summary>
+      <ul className="mt-1.5 space-y-1.5">
+        {brief.facts.map((fact) => (
+          <li key={fact} className="flex gap-2 text-xs leading-relaxed text-muted">
+            <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60" />
+            <span className="min-w-0">{fact}</span>
+          </li>
+        ))}
+      </ul>
+      {brief.precedent ? (
+        <p className="mt-2 text-xs leading-relaxed text-subtle">
+          <span className="font-mono text-micro tracking-wider uppercase">Precedent · </span>
+          {brief.precedent}
+        </p>
+      ) : null}
+    </details>
+  );
+}
+
+/**
+ * One watch a day, the same one for everybody.
+ *
+ * The engine has been fully deterministic since replay codes shipped, so this
+ * needs no server and no account: the date decides the seed and the scenario,
+ * and two people on opposite sides of the world get the same evening without
+ * ever talking to each other.
+ *
+ * Rendered from an effect rather than during the first render because the
+ * streak lives in localStorage and the date comes from the client clock —
+ * reading either while server-rendering would produce markup the browser then
+ * disagrees with.
+ */
+function DailyWatchPanel() {
+  const start = useGame((s) => s.start);
+  const [today, setToday] = useState<DailyWatch | null>(null);
+  const [record, setRecord] = useState<DailyRecord | null>(null);
+
+  useEffect(() => {
+    const watch = dailyWatch();
+    setToday(watch);
+    setRecord(getCareerStats().daily ?? null);
+  }, []);
+
+  if (!today) return null;
+  const def = SCENARIOS.find((s) => s.id === today.scenarioId);
+  const playedToday = record?.lastKey === today.key;
+
+  return (
+    <div className="mt-4 rounded-lg border border-accent/25 bg-surface/50 p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="font-mono text-micro tracking-wider text-accent uppercase">Daily watch · {today.key}</p>
+        {record && record.streak > 0 ? (
+          <p className="font-mono text-micro text-subtle uppercase">
+            streak {record.streak}
+            {record.bestStreak > record.streak ? ` · best ${record.bestStreak}` : ""}
+          </p>
+        ) : null}
+      </div>
+      <p className="mt-1 text-sm leading-snug text-fg">{today.title}</p>
+      <p className="mt-0.5 text-xs leading-snug text-subtle">
+        {playedToday
+          ? "Played today. Your result is on the end screen, ready to copy."
+          : "One seed, one scenario, the same for everyone today."}
+      </p>
+      <HudButton
+        variant={playedToday ? "ghost" : "accent"}
+        className="mt-2 min-h-11 w-full text-xs uppercase"
+        onClick={() =>
+          start({
+            difficulty: def?.difficulty ?? "standard",
+            playerId: def?.playerId ?? "US",
+            intent: def?.intent ?? "blue",
+            scenarioId: today.scenarioId,
+            seed: today.seed,
+            dailyKey: today.key,
+            deadhand: def?.defaultDeadhand,
+            strategicAI: def?.defaultAI,
+          })
+        }
+      >
+        {playedToday ? "Play today's watch again" : "Play today's watch"}
+      </HudButton>
+    </div>
+  );
+}
+
 function BriefRow({ label, value }: { label: string; value: string }) {
   return (
     <div>

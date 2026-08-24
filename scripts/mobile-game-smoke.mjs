@@ -79,12 +79,43 @@ async function chooseScenario(page, scenarioId) {
   );
 }
 
-async function beginWatch(page) {
+/**
+ * The first-watch tutorial, exercised rather than routed around.
+ *
+ * Each page here starts with empty storage, so every run is somebody's first
+ * watch and the overlay is genuinely on screen — it used to be suppressed on
+ * scenario watches, which is exactly the bug this now covers. Asserting it fits
+ * the viewport and dismisses cleanly is worth more than skipping it would save.
+ */
+async function clearFirstWatchTutorial(page, spec, expected) {
+  const dialog = page.getByRole("dialog").first();
+  const showed = await dialog.isVisible({ timeout: expected ? 5_000 : 1_500 }).catch(() => false);
+  if (!expected) {
+    // Second watch in the same session: Skip persists, so it must stay gone.
+    invariant(!showed, "first-watch tutorial came back after being dismissed");
+    return;
+  }
+  invariant(showed, "first-watch tutorial did not appear on a fresh watch");
+
+  const box = await dialog.boundingBox();
+  invariant(box, "first-watch tutorial has no measurable box");
+  invariant(box.x >= -1, "first-watch tutorial starts left of the viewport");
+  invariant(box.x + box.width <= spec.width + 1, "first-watch tutorial runs off the right edge");
+  invariant(box.y + box.height <= spec.height + 1, "first-watch tutorial runs off the bottom");
+
+  const skip = page.getByRole("button", { name: "Skip", exact: true });
+  await waitVisible(skip, "tutorial skip control");
+  await skip.click();
+  await dialog.waitFor({ state: "hidden", timeout: 5_000 });
+}
+
+async function beginWatch(page, spec, expectTutorial) {
   const begin = page.getByRole("button", { name: "Begin watch", exact: true });
   await waitVisible(begin, "Begin watch button");
   await begin.click();
   const nav = page.getByRole("navigation", { name: "Game views" });
   await waitVisible(nav, "mobile game navigation");
+  await clearFirstWatchTutorial(page, spec, expectTutorial);
   return nav;
 }
 
@@ -119,7 +150,7 @@ async function exerciseViewport(browser, spec) {
     evidence.push({ step: "title", ...(await assertNoHorizontalOverflow(page, "title screen")) });
 
     await chooseScenario(page, "deadhand-dilemma");
-    let nav = await beginWatch(page);
+    let nav = await beginWatch(page, spec, true);
     const navBox = await verifyBottomNavigation(page, nav, spec.height);
 
     const execute = page.getByRole("button", { name: "Execute", exact: true });
@@ -174,7 +205,7 @@ async function exerciseViewport(browser, spec) {
     await waitVisible(page.getByRole("button", { name: "Begin watch", exact: true }), "returned title screen");
 
     await chooseScenario(page, "signal-window");
-    nav = await beginWatch(page);
+    nav = await beginWatch(page, spec, false);
     await nav.getByRole("button", { name: "Map", exact: true }).click();
     await waitVisible(page.getByText(/Close call · unverified track/i), "close-call card");
     invariant(

@@ -3,6 +3,7 @@ import { chance } from "./rng";
 import { TERMINATOR_EVENTS } from "./terminator";
 import { eventFlash } from "./flash";
 import { pickWeighted, scoreCandidate } from "./consequences";
+import { arcBias } from "./arcs";
 
 export { eventFlash };
 
@@ -16,7 +17,7 @@ export const OPENING_EVENT: GameEvent = {
   tags: ["korea", "test"],
 };
 
-const DECK: GameEvent[] = [
+export const DECK: GameEvent[] = [
   {
     id: "nk-tactical-law",
     title: "DPRK tactical doctrine",
@@ -897,8 +898,13 @@ export function drawEvent(world: World): GameEvent {
     }
     return true;
   });
-  const choice = pickWeighted(world, weighted.length ? weighted : pool, (e) =>
-    scoreCandidate(world, e, world.lastAction ?? null),
+  // A running arc biases the score `scoreCandidate` already computes. It adds
+  // no draw: pickWeighted makes exactly one pick() call whatever the numbers
+  // are, so shifting a score is free and fixed-seed replay is unaffected.
+  const choice = pickWeighted(
+    world,
+    weighted.length ? weighted : pool,
+    (e) => scoreCandidate(world, e, world.lastAction ?? null) + arcBias(world, e),
   );
   world.usedEventIds.push(choice.id);
   if (world.usedEventIds.length > 40) world.usedEventIds.shift();

@@ -30,6 +30,22 @@ export interface ScenarioBrief {
   decision: string;
   /** What getting it wrong looks like. */
   stakes: string;
+  /**
+   * Hard facts with numbers, dates and places.
+   *
+   * The repository already contains a 1,584-line research corpus of a hundred
+   * real incidents -- dates, causes, outcomes, what each one stressed -- and
+   * until now not one line of it reached a player. These are drawn from it.
+   * Every entry should carry something checkable: a date, a count, a distance,
+   * a duration. "Tensions were high" is not a fact.
+   */
+  facts: string[];
+  /** For historical scenarios: what the people actually there actually did. */
+  whatHappened?: string;
+  /** What changed afterwards -- the procedure, the treaty, the design flaw. */
+  afterward?: string;
+  /** For invented scenarios: the real incident whose shape this borrows. */
+  precedent?: string;
 }
 
 export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
@@ -41,6 +57,15 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Shoot them down, escort them and let them leave, or hold the fighters back and say nothing publicly.",
     stakes:
       "Shooting down Russian aircraft over your territory is legally clean and politically enormous. Letting them fly tells Moscow exactly what your response time is, which is very likely what they came to measure.",
+    facts: [
+      "From 28 January to 4 February 2023 a Chinese high-altitude balloon crossed Alaska, Canada and the continental United States before being shot down off South Carolina.",
+      "NORAD's commander later testified that earlier balloon transits had gone undetected because radar processing was rejecting slow, small, high-altitude returns — 'a domain awareness gap.' Once the filters were changed, the tracks appeared immediately.",
+      "Beginning 6 December 2023, unmanned aircraft operated over Joint Base Langley-Eustis on roughly 17 separate nights. No operator was ever identified, and some F-22s were moved to another base.",
+      "NORAD's counter-drone remit was written for an 'attack of national consequence'; NORTHCOM had no authority to act, and base commanders owned the problem inside the fence and nothing outside it.",
+      "In the New Jersey drone flap of November and December 2024, thousands of reports were jointly assessed by four federal agencies as lawful commercial, hobbyist and police aircraft plus misidentified manned planes.",
+    ],
+    precedent:
+      "The balloon and drone incursions of 2023-2024: one real intrusion the sensors were not tuned to see, followed by a wave of reports that were mostly nothing.",
   },
   "airliner-down-2027": {
     headline: "A civilian airliner has been destroyed near your border and everyone is blaming you.",
@@ -50,6 +75,15 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Deny it flatly, admit the possibility and open an investigation, or say nothing until you actually know.",
     stakes:
       "A denial you later have to withdraw costs more than the admission would have. Waiting for the truth means the story is written by everyone else first.",
+    facts: [
+      "On 8 January 2020 an air-defence crew outside Tehran fired two missiles at Ukraine International Airlines Flight 752, a Boeing 737-800 that had just taken off. All 176 people aboard were killed.",
+      "Iranian investigators blamed a unit repositioned in haste whose alignment was left uncorrected, so an outbound airliner displayed as inbound, combined with a communications failure that left the crew unable to reach higher authority in the seconds available.",
+      "Iranian airspace had not been closed, even though the country was expecting an American retaliatory strike that night.",
+      "Iran denied responsibility for three days before admitting it. The denial, not the shootdown, is what brought people into the streets.",
+      "On 1 September 1983 a Soviet interceptor destroyed Korean Air Lines Flight 007, killing 269 people. Moscow denied it for five days and the incident poisoned relations for years.",
+    ],
+    precedent:
+      "Flight 752 (2020) and KAL 007 (1983): identification failure under alert conditions, and then the separate decision of what to say before you know.",
   },
   "carrier-collision-2027": {
     headline: "An American destroyer and a Chinese warship have collided. There are dead on both sides.",
@@ -59,6 +93,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Demand accountability publicly, take it to the hotline privately, or withdraw the patrol and cool the strait.",
     stakes:
       "An accident stays an accident only while both sides want it to. Withdrawing reads as fault, and staying puts the same two crews back in the same water.",
+    facts: [
+      "On 1 April 2001 a Chinese fighter collided with an American EP-3 over the South China Sea. The Chinese pilot was killed, the American aircraft landed on Hainan, and its crew of 24 was held for 11 days.",
+      "That crisis ended with a letter negotiated word by word, which said 'very sorry' twice without admitting fault. Both governments could show it to their own publics and read it differently.",
+      "In 2017 two American destroyers collided with merchant ships in the western Pacific: USS Fitzgerald in June, seven dead, and USS John S. McCain in August, ten dead. Both were failures of watchstanding, and neither was hostile.",
+      "The two navies operate under a code for unplanned encounters at sea agreed in 2014. It is a voluntary protocol, not a treaty, and it binds nobody's helm.",
+    ],
+    precedent:
+      "The 2001 Hainan Island collision: an accident between two forces that then had to invent a form of words letting both governments climb down.",
   },
   "boomer-collision-2027": {
     headline: "A British and a French ballistic missile submarine have collided while submerged.",
@@ -68,6 +110,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Disclose jointly with France, disclose alone, or hold it while both boats are recovered.",
     stakes:
       "Two allied deterrents are simultaneously unavailable and that fact is worth a great deal to anyone who learns it. Concealment is defensible for exactly as long as it holds.",
+    facts: [
+      "In early February 2009 HMS Vanguard and the French submarine Le Triomphant collided while submerged in the Atlantic. Both carried ballistic missiles, both returned to port under their own power, and neither had detected the other.",
+      "The two navies do not deconflict patrol areas. Deterrent submarines hide from everyone, allies included, and that is precisely why neither knew.",
+      "The collision was not disclosed for roughly two weeks, and then only after a newspaper had the story.",
+      "Britain has kept at least one armed submarine at sea continuously since April 1969. The entire doctrine rests on that boat being undetectable and available, and this event put two of them alongside instead.",
+    ],
+    precedent:
+      "The Vanguard and Le Triomphant collision (2009): two allied deterrents made simultaneously unavailable by the same secrecy that protects them.",
   },
   "petrov-1983": {
     headline: "A Soviet satellite is reporting five American missiles inbound.",
@@ -77,6 +127,17 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Report this up the chain as a real attack, or record it as a system malfunction on your own authority.",
     stakes:
       "Call it real and you start the retaliation clock on evidence one sensor type can see. Call it false and you are wrong once, at the only moment being wrong is unrecoverable.",
+    facts: [
+      "26 September 1983, Serpukhov-15 early-warning centre south of Moscow, shortly after midnight.",
+      "The Oko satellite system reported one launch, then four more, at its highest reliability indication.",
+      "The cause was sunlight glinting off high-altitude cloud tops in an unusual sun-cloud-satellite geometry near the autumn equinox.",
+      "Ground radar could not have confirmed anything yet: the missiles would not clear the radar horizon for several more minutes.",
+      "Three weeks earlier a Soviet interceptor had shot down Korean Air Lines Flight 007, killing 269 people. Baseline tension was extraordinary.",
+    ],
+    whatHappened:
+      "Lieutenant Colonel Stanislav Petrov reported the event up the chain as a system malfunction. Ground radars later confirmed nothing was inbound.",
+    afterward:
+      "He was not rewarded. The incident surfaced procedural record-keeping failures, he received no commendation, and he retired the following year. The satellite geometry flaw was later mitigated.",
   },
   "able-archer": {
     headline: "NATO's command exercise has stopped behaving like an exercise.",
@@ -86,6 +147,17 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Generate your own forces to be ready, or hold and let an exercise be an exercise.",
     stakes:
       "Generating tells the other side you believe war is imminent, which is exactly what convinces them war is imminent. Holding costs you the minutes if it is not a drill.",
+    facts: [
+      "7-11 November 1983. Able Archer 83 was a NATO command-post exercise rehearsing nuclear release procedures.",
+      "It used new encryption, new message formats and periods of radio silence that Warsaw Pact analysts had not seen before.",
+      "Soviet intelligence had been running Operation RYaN since 1981 \u2014 a standing collection effort premised on the theory that the West would use an exercise as cover for a real first strike.",
+      "Some Warsaw Pact air units were placed on heightened alert during the exercise.",
+      "The scale of Soviet alarm is disputed. Later assessments, including a 1990 US President's Foreign Intelligence Advisory Board review, judged the risk to have been more serious than was understood at the time.",
+    ],
+    whatHappened:
+      "The exercise ended on schedule and no forces were used. Western governments largely did not realise how it had been read until afterwards.",
+    afterward:
+      "It changed how NATO designed exercises and is the standard case for the observation that an exercise indistinguishable from preparation is preparation, to the people watching it.",
   },
   "cuba-1962": {
     headline: "American aircraft have photographed the missile canisters in your harbour.",
@@ -95,6 +167,17 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Back Moscow publicly, seek your own settlement with Washington, or try to hold both open.",
     stakes:
       "You are the ground the crisis is fought over, not a party to it. Every outcome here is decided in two other capitals unless you make yourself expensive to ignore.",
+    facts: [
+      "October 1962. U-2 photography on 14 October confirmed Soviet medium-range ballistic missile sites under construction in Cuba.",
+      "The crisis ran thirteen days from that confirmation to the 28 October agreement.",
+      "Roughly 100 tactical nuclear weapons were already on the island, a fact not known to Washington at the time.",
+      "The public settlement was a Soviet withdrawal in exchange for a US non-invasion pledge; the removal of US Jupiter missiles from Turkey was agreed privately and kept secret for decades.",
+      "Cuba was not a party to the negotiation that ended it. Castro learned the terms from a Radio Moscow broadcast.",
+    ],
+    whatHappened:
+      "The missiles were withdrawn. Havana, whose territory the crisis was fought over, was not consulted on the terms.",
+    afterward:
+      "The Moscow-Washington hotline was established in June 1963 precisely because the crisis had been conducted through public broadcasts and slow diplomatic cables.",
   },
   "ukraine-tactical-2022": {
     headline: "Western capitals are telling each other you are about to use a small nuclear weapon.",
@@ -104,6 +187,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Deny it and do nothing, deny it and stand forces down visibly, or let the belief stand because it is useful.",
     stakes:
       "A reputation for being about to do something is a weapon until the other side decides to act on it first. Denial that nobody believes is worse than silence.",
+    facts: [
+      "In late October 2022 Russia's defence minister told his American, British, French and Turkish counterparts that Ukraine was preparing to detonate a radiological device on its own soil as a provocation.",
+      "Ukraine denied it and invited inspectors in. The IAEA visited three Ukrainian facilities and reported on 3 November 2022 that it had found no indication of undeclared nuclear material or activity.",
+      "Western governments read the allegation as a possible pretext rather than a warning — an accusation constructed in advance to justify something later.",
+      "Public American assessments through late 2022 held that no decision to use a nuclear weapon had been taken, while treating preparation indicators as a standing collection priority. Both halves of that sentence were doing work.",
+    ],
+    precedent:
+      "The October 2022 dirty-bomb allegation: managing what other capitals believe you are about to do, when they are wrong and you cannot prove a negative.",
   },
   "taiwan-2027": {
     headline: "China has closed the sea lanes around Taiwan.",
@@ -113,6 +204,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Transit and force the issue, hold outside and negotiate, or find something in between that does not look like retreat.",
     stakes:
       "Sail through and any accident becomes a shooting incident between nuclear powers. Stay out and every ally in the region reads the answer to a question they have been asking for a decade.",
+    facts: [
+      "In the strait crisis of 1995-96 China fired missiles into closure areas near Keelung and Kaohsiung. The United States moved two carrier battle groups to the area in March 1996.",
+      "In August 2022 the PLA declared six exercise closure areas ringing Taiwan, some inside its claimed territorial waters, and fired ballistic missiles over the island for the first time. Shipping and aviation rerouted for days and nobody was fired on.",
+      "Roughly half of the world's container traffic passes through the Taiwan Strait, along with almost all of the most advanced semiconductor production leaving the island.",
+      "An 'inspection zone' is deliberately not the word blockade. A blockade is an act of war in international law; an inspection regime is a legal argument, and the argument is the weapon.",
+    ],
+    precedent:
+      "The 1995-96 strait crisis and the 2022 closure areas: coercion engineered to sit just below the threshold that would oblige a response.",
   },
   "baltics-flank-2027": {
     headline: "NATO has moved nuclear-capable aircraft to your border.",
@@ -122,6 +221,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Match the deployment, respond somewhere else entirely, or absorb it and say nothing.",
     stakes:
       "Matching it puts two sets of dual-capable aircraft inside minutes of each other. Absorbing it invites the next one. Nobody in this exchange can see what the other side's aircraft are loaded with.",
+    facts: [
+      "During Able Archer 83, from 7 to 11 November 1983, a NATO command exercise rehearsing nuclear release was read in Moscow as possible cover for a real first strike. Some Soviet units went to heightened alert over an exercise nobody thought was provocative.",
+      "Dual-capable aircraft cannot be told apart by their load from the ground. That ambiguity is the deterrent value and it is also the entire danger.",
+      "Kaliningrad borders two NATO members, has no land connection to the rest of Russia, and sits roughly 500 km from Berlin.",
+      "The 1987 treaty that removed intermediate-range missiles from Europe ended in August 2019 when both parties left it. The category of weapon it banned is the category that makes this border short.",
+    ],
+    precedent:
+      "Able Archer 83: a reassurance measure on one side read as preparation on the other, with neither able to see inside the other's aircraft.",
   },
   "nk-window-2027": {
     headline: "You have announced a launch window and the region wants to know what is in it.",
@@ -131,6 +238,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Fly the full-range profile, keep it lofted and deniable, or spend the window on something that is not a launch.",
     stakes:
       "The whole value of the programme is that other capitals cannot be certain what you can do. Proving it buys respect and spends the doubt that has been keeping you alive.",
+    facts: [
+      "North Korea has filed maritime and aviation notices before several satellite attempts, including the failed launch of 31 May 2023, which caused Seoul to issue and then retract an evacuation alert within about twenty minutes.",
+      "A lofted trajectory — flown steeply so the missile lands in nearby water — demonstrates energy without demonstrating range. The tests of July 2017 and November 2022 were both flown that way.",
+      "North Korea conducted six nuclear tests between 2006 and 2017 and none since. The pause is itself a form of message.",
+      "In 2017 state media declared a high-altitude electromagnetic pulse capability. No independent assessment has confirmed it, and its value depends entirely on not being tested.",
+    ],
+    precedent:
+      "The lofted-test pattern since 2017: the programme's leverage is what cannot be ruled out, and a full-range demonstration spends exactly that.",
   },
   "kashmir-2027": {
     headline: "Pakistan has moved short-range nuclear artillery to the border.",
@@ -140,6 +255,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Hold to no first use and absorb the risk, posture visibly, or pre-empt the batteries before they disperse.",
     stakes:
       "Four minutes is not enough time to verify anything. A declared doctrine only means something if it survives the first day it is inconvenient.",
+    facts: [
+      "Pakistan first tested the Nasr short-range system in April 2011, with a declared range of about 60 km. A weapon at that range has to be moved close to the border to mean anything at all.",
+      "India's declared doctrine since January 2003 is no first use, with a stated exception for a major attack using biological or chemical weapons.",
+      "The two capitals are roughly 700 km apart and the flight time across the disputed border is short enough that neither side can verify a launch before it lands.",
+      "Since 1992 the two states have exchanged lists of their nuclear installations every 1 January under an agreement not to attack them. Neither has ever missed a year — not during the 1999 Kargil fighting, not in 2019, not in any of the crises since.",
+    ],
+    precedent:
+      "Kargil (1999) and the 2019 exchange: two nuclear neighbours with almost no decision time and a doctrine that has never had to survive a bad night.",
   },
   "iran-breakout-2028": {
     headline: "Inspectors are at the gate and Israel is fuelling tankers.",
@@ -149,6 +272,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Admit the inspectors, expel them and sprint, or keep the ambiguity alive for a few more weeks.",
     stakes:
       "Ambiguity has protected you for twenty years. It stops protecting you at the exact moment somebody else decides you are too close to wait out.",
+    facts: [
+      "The 2015 agreement capped Iranian enrichment at 3.67% and the stockpile at 300 kg. After the United States withdrew in 2018 Iran exceeded both, and by 2021 was enriching to 60%.",
+      "Weapons-usable material is conventionally around 90%, but most of the separative work is done long before that. This is why 60% is treated as the alarming number and 90% is treated as arithmetic.",
+      "The IAEA's leverage is access. When monitoring cameras were removed in June 2022 the agency said it had lost continuity of knowledge — a gap that cannot be filled in retrospectively.",
+      "Israel struck Iraq's Osirak reactor on 7 June 1981 and a suspected reactor at Al-Kibar in Syria on 6 September 2007. Neither strike was preceded by a public warning to anyone.",
+    ],
+    precedent:
+      "Osirak (1981) and Al-Kibar (2007): in the record, the decision to pre-empt is usually taken by the other government, on a clock you cannot see.",
   },
   "israel-preempt-2026": {
     headline: "Iran is weeks from a device and your aircraft are loaded.",
@@ -158,6 +289,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Strike, wait for Washington, or act in a way that is deniable and buys weeks rather than years.",
     stakes:
       "Striking works once and starts something that does not end on your timetable. Waiting means the decision may not be yours much longer.",
+    facts: [
+      "Israel destroyed Iraq's Osirak reactor on 7 June 1981 using eight aircraft. The strike was condemned by the UN Security Council, with the United States voting for the resolution.",
+      "The September 2007 strike on the Al-Kibar site in Syria went unacknowledged by Israel for over a decade, and Syria never admitted the site existed. Neither government wanted a war, so both said nothing and there was none.",
+      "Osirak did not end Iraq's programme. Post-1991 assessments found the effort was reorganised afterwards, moved underground, and given more money.",
+      "Central Iran is roughly 1,600 km from Israel, which makes any strike package dependent on aerial refuelling — and tanker movements are visible to satellites days in advance.",
+    ],
+    precedent:
+      "Osirak (1981), Al-Kibar (2007), and what happened in Iraq afterwards: pre-emption buys time, and the record disagrees sharply about how much.",
   },
   "broken-arrow": {
     headline: "A nuclear weapon under your custody is unaccounted for.",
@@ -167,6 +306,15 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Report it at the highest rung immediately, recover quietly and announce afterwards, or something between.",
     stakes:
       "Say it loudly and every adversary knows exactly when your attention was elsewhere. Say it quietly and the story breaks on someone else's terms.",
+    facts: [
+      "On 24 January 1961 a B-52 broke up over Goldsboro, North Carolina and released two thermonuclear bombs. One came down intact under a parachute; the other broke apart in a swamp, and its secondary stage was never recovered — the Air Force bought rights to the ground rather than keep digging.",
+      "A 1969 Sandia review of that weapon, declassified in 2013, concluded the design 'did not possess adequate safety for the airborne alert role in the B-52.' The public statement at the time had been that there was no danger.",
+      "On 17 January 1966 a B-52 collided with a tanker over Palomares, Spain. Two of four bombs had their conventional explosive detonate on impact, scattering plutonium over roughly 2 km2 of farmland; about 1,750 tons of soil were shipped to South Carolina.",
+      "The fourth Palomares weapon was found because a local fisherman gave a bearing on where it had entered the water. It was recovered on 7 April, 80 days after the crash, from around 2,700 feet.",
+      "No accident of this kind has ever produced a nuclear detonation. The harm is contamination, cost, and what a commander says in the first hours on incomplete data.",
+    ],
+    precedent:
+      "Goldsboro (1961) and Palomares (1966): the physical event is over in seconds, and everything that follows is a disclosure problem.",
   },
   "empty-quiver-2027": {
     headline: "A warhead has been stolen.",
@@ -176,6 +324,15 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Go public to freeze the routes, stay quiet and hunt, or tell allies only and accept the leak.",
     stakes:
       "A device in the hands of people with no return address breaks deterrence entirely — there is nobody to retaliate against. Recovery is the only outcome that counts.",
+    facts: [
+      "On 29 and 30 August 2007 six cruise missiles with live warheads were mistakenly loaded onto a B-52 at Minot Air Force Base and flown to Barksdale. Nobody reported them missing; they sat on the aircraft without the required security for roughly 36 hours and were found by a ground crew at the destination.",
+      "For those 36 hours the accounting system said the warheads were in a bunker. The failure was not the flight — it was learning that the inventory did not inventory anything.",
+      "Four commanders were relieved and many personnel decertified. Restoring confidence and stripping out experience turned out to be the same action.",
+      "On 5 December 1965 an aircraft carrying a nuclear bomb rolled off the deck of USS Ticonderoga into roughly 16,000 feet of water. The loss was concealed for years, and when the location's proximity to Japan became clear in 1989 it produced a far larger crisis than an early admission would have.",
+      "Between 1992 and 1994 three separate insider thefts of weapon-usable material surfaced in Russia. All the material was recovered, and every thief was an amateur who stole first and went looking for a buyer afterwards.",
+    ],
+    precedent:
+      "Minot (2007) and the Ticonderoga loss (1965): custody failures where the only clock that mattered was the reporting clock.",
   },
   "cartel-auction": {
     headline: "A tactical nuclear weapon is being offered for sale in a port corridor.",
@@ -185,6 +342,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Act on thin intelligence, work the host government, or buy time and collect.",
     stakes:
       "Money moves faster than verification. Being right a week late is the same as being wrong.",
+    facts: [
+      "In August 1994 German authorities seized about 560 g of mixed uranium and plutonium oxide flown in from Moscow. The buyers were undercover officers, and the sting became a scandal because the state had manufactured the demand it then prosecuted.",
+      "In February 2006 a Georgian and American sting arrested a man carrying a 100 g sample of highly enriched uranium. He claimed to have kilograms more. It was never found.",
+      "The IAEA's trafficking database has recorded roughly 4,390 incidents since 1993, running about 145 to 150 a year. Of the 147 reported in 2024, three were assessed as likely connected to trafficking or malicious use and 123 were most likely unauthorised disposal or discovery.",
+      "The pattern across the whole record is a real supply and no competent buyer. Almost every seller who has been caught was caught while looking for one.",
+    ],
+    precedent:
+      "The Munich (1994) and Tbilisi (2006) stings: a real sample, a claimed stockpile behind it that never turns up, and an intelligence picture too thin to tell which world you are in.",
   },
   "union-generate": {
     headline: "Two governments now claim the same nuclear arsenal.",
@@ -194,6 +359,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Force the question and demand the garrisons choose, negotiate a split, or generate and let the ambiguity do the work.",
     stakes:
       "Two authentication chains over one arsenal is the specific condition under which a civil dispute becomes a nuclear one. Nobody outside is sure who to talk to.",
+    facts: [
+      "When the Soviet Union dissolved in December 1991, nuclear weapons sat on the territory of four successor states: Russia, Ukraine, Kazakhstan and Belarus.",
+      "Ukraine held physical custody of roughly 1,900 strategic warheads and did not hold the means to use them. The distinction between possessing weapons and holding authority over them is the whole of this problem.",
+      "Under the 1992 Lisbon Protocol and the 1994 Budapest Memorandum the three non-Russian states transferred the weapons to Russia in exchange for security assurances. The last warheads left Ukraine in 1996.",
+      "In 1994 Kazakhstan quietly asked Washington for help with about 600 kg of poorly secured highly enriched uranium. A team of about 31 people repackaged it into 448 containers and flew it out, and the operation stayed secret until the material was already on American soil.",
+    ],
+    precedent:
+      "The Soviet succession of 1991-96: custody, authority and recognition coming apart at different speeds over a single arsenal.",
   },
   "taiwan-prc-2027": {
     headline: "You declared an inspection zone and an American carrier group is sailing into it.",
@@ -203,6 +376,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Enforce the zone, let the transit through and keep the zone on paper, or narrow it before contact.",
     stakes:
       "Enforcement means intercepting a nuclear-armed navy in front of an audience. Letting it through means the zone was always words, and everyone will remember that.",
+    facts: [
+      "In October 1962 Washington called its naval cordon around Cuba a 'quarantine' rather than a blockade, because a blockade is an act of war in international law and a quarantine is not. The word was argued over in the room before the line was drawn.",
+      "In August 2022 the PLA declared six closure areas around Taiwan and fired ballistic missiles over the island. Commercial traffic rerouted for days, and no shot was fired at anyone.",
+      "The first hull to cross a declared line turns a policy into a decision made by a ship's captain in minutes, using authorities written months earlier by people who are asleep.",
+      "In the 1996 crisis the United States moved two carrier battle groups near the strait. Beijing's reading of that week drove two decades of building the means to make it expensive.",
+    ],
+    precedent:
+      "The Cuban quarantine (1962) seen from the other side of the line: you draw it, and then somebody sails at it.",
   },
   "trident-casd": {
     headline: "One of your ballistic missile submarines has missed its communications window.",
@@ -212,6 +393,15 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Generate the rest of the force, keep trying quietly, or treat the silence as information and act on it.",
     stakes:
       "Generating is visible to everyone and cannot be walked back quickly. Waiting is exactly what 1983 did, and 1983 is why this file exists.",
+    facts: [
+      "The United Kingdom has kept at least one armed ballistic missile submarine at sea continuously since April 1969 — more than fifty years without a gap.",
+      "Every patrol carries a handwritten letter from the Prime Minister with instructions for what to do if national command no longer exists. The letters are destroyed unopened when a Prime Minister leaves office, so nobody has ever read one.",
+      "On 24 November 1961 every communications link between SAC headquarters, NORAD and the three early-warning radars failed at once. Because the links were deliberately routed independently, their simultaneous failure was itself read as evidence of attack and bombers were readied.",
+      "The 1961 cause was a single relay station in Colorado through which the supposedly independent routes all happened to pass.",
+      "On 12 August 2000 the submarine Kursk sank with 118 aboard. Twenty-three men survived for some hours in the aft compartment; domestic rescue attempts failed repeatedly and foreign offers of help were not accepted for days.",
+    ],
+    precedent:
+      "The 1961 blackout and the Kursk (2000): silence that could be a fault, an evasion, or the thing the letters were written for.",
   },
   "frappe-independence": {
     headline: "NATO wants your deterrent on their timetable.",
@@ -221,6 +411,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Coordinate with NATO, generate separately on your own authority, or hold.",
     stakes:
       "A deterrent that moves when Washington asks is not independent, and everyone including your adversaries will draw that conclusion. A deterrent nobody coordinates with may not deter anything jointly.",
+    facts: [
+      "France tested its first weapon on 13 February 1960 and withdrew from NATO's integrated military command in 1966, keeping the deterrent under sole national authority. It rejoined the integrated command in 2009 and has never placed the deterrent under it.",
+      "French doctrine reserves a single demonstrative use as a final warning that vital interests are at stake. By design that is a national judgement, and it cannot be delegated to a committee of allies.",
+      "Employment rests with the President alone. There is no second signature in the French chain — a different design choice from the American two-person rule, made deliberately and never revisited.",
+      "NATO's nuclear planning group has existed since 1966. France has never joined it.",
+    ],
+    precedent:
+      "The 1966 withdrawal from the integrated command: an independent deterrent is only independent on the first day that independence is inconvenient.",
   },
   "nasr-flushed": {
     headline: "Your short-range nuclear batteries are forward and India has noticed.",
@@ -230,6 +428,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Pull them back, hold them forward, or disperse them further so they cannot be taken out in one strike.",
     stakes:
       "Dispersal survives a first strike and destroys two-man control at the same time. The safest arrangement against attack is the least safe against accident.",
+    facts: [
+      "Pakistan first tested the Nasr short-range system in April 2011, describing it as an answer to Indian conventional doctrine. Its declared range is about 60 km, which means it only matters if it is close to the border.",
+      "Moving such systems forward shortens the adversary's decision time and lengthens your own custody chain at the same moment. The people holding them are not the people who authorise them.",
+      "Dispersal is the standard answer to a first strike and the standard way two-person control degrades. The arrangement that best survives an attack is the worst one against an accident.",
+      "India declared no first use in January 2003. Pakistan has never declared one, and the absence is the policy.",
+    ],
+    precedent:
+      "The Nasr deployments since 2011: a weapon whose purpose is to be seen, held forward by people who cannot authorise it, on a border with almost no flight time.",
   },
   "asat-blind-2028": {
     headline: "One of your early-warning satellites has gone dark.",
@@ -239,6 +445,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Treat it as an attack, treat it as a failure, or spend the time to find out and accept being blind while you do.",
     stakes:
       "Calling it an attack when it was debris starts something over a broken component. Calling it a failure when it was deliberate means the next thing arrives unseen.",
+    facts: [
+      "On 11 January 2007 China destroyed one of its own weather satellites, producing more than 3,000 trackable fragments — still the largest single debris event on record.",
+      "On 15 November 2021 a Russian test destroyed a defunct satellite and produced roughly 1,500 trackable pieces. The crew of the International Space Station sheltered in their return capsules as the cloud passed.",
+      "A satellite failing on its own looks identical from the ground to a satellite being attacked, for hours. The catalogue tells you an object stopped reporting, never why.",
+      "Starfish Prime in 1962 killed satellites indiscriminately over the following months: Transit 4B stopped transmitting on 2 August 1962, TRAAC on 14 August, and Britain's Ariel 1 was crippled within days. None were targets; all were casualties of a belt of trapped electrons that lasted years.",
+    ],
+    precedent:
+      "The 2007 and 2021 anti-satellite tests, and Starfish Prime: losing a sensor is unambiguous, and losing it for a reason is not.",
   },
   "lac-clash-2027": {
     headline: "Indian and Chinese troops fought hand to hand at altitude last night.",
@@ -248,6 +462,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Retaliate conventionally, hold to the old agreement, or move forces without using them.",
     stakes:
       "Two nuclear states have kept this border non-lethal by convention alone for decades. Conventions end the first time one side decides the cost of restraint is higher than the cost of breaking it.",
+    facts: [
+      "On the night of 15 June 2020 Indian and Chinese troops fought with clubs and improvised weapons in the Galwan Valley at roughly 4,300 m. Twenty Indian soldiers died; China acknowledged four deaths months later. No shots were fired.",
+      "Firearms were absent by agreement. Protocols signed in 1996 and 2005 bar their use within two kilometres of the line, and that convention is the only reason the fighting was hand to hand.",
+      "The line of actual control is not drawn on any agreed map. Both armies patrol to their own version of it, which is why contact happens at all.",
+      "In September 2020 warning shots were fired near the line for the first time in 45 years. Both sides moved within days to contain it, because both understood what the convention was worth.",
+    ],
+    precedent:
+      "Galwan (2020): two nuclear states keeping a border dispute non-lethal by a convention with no enforcement behind it whatsoever.",
   },
   "carrington-2027": {
     headline: "A solar storm the size of the 1859 event will reach Earth in hours.",
@@ -257,6 +479,15 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Generate forces before you lose the ability to, warn adversaries in advance, or ride it out quietly.",
     stakes:
       "Generating looks like preparing a strike under cover of the storm. Not generating means whatever survives the storm is what you have. The sun is not on anyone's side.",
+    facts: [
+      "The Carrington event of 1-2 September 1859 induced currents strong enough to shock telegraph operators and set paper alight, and aurora were seen close to the tropics.",
+      "On 23 May 1967 a solar radio burst degraded all three Ballistic Missile Early Warning System radars simultaneously. Jamming those radars was doctrinally an act of war; additional bombers were readied while a small Air Force solar-forecasting cell established that all three sites were in sunlight and the Sun was the cause.",
+      "On 13 March 1989 a geomagnetic storm collapsed the Hydro-Quebec grid in about ninety seconds, leaving roughly six million people without power for nine hours and damaging a transformer at a New Jersey nuclear plant.",
+      "A Carrington-class ejection crossed Earth's orbital path in July 2012 and missed by about a week.",
+      "Every nuclear state's warning system degrades at the same moment, which means every one of them is deciding what the degradation means at the same moment, with the same bad information.",
+    ],
+    precedent:
+      "The 1967 BMEWS scare: the same physics that blinds your sensors also makes the blinding look like somebody's decision.",
   },
   "fobs-ambiguity": {
     headline: "Something launched from Plesetsk went into orbit instead of coming down.",
@@ -266,6 +497,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Posture against the southern approach, demand an explanation on the hotline, or wait for orbital confirmation.",
     stakes:
       "The southern gap in your coverage is not a secret. A system built to use it would look exactly like this, and so would an ordinary satellite.",
+    facts: [
+      "On 27 July 2021 China tested a vehicle that entered a partial orbit and released a hypersonic glide vehicle which then flew a long atmospheric course. Neither element was new — the Soviet Union fielded and retired a fractional orbital system under SALT II — but the combination had not been demonstrated.",
+      "The Chairman of the Joint Chiefs called it 'very close' to a Sputnik moment. China's foreign ministry described it as a routine reusable-spacecraft test. Both statements were made about the same object.",
+      "A partial-orbit approach is attractive precisely because it can arrive from the south, where early-warning radars built to look north are thinnest.",
+      "Telling a satellite insertion from a partial-orbit weapon takes hours of orbital determination, against a warning timeline of 25 to 30 minutes for an ordinary intercontinental trajectory. The boost phase looks the same either way, and the hours are the problem.",
+    ],
+    precedent:
+      "The July 2021 orbital and glide test: a profile whose entire value is that it cannot be classified quickly.",
   },
   "orbital-inspector": {
     headline: "One of your satellites is closing on an American early-warning bird.",
@@ -275,6 +514,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Continue the approach, break off visibly, or hold at distance and make Washington ask.",
     stakes:
       "Blinding an adversary's early warning is, to them, indistinguishable from preparing to strike. There is no way to inspect a warning satellite that looks harmless from the other side.",
+    facts: [
+      "In 2015 a Russian satellite manoeuvred between two commercial communications satellites and held station there for months. The operator complained publicly and nothing else happened.",
+      "In early 2020 a pair of Russian satellites shadowed an American reconnaissance satellite closely enough that the head of the US Space Force described the behaviour publicly as unusual — an unusual step in itself.",
+      "An inspection pass and an attack run share a trajectory until the last moments. There is no approach that reassures the owner, because the reassuring version looks the same from their console.",
+      "Blinding early warning is one of the classic indicators of preparation for a first strike. That makes a close approach to a warning satellite an announcement of intent whatever the intent actually is.",
+    ],
+    precedent:
+      "The 2015 and 2020 close approaches: an ambiguity built into orbital mechanics rather than into anybody's intentions.",
   },
   "signal-window": {
     headline: "Two warning systems disagree, and a late exercise notice has just arrived on another channel.",
@@ -284,6 +531,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Credit the notice, discount it, or spend more of the window trying to corroborate the track independently.",
     stakes:
       "A launch notice is a claim, not a guarantee — it tells you what a track is supposed to be. Believing it is a separate decision from receiving it.",
+    facts: [
+      "On 25 January 1995 Norway's notification of a scientific rocket launch had been filed weeks in advance through the proper channels and reached the Russian duty officer after the track was already on the board. Notification given is not notification received.",
+      "Nine minutes is roughly the whole decision window for a submarine-launched missile fired from close in. A notice arriving at minute nine arrives at the end of the argument, not the start.",
+      "On 13 January 2018 Hawaii issued a statewide ballistic missile alert by mistake. Military commands confirmed within minutes that nothing was inbound; the correction did not go out for 38 minutes.",
+      "A launch notice is a claim about what a track is supposed to be. Receiving it and believing it are two different decisions, and only the first one happens automatically.",
+    ],
+    precedent:
+      "Black Brant (1995) and the Hawaii alert (2018): the channel that could have settled it worked exactly as designed and still arrived too late to help.",
   },
   "alliance-fracture": {
     headline: "Your allies agree there is a crisis and disagree about everything else.",
@@ -293,6 +548,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Move at the pace of the slowest ally, act first and bring them along, or split the difference and satisfy nobody.",
     stakes:
       "Acting alone is faster and costs you the coalition you will need next month. Waiting for consensus is legitimate and may be slower than events.",
+    facts: [
+      "On 15 November 2022 a missile killed two people in the Polish village of Przewodow, about six kilometres from the Ukrainian border. Poland confirmed only that it was of Russian manufacture — true, and misleading, because Ukraine flies Soviet-designed air defences.",
+      "Within hours the American president said publicly it was 'unlikely' to have been launched from Russia and NATO's Secretary General attributed it to Ukrainian air defence. The decision was to be publicly slow, and it deflated the pressure for treaty consultations.",
+      "Ukraine contested that assessment in public for weeks. An ally disagreeing loudly is part of the price of getting it right quickly.",
+      "Article 4 is consultation and Article 5 is collective defence. The distance between them is where an alliance decides how large something is going to be.",
+    ],
+    precedent:
+      "Przewodow (2022): the only modern case where treaty machinery met a live attribution question, and the winning move was refusing to be fast.",
   },
   "black-sky-relay": {
     headline: "A power and network failure has blinded part of your warning system.",
@@ -302,6 +565,15 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Act on the degraded picture, wait for restoration, or assume the outage itself was hostile.",
     stakes:
       "Timing errors make honest sensors contradict each other. A degraded picture is not just less information — it is information that actively misleads.",
+    facts: [
+      "On 24 November 1961 every link between SAC headquarters, NORAD and the three early-warning radars failed simultaneously. The routes were deliberately independent, so the fact that all of them failed at once was itself read as hostile, and bombers were readied before anyone knew why.",
+      "The cause was a single relay station in Colorado through which every supposedly independent route happened to pass.",
+      "Modern warning depends on shared time. When timing references drift, honest sensors report the same event at different moments and the picture looks like contradiction rather than delay.",
+      "In 1991 a Patriot battery at Dhahran failed to engage a missile that killed 28 people. The cause was an accumulated clock drift of about a third of a second after a hundred hours of continuous operation.",
+      "Restoring a damaged grid and network takes days. The decisions taken while it is down take minutes.",
+    ],
+    precedent:
+      "The 1961 blackout and the Dhahran clock drift (1991): the failure is in the timing, and timing is what makes everything else look like a lie.",
   },
   "deepfake-summit": {
     headline: "A message in your counterpart's voice contradicts what the secure channel is saying.",
@@ -311,6 +583,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Trust the authenticated channel, act on the voice, or go and re-establish which one is real before doing anything.",
     stakes:
       "A cloned voice on a trusted line is the cheapest way to make a crisis worse. The purpose of authentication is that it survives exactly this, if you actually use it.",
+    facts: [
+      "On 13 January 2018 one employee sent a live statewide missile alert in Hawaii during an internal drill. Five colleagues in the room heard the exercise framing; he did not. The correction took 38 minutes.",
+      "Authentication exists for exactly this case. The point of a code is that it answers 'is this really them' without anyone having to judge whether a voice sounds right.",
+      "Synthetic audio convincing enough to fool close colleagues has been demonstrated since 2019, including in fraud cases where executives authorised transfers on the strength of a cloned voice on a familiar line.",
+      "The Washington-Moscow link has never been a telephone. It was teleprinter, then fax, then secure computer — text throughout, deliberately, so that what arrives can be verified rather than merely recognised.",
+    ],
+    precedent:
+      "The design of the Washington-Moscow link: it was never a red telephone, and this scenario is the reason why.",
   },
   "three-cities": {
     headline: "Three cities are demanding the same emergency supplies and you have one reserve.",
@@ -320,6 +600,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Concentrate the reserve where it does most good, split it three ways, or hold it back for what comes next.",
     stakes:
       "Splitting it may save nobody. Concentrating it saves the most people and abandons two cities in front of a live camera.",
+    facts: [
+      "In Bhopal on the night of 2-3 December 1984 roughly 40 tonnes of methyl isocyanate escaped over a sleeping city with no working alarm and no public warning plan. Official immediate deaths were about 3,800; independent estimates of deaths within weeks run from 8,000 to 16,000.",
+      "At Graniteville, South Carolina, at 2:39 a.m. on 6 January 2005, a breached tank car released about 60 tons of chlorine in minutes. Nine people died, over 550 sought medical care, and roughly 5,400 residents inside a one-mile radius were evacuated for about two weeks.",
+      "In Surat in September 1994 an estimated quarter of the city's population fled within days of a reported plague outbreak — several hundred thousand people, including a large share of its doctors and administrators.",
+      "Emergency reserves are sized against a planning scenario, never against the day. Every allocation is defensible in advance and indefensible afterwards, in public, with names attached.",
+    ],
+    precedent:
+      "Bhopal (1984) and Graniteville (2005): the part of a disaster that is arithmetic, performed live, where the arithmetic has a face.",
   },
   "contamination-corridor": {
     headline: "A contamination zone has cut the evacuation route in half.",
@@ -329,6 +617,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Move people through the shorter contaminated corridor, take the long route, or shelter in place.",
     stakes:
       "Moving people through contamination harms them. Keeping them still may harm more of them. The forecast that decides which is wrong more often than anyone admits.",
+    facts: [
+      "After the Chernobyl accident on 26 April 1986 the nearby city of Pripyat was not evacuated for about 36 hours. When the buses arrived, residents were told they would be back in three days.",
+      "At Graniteville in 2005 roughly 5,400 people within a mile were evacuated for two weeks after a chlorine release. Nine died, most of them close to the breach in the first minutes, before any decision could have reached them.",
+      "A plume moves with the weather, and forecasts degrade sharply past a few hours. The decision has to be made on the forecast you already distrust.",
+      "In Goiania in September 1987 a breached caesium source contaminated a city for two weeks before anyone identified the cause. About 112,000 people were monitored and 249 were found contaminated; the delay did more harm than the source.",
+    ],
+    precedent:
+      "Pripyat (1986) and Graniteville (2005): shelter or move, decided on a forecast, with the only road out as one of the variables.",
   },
   "public-health-cascade": {
     headline: "An outbreak is spreading faster than testing can confirm what it is.",
@@ -338,6 +634,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Act on the rumour and risk being wrong loudly, wait for confirmation, or move resources without saying why.",
     stakes:
       "Attribution and response are different problems on different clocks. Treating a natural outbreak as an attack is its own kind of catastrophe.",
+    facts: [
+      "In April 1979 an accidental release at a Soviet military microbiology facility in Sverdlovsk killed at least 66 people. Authorities blamed contaminated meat sold on the black market and held that line for 13 years.",
+      "The 2001 anthrax letters infected 22 people and killed five; roughly 32,000 began antibiotic prophylaxis. The investigation publicly named a first suspect who was later exonerated and compensated, and reached its conclusion nine years later.",
+      "In Germany in 2011 an E. coli outbreak caused about 3,950 confirmed cases and 53 deaths. Officials publicly blamed Spanish cucumbers before laboratory confirmation; the real source was sprouts grown from imported fenugreek seed, and the growers who were wrongly named never recovered.",
+      "Attribution and response run on different clocks. Laboratory confirmation takes days and public belief takes hours, and nothing you do changes the order they arrive in.",
+    ],
+    precedent:
+      "Sverdlovsk (1979) and the 2011 outbreak: naming a cause early is the fastest available way to be wrong in front of everyone.",
   },
   "arctic-cable": {
     headline: "An undersea cable has been cut and half your reporting is hours late.",
@@ -347,6 +651,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Treat the cut as hostile, treat it as an accident, or work the degraded picture and find out later.",
     stakes:
       "When reports arrive out of order, a calm situation can look like an escalating one. Rumour fills the gap faster than repair crews do.",
+    facts: [
+      "Undersea cables carry over 95% of intercontinental data traffic, and roughly 150 to 200 faults occur worldwide every year — overwhelmingly from fishing gear and anchors.",
+      "In October 2023 a gas pipeline and two telecom cables were damaged in the Gulf of Finland. Investigators concluded a ship's anchor had been dragged across the seabed; establishing whether it was deliberate took months and stayed contested.",
+      "Cables break constantly. A cable breaking during a crisis is the same physical event with a different meaning attached, and nothing in the evidence separates them quickly.",
+      "When traffic reroutes, reports arrive out of sequence. A calm situation reconstructed from out-of-order reports reads as an escalating one, and the correction always lags the alarm.",
+    ],
+    precedent:
+      "The Baltic seabed damage of 2023: an ordinary annual accident rate meeting a week when nobody can afford to call anything ordinary.",
   },
   "machine-chorus": {
     headline: "Three decision-support systems have given you three incompatible recommendations.",
@@ -356,6 +668,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Follow one, average them, or set all three aside and decide from the underlying evidence.",
     stakes:
       "Confidence is not accuracy, and three systems agreeing on confidence while disagreeing on action tells you the confidence is worthless. The recommendation you like best is the one to distrust most.",
+    facts: [
+      "On 9 November 1979 a training tape simulating a Soviet attack was loaded into the live NORAD system. Interceptors were scrambled and the airborne command post launched before the display was called false.",
+      "In June 1980 a failed 46-cent integrated circuit in a communications multiplexer produced two separate false attack displays three days apart, showing changing and implausible missile counts. The hardware was confident and the numbers were nonsense.",
+      "The ballistic missile defence test record since 1999 turns repeatedly on discrimination — telling a warhead from a decoy — under conditions the tester controls. A scored success is not a forecast.",
+      "Three systems agreeing on their confidence while disagreeing on the answer is a measurement of the confidence, not of the answer.",
+    ],
+    precedent:
+      "The 1979 training tape and the 1980 chip failures: the display was authoritative, internally consistent, and completely wrong.",
   },
   "deadhand-dilemma": {
     headline: "The fail-deadly system is receiving contradictory signals about whether you are still alive.",
@@ -365,6 +685,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Stand the system down, leave it armed, or re-establish command clearly enough that the question stops being live.",
     stakes:
       "Standing it down removes the deterrent it exists to provide. Leaving it armed while it is confused is how ambiguity becomes automatic.",
+    facts: [
+      "The Soviet Union built a semi-automatic retaliation system in the mid-1980s, generally reported as Perimeter, to guarantee a response if national leadership were destroyed. Its deterrent value comes from being known to exist, not from ever operating.",
+      "Published accounts describe human beings at the final rung — officers in a hardened facility who would still have to act. Guaranteed retaliation and human judgement are in tension by design, and the design chose both.",
+      "The system exists because of the fear of decapitation, which is the same fear that pushes leaders to delegate release authority in advance. Every remedy for one of those problems worsens the other.",
+      "On 26 September 1983 the Soviet officer who declined to pass a satellite warning up the chain received no commendation, and retired the following year. Being the human in the loop has never been a career.",
+    ],
+    precedent:
+      "The Perimeter design problem: a mechanism built to work when nobody can answer, now receiving mixed signals about whether anybody can.",
   },
   "quarantine-without-war": {
     headline: "Your inspections have halted regional shipping and every capital denies a war has started.",
@@ -374,6 +702,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Tighten the inspections, ease them quietly, or hold and let the other side move first.",
     stakes:
       "A conflict nobody admits to has no ceasefire mechanism, because there is nothing to cease. It ends when someone finds a way to climb down that is not a defeat.",
+    facts: [
+      "In October 1962 the United States deliberately chose 'quarantine' over 'blockade' because a blockade is an act of war in international law. The word was argued over in the Executive Committee before the ships moved.",
+      "Insurance is the fastest transmission mechanism in a maritime crisis. War-risk premiums close a region days before any government formally does anything.",
+      "A conflict nobody admits to has no ceasefire mechanism, because there is nothing formally to cease. It ends when one side finds an exit that is not a defeat.",
+      "In 1962 that exit was a private assurance about missiles in Turkey which stayed secret for decades, alongside a public commitment not to invade Cuba. The climb-down was real, and it was invisible.",
+    ],
+    precedent:
+      "The Cuban quarantine (1962): coercion conducted under a legal label chosen precisely so that nobody has to call it war.",
   },
   "continuity-gap": {
     headline: "Two deputies are both claiming lawful authority.",
@@ -383,6 +719,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Re-establish the chain publicly, work through one deputy only, or accept the split until communications recover.",
     stakes:
       "Nuclear authority depends on there being exactly one answer to who holds it. Two lawful claims is not a constitutional puzzle, it is a targeting problem.",
+    facts: [
+      "The American presidential line of succession runs 18 deep by statute. It was written for orderly vacancy, not for a communications failure that leaves two people each believing in good faith that they hold the office.",
+      "The 25th Amendment, ratified in 1967, provides for transfer of power but requires written declarations delivered to named officers — a procedure that quietly assumes the communications are working.",
+      "On 30 March 1981, with the President in surgery and the Vice President airborne, the Secretary of State told the press 'I am in control here.' He was constitutionally wrong, and the moment is remembered because the confusion behind it was real.",
+      "Nuclear authority depends on there being exactly one answer to who holds it. Two lawful-looking answers is not a legal puzzle; it is an instruction problem at every command post simultaneously.",
+    ],
+    precedent:
+      "The confusion of March 1981 and the succession statute: rules written for a vacancy, applied to an ambiguity.",
   },
   "orbital-debris": {
     headline: "A debris cascade has knocked out coverage, and the gap looks like evidence.",
@@ -392,6 +736,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Fill the gaps before drawing conclusions, act on the pattern of what is missing, or say publicly that you cannot see.",
     stakes:
       "Missing data is the easiest thing in the world to turn into a story. The pattern of what you cannot see is not evidence about what is there.",
+    facts: [
+      "On 10 February 2009 a defunct Russian satellite collided with an active Iridium spacecraft at roughly 42,000 km/h, producing about 2,300 trackable fragments.",
+      "China's 2007 anti-satellite test produced over 3,000 trackable pieces, a large share of which will still be in orbit decades from now.",
+      "Donald Kessler's 1978 paper described the cascade: past a certain density, collisions generate debris faster than debris decays, and the process continues with nobody adding anything to it.",
+      "A gap in coverage is not evidence about what is inside the gap. It is, however, the easiest thing in the world to narrate as though it were.",
+    ],
+    precedent:
+      "The 2009 Iridium and Cosmos collision: capability lost to physics, in a week when everybody is looking for intent.",
   },
   "ceasefire-clock": {
     headline: "The ceasefire is twelve hours old and already being violated.",
@@ -401,6 +753,14 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Protect the monitoring channel, punish the violation, or absorb it and keep the pause alive.",
     stakes:
       "Punishing a violation you cannot verify may be punishing a fabrication. Absorbing real violations teaches the other side what the pause is worth.",
+    facts: [
+      "The OPCW's 2018 Douma investigation produced a public report and a public dissent from members of the inspection team. The disagreement was about method, and every party used it as proof of whatever they already believed.",
+      "Verification is slower than the news cycle by construction. The Douma inspection team reached Damascus on 14 April 2018 and could not access the site until 21 April — a week in which a disputed violation only had to be asserted once.",
+      "A monitoring channel is the first thing both sides attack once it starts producing findings either of them dislikes. Protecting it costs more than using it.",
+      "Punishing an unverified violation may be punishing a fabrication, and fabrications are cheap. The side that wants the pause to collapse only needs to be believed once.",
+    ],
+    precedent:
+      "The Douma dissent (2018): the machinery that could have settled it becoming the thing under attack instead.",
   },
   "black-brant-1995": {
     headline: "A rocket launched from Norway is climbing on a profile that looks like a submarine attack.",
@@ -410,6 +770,17 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Treat it as the attack profile it resembles, or hold long enough for the arc to prove itself.",
     stakes:
       "A notice you did not read in time is worth nothing. If you hold and you are wrong, you lose the chance to answer at all — and the profile is designed to look precisely like this.",
+    facts: [
+      "25 January 1995. A four-stage Black Brant XII sounding rocket launched from And\u00f8ya, Norway, to study the aurora.",
+      "Olenegorsk radar on the Kola Peninsula saw a large multi-stage vehicle rising from the Norwegian Sea; stage separation produced multiple radar objects.",
+      "Norway had notified some 30 states, Russia among them, through diplomatic channels weeks in advance. The notice never reached the operators who mattered.",
+      "The track was assessed as non-threatening in about 8 minutes, once it was clearly heading away from Russian territory — inside the roughly 10-minute window a close-in submarine launch would have allowed.",
+      "A single object is more alarming than many: one high-altitude detonation could blind radars immediately before a mass strike, so a lone track reads as the opening move.",
+    ],
+    whatHappened:
+      "No launch order was given and the alert lapsed. President Yeltsin later stated the Cheget nuclear briefcase had been activated.",
+    afterward:
+      "The severity is genuinely contested \u2014 analysts including Pavel Podvig have argued the alert may never have risen to that level, and Russia has not released records. That dispute is itself part of the lesson.",
   },
   "norad-false-cascade": {
     headline: "Your warning centre is showing hundreds of Soviet missiles inbound.",
@@ -419,6 +790,17 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Act on the display, wait for the sensors that disagree with it, or generate forces while you find out.",
     stakes:
       "Two independent sensor types agreeing is the standard, and you do not have it. The display is confident, and confidence is exactly what a fault produces.",
+    facts: [
+      "9 November 1979. NORAD displays showed a large Soviet attack; the cause was a training tape loaded into a live system.",
+      "Ten interceptors were launched and the National Emergency Airborne Command Post was readied. The alert was resolved in about six minutes.",
+      "Separately, on 3 June and 6 June 1980, a failing 46-cent integrated circuit produced false attack displays with random numbers of missiles.",
+      "In both cases the resolving evidence was the same: satellite and radar sensors did not corroborate the display.",
+      "The standard the events established is dual phenomenology \u2014 a warning is credited only when two physically independent sensor types agree.",
+    ],
+    whatHappened:
+      "Duty officers checked the display against sensors that disagreed with it and stood the alert down without escalating to launch.",
+    afterward:
+      "Procedures were rewritten so that test scenarios could not run on operational systems, and the 46-cent chip failure became the standard argument for corroboration over confidence.",
   },
   "arkhipov-1962": {
     headline: "American destroyers are dropping depth charges on your submarine.",
@@ -428,6 +810,16 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Concur with the captain, refuse, or force the boat to surface and find out what is happening.",
     stakes:
       "You cannot see the surface, cannot reach Moscow, and are being attacked as far as anyone aboard can tell. Refusing is the only thing standing between this hull and a nuclear war.",
+    facts: [
+      "27 October 1962, during the Cuban missile crisis. Soviet submarine B-59, submerged and out of contact with Moscow for days.",
+      "US destroyers dropped practice depth charges intended as a signal to surface. Inside the hull they were indistinguishable from an attack.",
+      "The boat carried a nuclear torpedo. Battery power and air quality were failing; internal temperatures were reported above 45\u00b0C.",
+      "Launch required the agreement of the officers aboard. Captain Savitsky is reported to have favoured firing.",
+      "Vasili Arkhipov was flotilla chief of staff, which is why his concurrence was needed at all \u2014 on the other boats, it would not have been.",
+    ],
+    whatHappened: "Arkhipov refused to concur. B-59 surfaced instead, and no weapon was used.",
+    afterward:
+      "The episode was not publicly known for decades. It is the clearest case in the record of a nuclear war being prevented by one person declining to agree.",
   },
   "malmstrom-1967": {
     headline: "Ten missiles dropped off alert within seconds of each other.",
@@ -437,6 +829,16 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Treat it as an engineering fault, treat it as interference, or take the flight off line entirely while you find out.",
     stakes:
       "If something can take ten missiles off alert at once, the number that matters is not ten. Explaining it away is cheaper and might be wrong.",
+    facts: [
+      "16 March 1967, Echo Flight, Malmstrom Air Force Base, Montana. All ten Minuteman missiles in the flight went off alert within seconds.",
+      "The weapons were never in danger of launching; the failure removed them from readiness, it did not arm anything.",
+      "Air Force engineering attributed the fault to a noise pulse in the logic coupler. Security personnel accounts differed.",
+      "All 10 dropping out at once, in systems designed to be independent of each other, is the signature of a common-cause failure rather than a coincidence.",
+      "A similar mass-dropout occurred at Oscar Flight, and the discrepancy between the engineering and security accounts has never been fully reconciled in public.",
+    ],
+    whatHappened: "The flight was restored and the cause recorded as an engineering fault.",
+    afterward:
+      "The episode remains the standard example of common-cause failure in nuclear command systems: if one thing can take ten missiles off alert at once, the number that matters is not ten.",
   },
   "vela-flash-1979": {
     headline: "A satellite has recorded a double flash over the South Atlantic.",
@@ -446,6 +848,17 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Treat it as a confirmed test and attribute it, treat it as instrument error, or investigate quietly.",
     stakes:
       "Attributing a test to the wrong state has consequences that outlive the evidence. Ignoring a real one tells everyone what your detection is worth.",
+    facts: [
+      "22 September 1979. US satellite Vela 6911 recorded a double flash over the South Atlantic near the Prince Edward Islands.",
+      "A double flash \u2014 a fast first pulse, then a slower brighter second \u2014 is the characteristic optical signature of an atmospheric nuclear detonation.",
+      "Vela 6911 had been in orbit since 1969 and was long past its design life, with a known history of spurious signals from micrometeoroid strikes.",
+      "No fallout was ever conclusively detected. Hydroacoustic and ionospheric evidence was ambiguous and remains disputed.",
+      "A White House panel led by Jack Ruina concluded it was probably not a nuclear detonation; several agencies disagreed then and since.",
+    ],
+    whatHappened:
+      "No state claimed a test. No attribution was ever officially made, and the event is still formally unexplained.",
+    afterward:
+      "It stands as the clearest case in the record of a detection system producing a signal that could be neither confirmed nor dismissed \u2014 and of how much rests on attribution.",
   },
   "yom-kippur-scare-1973": {
     headline: "Soviet forces are mobilising and your desk cannot agree on what it means.",
@@ -455,6 +868,17 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Raise your own alert level to answer the signal, hold, or ask Moscow directly what they are doing.",
     stakes:
       "Raising alert is itself a signal, and it will be read by people making the same guesses about you that you are making about them.",
+    facts: [
+      "24-25 October 1973, during the Arab-Israeli war. Soviet airborne divisions were placed on alert and transport aircraft were readied.",
+      "The US response was to raise readiness to DEFCON 3 worldwide \u2014 the highest peacetime alert level reached since 1962.",
+      "The decision was taken overnight by a small group. President Nixon was not present for the deliberations, which were chaired by Kissinger.",
+      "The Soviet move may have been intended as a signal rather than a preparation; the intelligence supported both readings simultaneously.",
+      "Both sides de-escalated within roughly a day, and the alert was widely read afterwards as having been driven partly by domestic political circumstances.",
+    ],
+    whatHappened:
+      "DEFCON 3 was declared, Moscow did not intervene directly, and both sides stood down within about twenty-four hours.",
+    afterward:
+      "It became the standard case study in how an alert level intended as a message is read by its recipient as a preparation.",
   },
   "november-uap-1975": {
     headline: "Radar is painting unidentified objects over your missile complexes.",
@@ -464,6 +888,17 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Treat it as reconnaissance by an adversary, treat it as misidentification, or commit real resources to finding out.",
     stakes:
       "Something over the weapons storage areas is either hostile collection or a failure of your own security reporting. Both are serious and they need opposite responses.",
+    facts: [
+      "Late October to November 1975. Multiple US and Canadian bases in the northern tier reported unidentified objects over weapons storage and missile areas.",
+      "Loring, Wurtsmith, Malmstrom, Minot and Canadian Forces Station Falconbridge — 5 installations across the northern tier — filed reports over roughly 3 weeks.",
+      "Security police reported visual sightings; some sites reported radar returns. Interceptors were launched and made no identifications.",
+      "The reports were documented in NORAD and Air Force message traffic later released under freedom-of-information requests.",
+      "No cause was ever established. The candidate explanations \u2014 helicopters, misidentification, deliberate reconnaissance \u2014 were never resolved either way.",
+    ],
+    whatHappened:
+      "No object was ever identified or intercepted, and the reports stopped as abruptly as they began.",
+    afterward:
+      "The file is a durable example of the harder problem: reports from serious people at serious sites that cannot be confirmed and cannot be dismissed.",
   },
   "phenomenology-window-2027": {
     headline: "Your warning sensors disagree about something, and the rumour is already public.",
@@ -473,6 +908,227 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     decision: "Say what you know and admit the gap, wait for corroboration, or let the public story run.",
     stakes:
       "The standard is two independent sensor types agreeing, and you have two that do not. Saying nothing hands the explanation to whoever is loudest.",
+    facts: [
+      "The ODNI assessment of 25 June 2021 examined 144 US government reports and resolved exactly one — a large deflating balloon — leaving 143 unresolved. It stated plainly that the limiting factor was insufficient and inconsistent data, not exotic performance.",
+      "In the Nimitz encounter of 14 November 2004, shipboard radar, aircrew eyewitness accounts and infrared targeting-pod video all recorded something, and the sensors did not agree with each other about what.",
+      "The doctrinal standard for a launch warning is dual phenomenology: two independent sensor types, working on different physics, agreeing. It exists because one sensor type has been wrong before, repeatedly, in exactly this way.",
+      "Public belief moves faster than analysis and does not wait for it. The New Jersey drone flap of late 2024 generated thousands of reports which four federal agencies jointly assessed as ordinary aircraft.",
+    ],
+    precedent:
+      "The 2021 ODNI assessment and the Nimitz case (2004): sensors disagreeing is the normal condition, and the public gets the video first.",
+  },
+
+  // Ten from the half of the corpus that had no scenario. All historical, so
+  // all carry an outcome rather than a precedent.
+  "hawaii-alert-2018": {
+    headline: "A statewide missile alert went out by mistake and is still standing.",
+    situation:
+      "An employee sent a live alert during an internal drill and the whole state read it as real. Military commands confirmed within minutes that nothing is inbound. Nothing has gone out to the public, and people are putting their children into storm drains.",
+    youAre: "You are the President of the United States, watching a state you govern take shelter from nothing.",
+    decision:
+      "Correct it now on what you have, wait for a channel that is authorised to correct it, or say nothing and let the local authority own it.",
+    stakes:
+      "The harm is not the alert, it is the gap between the alert and the correction. Every minute is spent by somebody who thinks they have ten left.",
+    facts: [
+      "At 08:07 local time on 13 January 2018 an employee at the Hawaii Emergency Management Agency sent a live statewide alert reading BALLISTIC MISSILE THREAT INBOUND TO HAWAII. SEEK IMMEDIATE SHELTER. THIS IS NOT A DRILL.",
+      "It happened during an unannounced internal drill. The employee reported hearing 'this is not a drill' but not the 'exercise, exercise, exercise' framing that five colleagues in the room heard.",
+      "Military commands confirmed there was no threat within minutes. The formal corrective alert did not go out for 38 minutes.",
+      "The flight time for a missile from North Korea to Hawaii is roughly 20 minutes. The correction took nearly twice the time people believed they had.",
+      "No one was killed by the alert itself. The injuries were from the sheltering — and the lasting damage was to whether the next alert would be believed.",
+    ],
+    whatHappened:
+      "The agency issued the correction 38 minutes later, after officials worked out who was authorised to send one. The employee was dismissed and the agency's administrator resigned.",
+    afterward:
+      "The FCC investigation found no procedure existed for cancelling a false alert. Hawaii added a two-person rule for live alerts and, more importantly, built the correction template in advance — the thing whose absence cost the 38 minutes.",
+  },
+  "damascus-titan-1980": {
+    headline: "A dropped tool has holed a fuelled missile inside one of your own silos.",
+    situation:
+      "Maintenance dropped a socket; it fell the height of the silo, struck the missile and punctured a propellant tank. The complex is filling with vapour and the crew is out. The warhead is still on top of it, and the county sheriff is asking what to tell people who live within sight of the fence.",
+    youAre: "You are the President of the United States, being briefed on your own weapon by people who disagree with each other.",
+    decision:
+      "Get a picture of the site before committing, tell the county now and accept a story you cannot yet finish, or keep the circle small while the pressure rises.",
+    stakes:
+      "The people nearest the hazard are the ones you have told the least, and the argument about what to do is being had between a crew at the gate and commanders a long way away.",
+    facts: [
+      "On the evening of 18 September 1980 an airman dropped a socket inside Launch Complex 374-7 near Damascus, Arkansas. It fell roughly 80 feet, struck the missile and punctured the first-stage fuel tank.",
+      "The propellant vented for about eight and a half hours while on-scene crews and remote commanders disagreed about how to respond.",
+      "At about 03:00 on 19 September the propellant exploded, destroying the complex, killing one airman and injuring around twenty.",
+      "The warhead was thrown roughly 100 feet outside the entry gate. Its safety features worked and there was no nuclear yield and no radioactive release.",
+      "The official posture through the night was to neither confirm nor deny that a warhead was present, in a county whose residents could see the site from their homes.",
+    ],
+    whatHappened:
+      "The Air Force maintained neither-confirm-nor-deny while local officials evacuated on their own judgement. The disagreement between the site and the command chain was never resolved before the tank failed.",
+    afterward:
+      "The Titan II force was retired over the following seven years. The accident became the standard case for why the people closest to a hazard need standing authority to act without waiting for a chain of command that cannot see the site.",
+  },
+  "kursk-2000": {
+    headline: "Your submarine is on the bottom and foreign rescue has been offered in public.",
+    situation:
+      "An explosion in the forward compartment put her down during an exercise. Your own submersibles have failed twice in poor conditions. Norway and Britain have offered help, publicly, which makes refusing a public act too. Some of the crew are alive aft and nobody can tell you for how long.",
+    youAre: "You are the President of the Russian Federation, deciding how much of your newest hull foreign divers may see.",
+    decision:
+      "Accept the offered help now, keep trying with your own equipment, or accept it quietly and late.",
+    stakes:
+      "Accepting is an admission that you cannot reach your own sailors. Refusing is an admission about what you are protecting instead.",
+    facts: [
+      "On 12 August 2000 an explosion in the forward torpedo compartment of the Kursk was followed roughly two minutes later by a much larger detonation. She sank in about 108 metres of water with 118 aboard.",
+      "The official inquiry attributed the first explosion to a leak of high-test peroxide from a practice torpedo with a faulty weld.",
+      "23 men survived in the aft ninth compartment for some hours and left written notes.",
+      "Both reactors scrammed and remained stable throughout. The nuclear risk was never the issue; the rescue was.",
+      "Russian submersibles failed repeatedly in poor conditions. Norwegian and British offers of assistance were not accepted for days; Norwegian divers opened the aft hatch on 21 August, nine days after she sank, within hours of finally being allowed to try.",
+    ],
+    whatHappened:
+      "Foreign help was accepted after several days. Norwegian divers reached the aft compartment quickly once permitted; everyone aboard had already died.",
+    afterward:
+      "The delay, not the accident, defined the event politically and became a lasting case study in how secrecy about capability trades against the lives the capability exists to protect.",
+  },
+  "sverdlovsk-1979": {
+    headline: "A release from one of your own facilities is killing people downwind.",
+    situation:
+      "District hospitals are seeing a pattern they cannot explain and it points at a military compound on the edge of the city. The treaty you signed seven years ago says the programme behind that fence does not exist. There is a story available about contaminated meat, and it will hold.",
+    youAre: "You are the leadership of the Soviet Union, choosing between the treaty and the district.",
+    decision:
+      "Admit enough to get the district treated properly, find out first what actually left the fence, or let the cover story do the work.",
+    stakes:
+      "The cover story works. That is the problem with it: it will keep working for years, and every year it works the eventual correction costs more.",
+    facts: [
+      "In early April 1979 an accidental airborne release of anthrax spores occurred at a Soviet military microbiology facility, Compound 19, in Sverdlovsk.",
+      "At least 66 people died — the deadliest inhalational anthrax outbreak on record. Roughly 77 to 96 human cases were identified; totals remain contested because the KGB confiscated hospital and autopsy records.",
+      "The Soviet Union had signed the Biological Weapons Convention in 1972. The facility's existence was inconsistent with it.",
+      "Authorities publicly blamed contaminated meat sold on the black market and maintained that account for 13 years.",
+      "The truth was acknowledged in 1992. A 1994 epidemiological study of the case locations showed they lay along a single narrow downwind plume on one afternoon — the geometry the meat story could never explain.",
+    ],
+    whatHappened:
+      "The meat story was adopted and held. Victims were treated for what the state said they had, records were confiscated, and the district was told it was a food outbreak.",
+    afterward:
+      "Russia acknowledged the release in 1992. The thirteen-year gap became the standard argument for why verification regimes need access rather than assurances, and it damaged confidence in the convention for a generation.",
+  },
+  "juarez-cobalt-1984": {
+    headline: "A medical source was sold for scrap and the metal is already in circulation.",
+    situation:
+      "A disused radiotherapy head went to a junkyard, was broken open, and went into a foundry. The steel it became has been shipping for weeks as ordinary things — reinforcing bar, table legs — and the first detection was an accident at a laboratory gate. Nobody has a list of where it went.",
+    youAre: "You are the President of the United States, holding a contamination problem that arrived through commerce.",
+    decision:
+      "Map the distribution before announcing anything, work the neighbouring government that did not cause this and will be blamed for it, or let the metal keep moving.",
+    stakes:
+      "Contamination travels through a supply chain faster than any agency can follow it, and a recall you announce before you understand is a recall of everything.",
+    facts: [
+      "A teletherapy unit bought by a private hospital in Ciudad Juárez in 1977 and never commissioned was dismantled for scrap on 6 December 1983, spilling roughly six thousand cobalt-60 pellets into the scrap stream.",
+      "Foundries melted the material into an estimated 6,000 tonnes of contaminated rebar and cast products, distributed across 17 Mexican states and exported.",
+      "It went undetected for six weeks. The discovery on 16 January 1984 was an accident: a truck carrying contaminated rebar took a wrong turn at Los Alamos and set off a portal monitor.",
+      "Estimates of exposed persons run to around 4,000, and 109 houses in Sinaloa were demolished.",
+      "No detection system was looking for this. The one that found it was pointed at something else entirely.",
+    ],
+    whatHappened:
+      "Both governments traced and recovered what they could once the portal monitor gave them the thread. Contaminated product had already been installed in buildings on both sides of the border.",
+    afterward:
+      "Radiation portal monitors were installed at scrap yards and border crossings across North America — the practice now standard worldwide — because the only reason this was caught at all was one monitor at a laboratory gate and a wrong turn.",
+  },
+  "maultsby-1962": {
+    headline: "One of your aircraft is lost deep inside Soviet airspace on the worst day of the crisis.",
+    situation:
+      "A routine air-sampling flight over the pole navigated by the stars, lost its references in an aurora, and came out somewhere it should never have been. Soviet interceptors are climbing toward him. Your own fighters are going out to meet him, carrying what everything is carrying this week. He is running out of fuel.",
+    youAre: "You are the President of the United States, on the day both sides believe the other may already have decided.",
+    decision:
+      "Tell Moscow what this is before they decide for themselves, or say nothing and let an aircraft nobody can explain fly out on its own.",
+    stakes:
+      "On a day like this your own routine operations are the likeliest cause of the next crisis, and an unexplained penetration is indistinguishable from a last look before a strike.",
+    facts: [
+      "On 27 October 1962 — Black Saturday — a US Air Force U-2 on a routine air-sampling mission lost its celestial navigation references, an intense auroral display being the reason usually given, and drifted roughly 300 miles into Soviet airspace over Chukotka.",
+      "Soviet air defence scrambled interceptors. American F-102s launched to escort him home and, under the crisis dispersal posture, were carrying nuclear-tipped air-to-air missiles.",
+      "The same day a U-2 was shot down over Cuba and a Soviet submarine crew argued about a nuclear torpedo. Three separate paths to war ran in parallel within hours of each other.",
+      "Ground controllers talked the pilot out by star reference. He landed short of fuel on the Alaskan coast with the engine out.",
+      "Kennedy's recorded reaction on being told was that there is always some son of a bitch who does not get the word.",
+    ],
+    whatHappened:
+      "Nobody fired. Controllers walked the pilot home, the interceptors never made contact, and Khrushchev raised the intrusion in writing the next day — noting that it could have been taken for a bomber and asking what would have followed.",
+    afterward:
+      "The incident is the standard illustration that in a crisis the dangerous events are not the planned ones. Routine operations continued during the crisis because nobody had the authority or the inclination to stop them.",
+  },
+  "przewodow-2022": {
+    headline: "Two people are dead on allied soil and the one confirmed fact is misleading.",
+    situation:
+      "A missile came down in a border village during a large barrage and killed two farm workers. The only confirmed detail is that it was of Russian manufacture — true, and also what the defending side flies. Wire copy citing an anonymous official already says Russia hit NATO. Trajectory analysis is hours away; the treaty consultation clock is not.",
+    youAre: "You are the President of the United States, on a video call with allies who are waiting for you to characterise this.",
+    decision:
+      "Wait for the trajectory, say publicly what you do not yet know and deflate the pressure, or answer the wire story rather than the event.",
+    stakes:
+      "Being publicly slow is a decision, and it is one you have to make within the hour. A technically true fact is doing more work here than any false one could.",
+    facts: [
+      "On 15 November 2022 a missile struck a grain facility in Przewodów, Poland, about six kilometres from the Ukrainian border, killing two people.",
+      "Polish officials confirmed only that the missile was of Russian manufacture — accurate, and misleading, because Ukraine operates Soviet-designed air defences.",
+      "Within hours US and NATO assessments based on trajectory data concluded it was most likely a Ukrainian air-defence interceptor that had gone off course.",
+      "Leaders meeting at the G20 in Bali held an emergency consultation. President Biden said publicly it was 'unlikely' to have been launched from Russia; NATO's Secretary General attributed it to Ukrainian air defence.",
+      "Poland invoked consultation rather than collective defence. Ukraine contested the assessment publicly for a period, which was part of the cost of getting it right quickly.",
+    ],
+    whatHappened:
+      "Leaders chose to be publicly slow. Early, deliberate statements that the evidence did not indicate a deliberate Russian attack deflated the pressure for treaty consultations before it could build.",
+    afterward:
+      "It is widely regarded as the model case for alliance crisis management: the decisive act was two heads of government publicly lowering the temperature on incomplete information, in the direction of de-escalation, before the analysis was finished.",
+  },
+  "balloon-2023": {
+    headline: "A foreign high-altitude balloon is crossing your country right now.",
+    situation:
+      "It came in over Alaska, transited Canada, and is over the continental United States. Beijing calls it a stray weather craft. Shooting it down over land drops a large payload onto somebody; waiting for the coast means several more days of it on television. Your own command has just worked out that earlier ones crossed undetected.",
+    youAre: "You are the President of the United States, being asked why this is still flying.",
+    decision:
+      "Learn more from it flying than from the wreckage, take it now and accept the debris, or wait for water and spend the days in public.",
+    stakes:
+      "A gap in what your sensors were tuned to see is not a gap in what was there. The uncomfortable part is not the balloon, it is what the balloon proves about the record.",
+    facts: [
+      "From 28 January to 4 February 2023 a Chinese-operated high-altitude balloon transited Alaska, Canada and the contiguous United States before being shot down over territorial waters off South Carolina on 4 February.",
+      "NORAD's commander later testified that earlier Chinese balloon transits had not been detected at the time, attributing it to 'a domain awareness gap' — radar processing had been rejecting slow, small, high-altitude returns.",
+      "After the detection parameters were adjusted, NORAD immediately began seeing objects it had not been seeing before.",
+      "Three further objects were shot down over Alaska, the Yukon and Lake Huron between 10 and 12 February. None was ever positively identified.",
+      "The payload was recovered from shallow water off South Carolina — an intelligence outcome that would not have been available from a shoot-down over land.",
+    ],
+    whatHappened:
+      "It was allowed to complete its transit and shot down over water, where the payload was recovered. The political cost of the delay was real and the intelligence gain was the argument for it.",
+    afterward:
+      "The filter change is the lasting part: adjusting what the radars were willing to report turned an empty sky into a busy one, and the three February shoot-downs that followed were the immediate consequence of looking harder.",
+  },
+  "salisbury-2018": {
+    headline: "A military-grade nerve agent has been used on your territory against two people.",
+    situation:
+      "Two people were found on a bench in a small cathedral city and the laboratory has identified a class of agent only a state programme produces. A police officer is in hospital. Moscow denies everything and demands a sample. You are certain who did this, and the evidence that makes you certain is the evidence you cannot show.",
+    youAre: "You are the Prime Minister of the United Kingdom, holding an attribution you believe and cannot fully publish.",
+    decision:
+      "Build coordinated expulsions and spend weeks doing it, act now on an attribution your allies have not yet seen, or wait for a verification process the accused sits on.",
+    stakes:
+      "Attribution you are certain of and attribution you can prove are different instruments. Acting alone is fast and cheap for the other side to dismiss.",
+    facts: [
+      "On 4 March 2018 Sergei and Yulia Skripal were found unconscious on a bench in Salisbury. A police officer, DS Nick Bailey, was also seriously affected.",
+      "Porton Down identified a Novichok-class nerve agent within days, and OPCW technical assistance independently confirmed the identification through two designated laboratories.",
+      "More than 20 countries expelled Russian diplomats in coordination — the largest collective expulsion of its kind — because the attribution had been shared with allies before it was acted on.",
+      "Four months later, on 30 June, Dawn Sturgess and Charlie Rowley were poisoned in nearby Amesbury by a discarded container disguised as a consumer product. Sturgess died on 8 July.",
+      "The Amesbury deaths are the part that had nothing to do with attribution: the agent was still in the environment months after everyone had agreed who put it there.",
+    ],
+    whatHappened:
+      "The United Kingdom shared the technical attribution with allies first and then acted, producing a coordinated expulsion by more than twenty countries rather than a unilateral gesture.",
+    afterward:
+      "The independent OPCW confirmation is what made the coalition possible; the Amesbury deaths four months later showed that response and consequence run on different clocks, and the second one is longer.",
+  },
+  "fobs-prc-2021": {
+    headline: "You flew a partial orbit and Washington is calling it a Sputnik moment.",
+    situation:
+      "The vehicle went partway round and released a glider that flew a long atmospheric course. Neither half is new; the combination has not been demonstrated before. Your ministry has described it as a routine reusable-spacecraft test. The American chairman has described it as very close to a Sputnik moment. Both statements are about the same object.",
+    youAre: "You are the Chairman, holding a capability whose entire value is that nobody can classify it quickly.",
+    decision:
+      "Explain enough to calm Washington, let both descriptions stand, or repeat the test and settle the question in their favour.",
+    stakes:
+      "A system worth having because it is ambiguous gets less valuable every time you clarify it, and more dangerous every time you do not.",
+    facts: [
+      "On 27 July 2021 China conducted a test in which a vehicle was placed into a partial orbit and released a hypersonic glide vehicle that flew a long atmospheric course before impacting some distance from its target.",
+      "Neither element was new: the Soviet Union fielded and then retired a fractional orbital bombardment system under SALT II. The combination had not been demonstrated before.",
+      "Chairman of the Joint Chiefs Gen. Mark Milley called it 'very concerning' and 'very close' to a Sputnik moment.",
+      "China's foreign ministry described the event as a routine reusable-spacecraft test. Both descriptions were issued about the same object within days of each other.",
+      "A partial-orbit approach is attractive because it can arrive from the south, where early-warning radars built to look north are thinnest — and telling it from a satellite launch takes hours of orbital determination against a warning timeline of 25 to 30 minutes.",
+    ],
+    whatHappened:
+      "Beijing let both descriptions stand, repeating the routine-test characterisation without addressing the trajectory. Washington's assessment hardened rather than softened.",
+    afterward:
+      "The test is now the standard citation in arguments about southern-approach warning coverage, and it accelerated exactly the sensor investment that reduces the ambiguity the system depended on.",
   },
 };
 

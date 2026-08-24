@@ -1,7 +1,13 @@
 import { createWorld } from "./world";
 import { resolveTurn, forecast } from "./sim";
-import { applyScenario, SCENARIOS } from "./scenarios";
+import { applyScenario, SCENARIOS, SCENARIO_IDS } from "./scenarios";
 import { SCENARIO_BRIEFS, briefFor } from "./scenarioBriefs";
+import { buildArchive, lockedLine } from "./archive";
+import { TUTORIAL_STEPS, shouldShowTutorial } from "./tutorial";
+import { dailyWatch, defconSpark, shareText } from "./daily";
+import { ARCS, arcById } from "./arcs";
+import { DECK, drawEvent } from "./events";
+import { foldDaily } from "./stats";
 import { makeActors } from "./actors";
 import { seatObjectives } from "./objectives";
 import { encodeReplay, decodeReplay, recordTurn } from "./replay";
@@ -746,14 +752,11 @@ export function runIntegrityChecks(): IntegrityResult {
   check("advisor-stance-is-deterministic-and-rng-free", () => {
     // Same contract as staffAdvice: forecast() replays through this twice per
     // render, so a draw here would diverge the stream.
-    const w = createWorld("standard", 23, "US", "blue");
-    let guard = 0;
-    let staged = w;
-    while (!currentDecision(staged) && guard < 14) {
-      staged = resolveTurn(structuredClone(staged), hold());
-      guard += 1;
-    }
-    if (!currentDecision(staged)) throw new Error("never reached a decision card");
+    // Deliberately the deterministic fixture rather than playing forward until
+    // a close call happens to spawn: how quickly one spawns is a balance
+    // property, and this check is about determinism.
+    const staged = worldWithCard(23);
+    if (!currentDecision(staged)) throw new Error("fixture produced no decision card");
     convene(staged, 3);
     const before = staged.rngState;
     const first = participants(staged, 3).map((a) => advisorStance(staged, a)?.optionId);
@@ -1106,9 +1109,17 @@ export function runIntegrityChecks(): IntegrityResult {
       const brief = briefFor(def.id);
       if (!brief) throw new Error(`${def.id} has no brief`);
       for (const [field, value] of Object.entries(brief)) {
-        if (!value.trim()) throw new Error(`${def.id}.${field} is empty`);
-        if (value.includes("undefined")) throw new Error(`${def.id}.${field} has an unrendered value`);
+        const parts = Array.isArray(value) ? value : [value];
+        for (const part of parts) {
+          if (typeof part !== "string" || !part.trim()) throw new Error(`${def.id}.${field} is empty`);
+          if (part.includes("undefined")) throw new Error(`${def.id}.${field} has an unrendered value`);
+        }
       }
+      // Facts have to be facts: at least three, and each carrying something
+      // checkable rather than atmosphere.
+      if (brief.facts.length < 3) throw new Error(`${def.id} has ${brief.facts.length} facts`);
+      const checkable = brief.facts.filter((f) => /\d/.test(f)).length;
+      if (checkable < 2) throw new Error(`${def.id} has ${checkable} facts carrying a number or date`);
       // A headline is a sentence about something that happened, not a label.
       if (!/[.!?]$/.test(brief.headline)) throw new Error(`${def.id} headline is not a sentence: "${brief.headline}"`);
       // Crude on purpose. What this is really catching is the label-style
@@ -1126,6 +1137,325 @@ export function runIntegrityChecks(): IntegrityResult {
     return `${SCENARIOS.length} scenarios, all briefed`;
   });
 
+  check("arcs-add-no-rng-draws", () => {
+    // The load-bearing claim of the whole feature, stated precisely.
+    //
+    // Arcs bias the score `scoreCandidate` already computes, and `pickWeighted`
+    // makes exactly one `pick()` call whatever the numbers are. So the arc may
+    // change WHICH event is drawn -- that is the entire point -- but it must
+    // never change HOW MANY draws the deck consumes. If it did, forecast()
+    // would stop replaying and every fixed-seed check here would be downstream
+    // of the damage.
+    //
+    // Note what this deliberately does NOT assert: that a run with arcs has the
+    // same RNG cursor as a run without. It does not, and it should not. A
+    // different event leads down a different turn, which legitimately spends a
+    // different number of draws later. Comparing whole runs would be testing
+    // that arcs do nothing.
+    let sampled = 0;
+    let steered = 0;
+    for (let seed = 1; seed <= 12; seed += 1) {
+      let w = createWorld("standard", seed, "US", "blue");
+      for (let i = 0; i < 20 && !w.ended; i += 1) {
+        w = resolveTurn(structuredClone(w), hold());
+        if (!w.arc) continue;
+        const withArc = structuredClone(w);
+        const before = withArc.rngState;
+        const chosenWith = drawEvent(withArc);
+        const costWith = withArc.rngState - before;
+
+        const without = structuredClone(w);
+        without.arc = null;
+        const chosenWithout = drawEvent(without);
+        const costWithout = without.rngState - before;
+
+        sampled += 1;
+        if (costWith !== costWithout) {
+          throw new Error(`turn ${w.turn} seed ${seed}: arc cost ${costWith} draws, no-arc cost ${costWithout}`);
+        }
+        if (chosenWith.id !== chosenWithout.id) steered += 1;
+      }
+    }
+    if (sampled < 40) throw new Error(`only ${sampled} turns had an arc running to sample`);
+    // And the bias has to actually do something, or the check above is vacuous.
+    if (steered === 0) throw new Error("the arc never changed which event was drawn");
+    return `${sampled} sampled turns, ${steered} steered, 0 extra draws`;
+  });
+
+  check("arcs-run-and-resolve", () => {
+    // An arc that never resolves is worse than no arc: it is a promise the game
+    // does not keep. The first draft of arcs.ts invented event tags the deck
+    // does not carry and measured 0 resolutions in 40 runs, which is exactly
+    // the failure this catches.
+    let started = 0;
+    let resolved = 0;
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 24; seed += 1) {
+      let w = createWorld("standard", seed, "US", "blue");
+      let openId: string | null = null;
+      let lastBeat = -1;
+      for (let i = 0; i < 30 && !w.ended; i += 1) {
+        w = resolveTurn(structuredClone(w), hold());
+        const id = w.arc?.id ?? null;
+        if (openId && id !== openId) {
+          const total = arcById(openId)?.beats.length ?? 0;
+          if (lastBeat >= total - 1) resolved += 1;
+          openId = null;
+          lastBeat = -1;
+        }
+        if (id && id !== openId) {
+          started += 1;
+          openId = id;
+          lastBeat = w.arc?.beat ?? 0;
+          seen.add(id);
+        } else if (id && w.arc) {
+          lastBeat = Math.max(lastBeat, w.arc.beat);
+        }
+      }
+    }
+    if (started < 12) throw new Error(`only ${started} arcs started across 24 runs`);
+    if (resolved < 4) throw new Error(`${started} arcs started and only ${resolved} resolved`);
+    if (seen.size < 3) throw new Error(`only ${seen.size} distinct arcs ever ran`);
+    // Every beat of every arc has to be reachable at all: a beat asking for a
+    // tag the deck does not carry can never land, and the arc stalls on it.
+    const deckTags = new Set<string>();
+    for (const ev of DECK) for (const tag of ev.tags) deckTags.add(tag);
+    const followTags = ["silence", "talks", "backlash", "posture", "intel", "covert", "war", "intercept"];
+    for (const arc of ARCS) {
+      for (const beat of arc.beats) {
+        const reachable = beat.wants.some((tag) => deckTags.has(tag) || followTags.includes(tag));
+        if (!reachable) throw new Error(`${arc.id} beat "${beat.label}" wants tags no event carries`);
+      }
+    }
+    return `${started} started, ${resolved} resolved, ${seen.size} distinct across 24 runs`;
+  });
+
+  check("arc-world-stays-cloneable-and-replays", () => {
+    // World holds an id and three numbers, never a function -- structuredClone
+    // throws on those and save.ts silently JSON-drops them, which is how the
+    // Stage 1 decision cards broke.
+    let w = createWorld("standard", 9, "US", "blue");
+    for (let i = 0; i < 14 && !w.ended; i += 1) {
+      recordTurn(w, hold());
+      w = resolveTurn(structuredClone(w), hold());
+    }
+    structuredClone(w);
+    const roundTrip = JSON.parse(JSON.stringify(w)) as World;
+    if (JSON.stringify(roundTrip.arc ?? null) !== JSON.stringify(w.arc ?? null)) {
+      throw new Error("arc state did not survive serialisation");
+    }
+    const run = replayFromCode(encodeReplay(w));
+    if (!run) throw new Error("replay decode failed");
+    if (JSON.stringify(run.world.arc ?? null) !== JSON.stringify(w.arc ?? null)) {
+      throw new Error(`replay produced a different arc: ${JSON.stringify(run.world.arc)} vs ${JSON.stringify(w.arc)}`);
+    }
+    if ((run.world.arcsSeen ?? []).join() !== (w.arcsSeen ?? []).join()) {
+      throw new Error("replay saw a different set of arcs");
+    }
+    return `arc ${w.arc?.id ?? "none"} · seen ${(w.arcsSeen ?? []).join(",") || "none"} · replays`;
+  });
+
+  check("daily-watch-is-stable-for-a-date", () => {
+    // Everybody playing on a given day has to get the same evening, computed
+    // from the date alone with no server and nothing stored. Both hashes are
+    // pure, so this is the whole contract.
+    const a = dailyWatch(new Date(Date.UTC(2026, 7, 24)));
+    const b = dailyWatch(new Date(Date.UTC(2026, 7, 24, 23, 59, 59)));
+    if (a.key !== "2026-08-24") throw new Error(`key ${a.key}`);
+    if (a.seed !== b.seed || a.scenarioId !== b.scenarioId) throw new Error("same day gave two watches");
+    if (a.seed <= 0) throw new Error(`seed ${a.seed} is not usable`);
+    const next = dailyWatch(new Date(Date.UTC(2026, 7, 25)));
+    if (next.seed === a.seed) throw new Error("consecutive days share a seed");
+    // And the rotation must actually rotate rather than clump on a few
+    // scenarios, which is what a single hash for both seed and scenario does.
+    const seen = new Set<string>();
+    for (let i = 0; i < 120; i += 1) {
+      seen.add(dailyWatch(new Date(Date.UTC(2026, 0, 1 + i))).scenarioId);
+    }
+    if (seen.size < 20) throw new Error(`only ${seen.size} distinct scenarios across 120 days`);
+    if (!SCENARIO_IDS.includes(a.scenarioId)) throw new Error(`${a.scenarioId} is not a scenario`);
+    return `${seen.size} distinct watches across 120 days`;
+  });
+
+  check("daily-watch-adds-no-draws-and-replays", () => {
+    // The daily seed is read once at start, outside resolveTurn. A run built
+    // from it has to behave exactly like any other run on that seed -- if it
+    // did not, the shared date would not produce a shared game.
+    const w = dailyWatch(new Date(Date.UTC(2026, 7, 24)));
+    const def = SCENARIOS.find((s) => s.id === w.scenarioId);
+    if (!def) throw new Error("daily scenario is not in the list");
+    const one = applyScenario(createWorld(def.difficulty, w.seed, def.playerId, def.intent), w.scenarioId);
+    const two = applyScenario(createWorld(def.difficulty, w.seed, def.playerId, def.intent), w.scenarioId);
+    if (one.rngState !== two.rngState) throw new Error("same seed diverged before turn one");
+    const a = runTurns(structuredClone(one), 6);
+    const b = runTurns(structuredClone(two), 6);
+    if (a.rngState !== b.rngState) throw new Error("same seed diverged across six turns");
+    if (a.turn !== b.turn || a.ended !== b.ended) throw new Error("same seed produced different runs");
+    // DEFCON history is bookkeeping and must not have cost a draw.
+    if ((a.defconHistory ?? []).length < 1) throw new Error("defcon history never recorded");
+    return `seed ${w.seed} · ${w.scenarioId} · reproduces across ${a.turn} turns`;
+  });
+
+  check("daily-streak-counts-days-not-plays", () => {
+    // Pure, so the rules are provable here. Replaying the same day must not
+    // advance the streak, the next day extends it, and a gap resets to one --
+    // the day you came back still counts as a day.
+    let rec = foldDaily(undefined, "2026-08-24", 500);
+    if (rec.streak !== 1 || rec.played !== 1) throw new Error(`first daily gave streak ${rec.streak}`);
+    rec = foldDaily(rec, "2026-08-24", 700);
+    if (rec.streak !== 1) throw new Error("replaying a day advanced the streak");
+    if (rec.best !== 700) throw new Error(`best did not improve: ${rec.best}`);
+    if (rec.played !== 1) throw new Error("replaying a day counted as a second play");
+    rec = foldDaily(rec, "2026-08-25", 400);
+    if (rec.streak !== 2) throw new Error(`next day gave streak ${rec.streak}`);
+    if (rec.best !== 700) throw new Error("a worse score lowered the best");
+    rec = foldDaily(rec, "2026-08-28", 100);
+    if (rec.streak !== 1) throw new Error(`a gap gave streak ${rec.streak}`);
+    if (rec.bestStreak !== 2) throw new Error(`best streak lost: ${rec.bestStreak}`);
+    // Month and year boundaries are the classic place this breaks.
+    let edge = foldDaily(undefined, "2026-08-31", 1);
+    edge = foldDaily(edge, "2026-09-01", 1);
+    if (edge.streak !== 2) throw new Error("streak broke across a month boundary");
+    edge = foldDaily(foldDaily(undefined, "2026-12-31", 1), "2027-01-01", 1);
+    if (edge.streak !== 2) throw new Error("streak broke across a year boundary");
+    return "same day holds, next day extends, gap resets to one";
+  });
+
+  check("daily-share-block-spoils-nothing", () => {
+    // The block is the thing a player pastes in public. It must never carry an
+    // ending: someone who has not played today should read it and still want to.
+    const w = dailyWatch(new Date(Date.UTC(2026, 7, 24)));
+    const def = SCENARIOS.find((s) => s.id === w.scenarioId);
+    if (!def) throw new Error("daily scenario is not in the list");
+    let world = applyScenario(createWorld(def.difficulty, w.seed, def.playerId, def.intent), w.scenarioId);
+    world.dailyKey = w.key;
+    world = runTurns(world, 8);
+    const text = shareText(world, 3, defconSpark(world.defconHistory ?? []));
+    if (!text.includes(w.key)) throw new Error("share block does not name the day");
+    for (const brief of Object.values(SCENARIO_BRIEFS)) {
+      for (const secret of [brief.whatHappened, brief.afterward, brief.precedent]) {
+        if (secret && text.includes(secret)) throw new Error("share block leaks an ending");
+      }
+    }
+    if (/\n\n/.test(text)) throw new Error("share block has a blank line");
+    if (text.split("\n").length > 5) throw new Error("share block is too tall to paste");
+    // The spark has to read the right way round: DEFCON 1 is the worst state
+    // and must be the tallest bar, or the picture means the opposite of itself.
+    const calm = defconSpark([5, 5, 5]);
+    const dire = defconSpark([1, 1, 1]);
+    if (calm === dire) throw new Error("spark does not distinguish DEFCON 5 from 1");
+    if (dire.charCodeAt(0) <= calm.charCodeAt(0)) throw new Error("spark is inverted: DEFCON 1 is not the tallest");
+    if (defconSpark(new Array(60).fill(3)).length > 12) throw new Error("spark does not fit one line");
+    return `${text.split("\n").length} lines, spark ${dire}`;
+  });
+
+  check("first-watch-tutorial-runs-on-a-scenario", () => {
+    // The gate used to require !world.scenarioId, so picking any scenario turned
+    // the tutorial off entirely -- and scenarios are the front door. This is the
+    // regression guard for the path a new player actually takes.
+    const scenario = applyScenario(createWorld("standard", 5, "US", "blue"), "alaska-drones-2027");
+    if (scenario.turn !== 1) throw new Error(`scenario world opens on turn ${scenario.turn}`);
+    if (!scenario.scenarioId) throw new Error("fixture is not a scenario world");
+    if (!shouldShowTutorial(scenario, false, 0)) throw new Error("tutorial suppressed on a scenario watch");
+    // And a sandbox watch, which is where it used to be the only thing showing.
+    if (!shouldShowTutorial(createWorld("standard", 5, "US", "blue"), false, 0)) {
+      throw new Error("tutorial suppressed on a sandbox watch");
+    }
+    // It is a *first* watch feature and it stays dismissible.
+    if (shouldShowTutorial({ turn: 2 }, false, 0)) throw new Error("tutorial showed after turn one");
+    if (shouldShowTutorial(scenario, true, 0)) throw new Error("dismissal did not stick");
+    if (shouldShowTutorial(scenario, false, -1)) throw new Error("negative step still showed");
+    if (shouldShowTutorial(scenario, false, TUTORIAL_STEPS.length)) throw new Error("ran past the last step");
+    // The steps have to cover the game as it now is, not as it was three
+    // features ago. Naming them here means deleting one fails loudly.
+    if (TUTORIAL_STEPS.length < 6) throw new Error(`${TUTORIAL_STEPS.length} steps`);
+    const copy = TUTORIAL_STEPS.map((s) => `${s.title} ${s.body}`.toLowerCase()).join(" ");
+    for (const topic of ["forecast", "hold", "advisors", "countdown", "mandate"]) {
+      if (!copy.includes(topic)) throw new Error(`tutorial never mentions ${topic}`);
+    }
+    for (const s of TUTORIAL_STEPS) {
+      if (!s.title.trim() || !s.body.trim()) throw new Error("a tutorial step is empty");
+    }
+    return `${TUTORIAL_STEPS.length} steps, shown on scenario and sandbox watches`;
+  });
+
+  check("archive-opens-only-what-you-finished", () => {
+    // A file opens when a run ends, not when one starts. buildArchive is pure
+    // and takes the stats as an argument precisely so the rule can be proved
+    // here, with no localStorage to read.
+    const fresh = buildArchive({ scenarioBest: {} });
+    if (fresh.opened !== 0) throw new Error(`${fresh.opened} files open on a fresh career`);
+    if (fresh.total !== SCENARIOS.length) {
+      throw new Error(`${fresh.total} files for ${SCENARIOS.length} scenarios`);
+    }
+    for (const e of fresh.entries) {
+      if (e.best !== null) throw new Error(`${e.id} carries a best score with no games played`);
+    }
+    const one = buildArchive({ scenarioBest: { "petrov-1983": 812 } });
+    const petrov = one.entries.find((e) => e.id === "petrov-1983");
+    if (!petrov?.opened) throw new Error("finishing petrov-1983 did not open its file");
+    if (petrov.best !== 812) throw new Error(`best recorded as ${petrov.best}`);
+    if (one.opened !== 1) throw new Error(`${one.opened} files open after one finished run`);
+    // Zero is a real score, not a missing one. A truthiness test here would
+    // seal the file of anyone who finished a run badly enough.
+    const zero = buildArchive({ scenarioBest: { "cuba-1962": 0 } });
+    if (!zero.entries.find((e) => e.id === "cuba-1962")?.opened) {
+      throw new Error("a score of zero failed to open the file");
+    }
+    return `${fresh.total} files, sealed until finished`;
+  });
+
+  check("archive-sealed-files-reveal-nothing", () => {
+    // The locked line is the only string a player sees before playing, so it
+    // has to stay a template. Interpolating the headline or the situation into
+    // it would hand over the scenario the archive exists to reward.
+    const shape = /^(Historical|2027 theater|Threshold) · [a-z-]+ · challenge [1-5] of 5\. Finish this watch to open the file\.$/;
+    for (const e of buildArchive({ scenarioBest: {} }).entries) {
+      const line = lockedLine(e);
+      if (!shape.test(line)) throw new Error(`${e.id} sealed line is not a template: "${line}"`);
+    }
+    return `${SCENARIOS.length} sealed files say only era, category and challenge`;
+  });
+
+  check("after-action-reveals-only-what-it-should", () => {
+    // The briefing screen must never carry the ending. A player told "Petrov
+    // reported it as a malfunction" before they sit down has not been given a
+    // decision, they have been given an answer -- so the ending fields live in
+    // the brief from the start and only AfterAction renders them.
+    //
+    // The two shapes are exclusive: a historical scenario has an outcome and
+    // what it changed; an invented one has no outcome to reveal and instead
+    // names the real incident it borrows from.
+    let historical = 0;
+    for (const def of SCENARIOS) {
+      const brief = briefFor(def.id);
+      if (!brief) throw new Error(`${def.id} has no brief`);
+      if (def.era === "historical") {
+        if (!brief.whatHappened) throw new Error(`${def.id} is historical with no whatHappened`);
+        if (!brief.afterward) throw new Error(`${def.id} is historical with no afterward`);
+        historical += 1;
+      } else {
+        if (brief.whatHappened) throw new Error(`${def.id} is not historical but claims an outcome`);
+        if (!brief.precedent) throw new Error(`${def.id} is invented with no precedent`);
+      }
+    }
+    return `${historical} historical with outcomes, ${SCENARIOS.length - historical} invented with precedents`;
+  });
+
+  check("ending-keeps-the-scenario-it-came-from", () => {
+    // AfterAction looks the brief up by world.scenarioId. If a turn, a save or a
+    // replay drops it, the panel silently renders nothing at the exact moment
+    // the game finally has something to say.
+    let w = applyScenario(createWorld("standard", 31, "US", "blue"), "petrov-1983");
+    if (w.scenarioId !== "petrov-1983") throw new Error("applyScenario did not record the id");
+    w = runTurns(w, 6);
+    if (w.scenarioId !== "petrov-1983") throw new Error(`lost across turns: ${w.scenarioId}`);
+    const run = replayFromCode(encodeReplay(w));
+    if (!run) throw new Error("replay decode failed");
+    if (run.world.scenarioId !== "petrov-1983") throw new Error(`replay lost it: ${run.world.scenarioId}`);
+    return `petrov-1983 survives ${w.turn} turns and a replay`;
+  });
+
   check("briefs-cover-exactly-the-scenario-list", () => {
     // A brief for a scenario that no longer exists, or a scenario with no brief,
     // both mean the two lists have drifted apart.
@@ -1139,24 +1469,27 @@ export function runIntegrityChecks(): IntegrityResult {
     return `${SCENARIOS.length} in both lists`;
   });
 
-  check("new-scenarios-actually-set-something-up", () => {
+  check("every-scenario-sets-up-a-real-situation", () => {
     // A scenario in the list with no block in applyScenario is a menu entry
     // that starts an ordinary sandbox game -- worse than not existing.
-    const added = ["alaska-drones-2027", "airliner-down-2027", "carrier-collision-2027", "boomer-collision-2027"] as const;
-    for (const id of added) {
-      const def = SCENARIOS.find((d) => d.id === id);
-      if (!def) throw new Error(`${id} is not in the scenario list`);
+    //
+    // This used to name four ids explicitly, which meant it only ever policed
+    // the four that happened to be new when it was written. Every scenario in
+    // the list passes it today, so there is no reason to let the next one in
+    // unchecked.
+    for (const def of SCENARIOS) {
       const plain = createWorld("standard", 5, def.playerId, def.intent);
-      const w = applyScenario(createWorld("standard", 5, def.playerId, def.intent), id);
-      if (w.scenarioId !== id) throw new Error(`${id} did not record its scenario id`);
+      const w = applyScenario(createWorld("standard", 5, def.playerId, def.intent), def.id);
+      if (w.scenarioId !== def.id) throw new Error(`${def.id} did not record its scenario id`);
       const moved =
         w.defcon !== plain.defcon ||
         Math.round(w.globalRisk) !== Math.round(plain.globalRisk) ||
         w.event.id !== plain.event.id;
-      if (!moved) throw new Error(`${id} starts an ordinary sandbox game`);
-      if (!w.event.title.trim() || !w.event.body.trim()) throw new Error(`${id} has no opening event text`);
+      if (!moved) throw new Error(`${def.id} starts an ordinary sandbox game`);
+      if (!w.event.title.trim() || !w.event.body.trim()) throw new Error(`${def.id} has no opening event text`);
+      if (w.playerId !== def.playerId) throw new Error(`${def.id} seats the player as ${w.playerId}, not ${def.playerId}`);
     }
-    return `${added.length} new scenarios set up real situations`;
+    return `${SCENARIOS.length} scenarios set up real situations`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };

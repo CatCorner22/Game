@@ -1506,7 +1506,11 @@ export function makeActors(): Record<ActorId, Actor> {
   set("US", "FR", 12, 80);
   set("US", "RU", 74, 18);
   set("US", "CN", 66, 22);
-  set("US", "KP", 82, 6);
+  // 40, not 82. North Korea's firing gate in ai.ts requires hostility above 80,
+  // and the reciprocal of 82 is 84 -- so the gate was satisfied before turn one
+  // and was never a gate at all. Opening at 40 makes crossing it something that
+  // has to happen during the game rather than a fact about its start.
+  set("US", "KP", 40, 6);
   set("US", "IR", 72, 10);
   set("US", "PK", 38, 42);
   set("US", "IN", 22, 62);
