@@ -64,6 +64,12 @@ const DESKS: Partial<Record<ActorId, string[]>> = {
   IN: ["CDS", "Strategic Forces"],
   PK: ["SPD", "corps commander", "Nasr battery"],
   IL: ["Defense Minister", "air staff"],
+  // KP and IR were missing, so both fell through to the generic ["staff"]
+  // fallback and rendered as "North Korea staff: panic..." -- a named seat
+  // reduced to a placeholder in the one panel that is supposed to make the
+  // other side feel like people.
+  KP: ["General Staff", "Hwasong brigade", "KN-23 battery", "early-warning desk"],
+  IR: ["IRGC commander", "aerospace force", "atomic energy staff", "Supreme Council aide"],
   SU: ["General Secretary staff", "USSR Defense Minister", "claimed RVSN", "Minsk duty"],
   CU: ["FAR chief", "Havana air defense", "Mariel watch"],
   CR: ["plaza boss", "corridor boss", "port fixer", "colonel on the ledger"],

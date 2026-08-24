@@ -43,7 +43,7 @@ export function SituationLog({ world }: { world: World }) {
           <HudButton
             key={f.id}
             variant={filter === f.id ? "active" : "ghost"}
-            className="min-h-8 px-2 text-[10px] uppercase"
+            className="min-h-8 px-2 text-micro uppercase"
             onClick={() => setFilter(f.id)}
           >
             {f.label}
@@ -62,15 +62,15 @@ export function SituationLog({ world }: { world: World }) {
                 e.kind === "you" && "neon-border-accent",
               )}
             >
-              <p className="font-mono text-[9px] tracking-wider text-muted uppercase">
+              <p className="font-mono text-micro tracking-wider text-muted uppercase">
                 {e.date} · turn {e.turn}
                 {e.kind === "critical" ? " · CRITICAL" : e.kind === "you" ? " · YOU" : ""}
               </p>
               <p className="mt-1 text-xs leading-snug text-fg">{e.text}</p>
               {whyId === e.id ? (
-                <p className="mt-2 text-[11px] leading-relaxed text-muted">{e.why}</p>
+                <p className="mt-2 text-micro leading-relaxed text-muted">{e.why}</p>
               ) : (
-                <p className="mt-1 text-[10px] text-subtle">Tap for causal line</p>
+                <p className="mt-1 text-micro text-subtle">Tap for causal line</p>
               )}
             </button>
           </li>

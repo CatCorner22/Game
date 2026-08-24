@@ -5,9 +5,13 @@ import type {
   Difficulty,
   Flashpoint,
   Meters,
+  PlayableId,
   Team,
   World,
 } from "./types";
+import { PLAYABLE_IDS } from "./types";
+import { standingPost } from "./posts";
+import { DEFAULT_LEADER, assignLeaders } from "./leaders";
 import { clamp, round } from "./rng";
 import { openingFor } from "./events";
 import { COMMAND, asPlayable, makeOfficer, nextAuthCode } from "./command";
@@ -217,6 +221,16 @@ export function createWorld(
     doctrinePending: false,
     doctrineTaken: [],
     actionHistory: [],
+    commandPost: standingPost((PLAYABLE_IDS as string[]).includes(playerId) ? (playerId as PlayableId) : "US").id,
+    relocation: null,
+    postureSignature: 0,
+    conferenceRung: 0,
+    advisorTrust: {},
+    overruled: [],
+    addressStyle: "neutral",
+    leaderArchetype: DEFAULT_LEADER,
+    leaders: undefined,
+    leadersKnown: [],
     scenarioId: null,
     sites: makeSites(),
     trickery: emptyTrickery(),
@@ -258,6 +272,8 @@ export function createWorld(
     ending: null,
   };
   world.authCode = nextAuthCode(world);
+  // Derived from the seed, not drawn, so a replay faces the same cast.
+  assignLeaders(world);
   world.actors[playerId].warning = warningQuality(world, playerId);
   seedSpies(world);
   world.treaties = seedTreaties(world);
@@ -311,7 +327,9 @@ export function recompute(world: World) {
       0.1 * defconPenalty +
       0.08 * (nk > 80 ? 40 : 0) +
       12 * uses +
-      0.14 * (world.aiTakeover ?? 0),
+      0.14 * (world.aiTakeover ?? 0) +
+      // Leadership on the move is one of the indicators other capitals read.
+      0.06 * (world.postureSignature ?? 0),
     0,
     100,
   );

@@ -8,6 +8,7 @@ import { DEADHAND_CONFIGS, STRATEGIC_AI_CONFIGS, type DeadhandMode, type Strateg
 import { useMemo, useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
+import { DEFAULT_LEADER, LEADERS, leaderById } from "@/lib/game/leaders";
 
 const DIFFS: { id: Difficulty; label: string; line: string }[] = [
   { id: "standard", label: "STANDARD", line: "Readable files. Hostile world." },
@@ -32,6 +33,7 @@ export function TitleScreen() {
   const [team, setTeam] = useState<Team | null>("blue");
   const [country, setCountry] = useState<PlayableId | null>("US");
   const [scenario, setScenario] = useState<ScenarioId | null>(null);
+  const [leader, setLeader] = useState<string>(DEFAULT_LEADER);
   const [terminator, setTerminator] = useState(false);
   const [aiMode, setAiMode] = useState<StrategicAIMode>("human");
   const [deadhand, setDeadhand] = useState<DeadhandMode>("off");
@@ -66,6 +68,7 @@ export function TitleScreen() {
       strategicAI: terminator ? "skynet" : aiMode,
       deadhand: def?.defaultDeadhand ?? deadhand,
       scenarioId: scenario ?? undefined,
+      leaderArchetype: leader,
     });
   }
 
@@ -113,7 +116,7 @@ export function TitleScreen() {
               procedures. ORACLE, CHORUS, SKYNET, and DEADHAND are fictional/local decision-support puzzles.
             </p>
             <HudButton
-              variant="danger"
+              variant="active"
               aria-label="Begin watch"
               className="mt-6 min-h-14 w-full px-4 text-lg"
               onClick={launchWatch}
@@ -161,6 +164,27 @@ export function TitleScreen() {
             </label>
             {selectedDef ? <p className="mt-2 text-sm text-fg">{selectedDef.title}</p> : null}
 
+            {/* Deliberately AFTER the scenario select: the mobile smoke reaches
+                the scenario picker as `select` nth(1), so a new control must not
+                be inserted above it. */}
+            <label className="mt-3 block">
+              <span className="sr-only">Choose your temperament</span>
+              <select
+                value={leader}
+                onChange={(event) => setLeader(event.target.value)}
+                className="min-h-12 w-full rounded-md border border-accent/20 bg-bg/60 px-3 text-sm text-fg outline-none focus:neon-border-accent"
+              >
+                {LEADERS.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                    {l.volatile ? " — volatile" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="mt-2 text-sm text-fg">{leaderById(leader).line}</p>
+            <p className="mt-1 text-xs leading-relaxed text-subtle">{leaderById(leader).detail}</p>
+
             <div className="mt-8 space-y-6">
               <section>
                 <HudLabel>1 · Intent</HudLabel>
@@ -171,7 +195,7 @@ export function TitleScreen() {
                     onClick={() => setTeam("blue")}
                   >
                     <span className="font-display text-base tracking-[0.2em]">BLUE</span>
-                    <span className="mt-1 block text-xs font-normal normal-case tracking-normal text-muted">
+                    <span className="mt-1 block text-xs font-normal normal-case tracking-normal opacity-80">
                       Prevent war. If it starts, keep a country.
                     </span>
                   </HudButton>
@@ -191,26 +215,26 @@ export function TitleScreen() {
               {team ? (
                 <section>
                   <HudLabel>2 · Seat</HudLabel>
-                  <p className="mt-2 font-mono text-[9px] tracking-wider text-subtle uppercase">Nuclear states</p>
+                  <p className="mt-2 font-mono text-micro tracking-wider text-subtle uppercase">Nuclear states</p>
                   <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                     {PLAYABLE.filter((p) => p.group === "nuclear").map((p) => (
                       <HudButton
                         key={p.id}
                         variant={country === p.id ? "active" : "default"}
-                        className="min-h-10 px-2 py-2 text-left text-xs"
+                        className="min-h-11 px-2 py-2 text-left text-xs"
                         onClick={() => setCountry(p.id)}
                       >
                         {p.id}
                       </HudButton>
                     ))}
                   </div>
-                  <p className="mt-2 font-mono text-[9px] tracking-wider text-subtle uppercase">Threshold / other</p>
+                  <p className="mt-2 font-mono text-micro tracking-wider text-subtle uppercase">Threshold / other</p>
                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                     {PLAYABLE.filter((p) => p.group === "other").map((p) => (
                       <HudButton
                         key={p.id}
                         variant={country === p.id ? "accent" : "default"}
-                        className="min-h-10 px-2 py-2 text-left text-xs"
+                        className="min-h-11 px-2 py-2 text-left text-xs"
                         onClick={() => setCountry(p.id)}
                       >
                         {p.name}
@@ -246,34 +270,34 @@ export function TitleScreen() {
                       <span className="mt-1 block text-xs font-normal normal-case opacity-80">Rogue model on keys</span>
                     </HudButton>
                   </div>
-                  <p className="mt-3 font-mono text-[9px] tracking-wider text-subtle uppercase">Command intelligence</p>
+                  <p className="mt-3 font-mono text-micro tracking-wider text-subtle uppercase">Command intelligence</p>
                   <div className="mt-2 grid grid-cols-2 gap-1.5">
                     {STRATEGIC_AI_CONFIGS.map((cfg) => (
                       <HudButton
                         key={cfg.id}
                         variant={aiMode === cfg.id ? "active" : "default"}
-                        className="min-h-12 p-2 text-left text-[11px]"
+                        className="min-h-12 p-2 text-left text-micro"
                         onClick={() => {
                           setAiMode(cfg.id);
                           if (cfg.id === "skynet") setTerminator(true);
                         }}
                       >
                         <span className="font-display tracking-wider uppercase">{cfg.label}</span>
-                        <span className="mt-1 block text-[10px] font-normal normal-case text-muted">{cfg.risk}</span>
+                        <span className="mt-1 block text-micro font-normal normal-case text-muted">{cfg.risk}</span>
                       </HudButton>
                     ))}
                   </div>
-                  <p className="mt-3 font-mono text-[9px] tracking-wider text-subtle uppercase">Continuity</p>
+                  <p className="mt-3 font-mono text-micro tracking-wider text-subtle uppercase">Continuity</p>
                   <div className="mt-2 grid grid-cols-1 gap-1.5">
                     {DEADHAND_CONFIGS.map((cfg) => (
                       <HudButton
                         key={cfg.id}
                         variant={deadhand === cfg.id ? "accent" : "default"}
-                        className="min-h-12 p-2 text-left text-[11px]"
+                        className="min-h-12 p-2 text-left text-micro"
                         onClick={() => setDeadhand(cfg.id)}
                       >
                         <span className="font-display tracking-wider uppercase">{cfg.label}</span>
-                        <span className="mt-1 block text-[10px] font-normal normal-case text-muted">{cfg.line}</span>
+                        <span className="mt-1 block text-micro font-normal normal-case text-muted">{cfg.line}</span>
                       </HudButton>
                     ))}
                   </div>
@@ -299,6 +323,7 @@ export function TitleScreen() {
                             strategicAI: terminator ? "skynet" : aiMode,
                             deadhand: def?.defaultDeadhand ?? deadhand,
                             scenarioId: scenario ?? undefined,
+                            leaderArchetype: leader,
                           });
                         }}
                       >
@@ -323,7 +348,7 @@ export function TitleScreen() {
                         onClick={() => resumeSlot(slot)}
                       >
                         <span className="font-display text-xs">Slot {slot + 1}</span>
-                        <span className="mt-1 block font-mono text-[10px] text-subtle">
+                        <span className="mt-1 block font-mono text-micro text-subtle">
                           {meta ? `${meta.seat} · T${meta.turn}` : "Empty"}
                         </span>
                       </HudButton>
@@ -338,7 +363,7 @@ export function TitleScreen() {
                   value={replayCode}
                   onChange={(e) => setReplayCode(e.target.value)}
                   placeholder="Paste replay code"
-                  className="mt-2 h-16 w-full rounded-md border border-accent/20 bg-bg/60 px-3 py-2 font-mono text-[11px] text-fg outline-none focus:neon-border-accent"
+                  className="mt-2 h-16 w-full rounded-md border border-accent/20 bg-bg/60 px-3 py-2 font-mono text-micro text-fg outline-none focus:neon-border-accent"
                 />
                 <HudButton variant="accent" className="mt-2 px-4 py-2 text-xs" onClick={() => startReplay(replayCode)}>
                   Run replay
@@ -360,29 +385,35 @@ export function TitleScreen() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search theater, seat, title"
-                className="mt-2 h-9 w-full rounded-md glass-panel px-3 font-mono text-[11px] text-fg outline-none focus:neon-border-accent"
+                className="mt-2 h-9 w-full rounded-md glass-panel px-3 font-mono text-micro text-fg outline-none focus:neon-border-accent"
               />
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by category">
+                <span className="mr-0.5 font-mono text-micro tracking-[0.08em] text-subtle uppercase">Theme</span>
                 {SCENARIO_CATEGORIES.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => setCategoryFilter(c.id)}
+                    aria-pressed={categoryFilter === c.id}
                     className={cn(
-                      "rounded-sm px-2 py-1 font-mono text-[9px] tracking-wider uppercase",
+                      "rounded-sm px-2 py-1 font-mono text-micro tracking-wider uppercase",
                       categoryFilter === c.id ? "bg-accent/20 text-accent neon-border-accent" : "text-subtle hover:text-muted",
                     )}
                   >
                     {c.label}
                   </button>
                 ))}
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by era">
+                <span className="mr-0.5 font-mono text-micro tracking-[0.08em] text-subtle uppercase">Era</span>
                 {(["all", "historical", "2027", "threshold"] as const).map((e) => (
                   <button
                     key={e}
                     type="button"
                     onClick={() => setEraFilter(e)}
+                    aria-pressed={eraFilter === e}
                     className={cn(
-                      "rounded-sm px-2 py-1 font-mono text-[9px] tracking-wider uppercase",
+                      "rounded-sm px-2 py-1 font-mono text-micro tracking-wider uppercase",
                       eraFilter === e ? "bg-accent/20 text-accent neon-border-accent" : "text-subtle hover:text-muted",
                     )}
                   >
@@ -392,8 +423,9 @@ export function TitleScreen() {
                 <button
                   type="button"
                   onClick={() => setSeatOnly((v) => !v)}
+                  aria-pressed={seatOnly}
                   className={cn(
-                    "rounded-sm px-2 py-1 font-mono text-[9px] tracking-wider uppercase",
+                    "rounded-sm px-2 py-1 font-mono text-micro tracking-wider uppercase",
                     seatOnly ? "bg-accent/20 text-accent neon-border-accent" : "text-subtle hover:text-muted",
                   )}
                 >
@@ -451,7 +483,7 @@ export function TitleScreen() {
           )}
         </div>
 
-        <footer className="mt-8 font-mono text-[10px] tracking-wider text-subtle uppercase">
+        <footer className="mt-8 font-mono text-micro tracking-wider text-subtle uppercase">
           FAS / SIPRI 2026 estimates · Football = aide briefcase · Terminator = rogue C2
         </footer>
     </div>

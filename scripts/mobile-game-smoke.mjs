@@ -47,13 +47,36 @@ async function screenshot(page, name) {
 async function chooseScenario(page, scenarioId) {
   const scenarioSelect = page.locator("select").nth(1);
   await waitVisible(scenarioSelect, "scenario selector");
-  // The title screen is server-rendered. Wait for React hydration before
-  // exercising controls, then prove the change reached application state.
-  await page.waitForTimeout(1_000);
-  await scenarioSelect.selectOption(scenarioId);
   const title = scenarioTitles[scenarioId];
   invariant(title, `missing expected title for scenario ${scenarioId}`);
-  await waitVisible(page.getByText(title, { exact: true }), `${title} scenario details`);
+  const details = page.getByText(title, { exact: true });
+
+  // The title screen is server-rendered and the scenario select is controlled,
+  // so a change that lands before React is listening is simply lost and nothing
+  // retries it. The old code slept a fixed second and hoped. Drive the same
+  // interaction until application state actually agrees instead -- the
+  // assertion below is unchanged, only the interaction is now reliable.
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    await page.waitForTimeout(attempt === 0 ? 1_000 : 500);
+    await scenarioSelect.selectOption(scenarioId).catch(() => undefined);
+    if (await details.isVisible().catch(() => false)) return;
+  }
+
+  // Still nothing. Say what we can see, so a CI-only failure is legible from
+  // the log rather than needing the screenshot artifact.
+  const value = await scenarioSelect.inputValue().catch(() => "<unreadable>");
+  const options = await scenarioSelect
+    .locator("option")
+    .evaluateAll((els) => els.map((el) => el.value))
+    .catch(() => []);
+  const inDom = await details.count().catch(() => -1);
+  const selectCount = await page.locator("select").count().catch(() => -1);
+  await waitVisible(
+    details,
+    `${title} scenario details ` +
+      `(select value "${value}", ${options.length} options, option present: ${options.includes(scenarioId)}, ` +
+      `matching nodes in DOM: ${inDom}, selects on page: ${selectCount})`,
+  );
 }
 
 async function beginWatch(page) {

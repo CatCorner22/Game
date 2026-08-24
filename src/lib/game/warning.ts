@@ -2,6 +2,9 @@ import type { ActorId, CloseCall, Hotline, PlayableId, SatTrack, SensorNet, Trac
 import { chance, clamp, nextInt, pick, round } from "./rng";
 import { log } from "./simLog";
 import { spyCorroboration } from "./spies";
+import { distanceKm } from "./geo";
+import { flightProfile, isMaritimeAzimuth, unresolvedProfile } from "./flight";
+import { postEffects } from "./posts";
 
 const AZ = ["north polar", "Aleutians", "Kamchatka", "Arctic", "Pacific", "Central Asia", "Indian Ocean", "Mediterranean"];
 
@@ -60,10 +63,14 @@ export function sensorsFor(world: World, id: ActorId): SensorNet[] {
 
 export function warningQuality(world: World, id: ActorId): number {
   const nets = sensorsFor(world, id);
-  if (!nets.length) return world.actors[id].warning;
+  // Where you are sitting changes what you can see. Cheyenne is the sensory
+  // organ; a continuity site hears about it second-hand; a convoy in transit
+  // is nearly blind. Only the player's own seat has a post.
+  const post = id === world.playerId ? postEffects(world).warning : 0;
+  if (!nets.length) return clamp(world.actors[id].warning + post, 5, 98);
   const cov = nets.reduce((a, s) => a + s.coverage, 0) / nets.length;
   const fa = nets.reduce((a, s) => a + s.falseAlarm, 0) / nets.length;
-  return clamp(cov - fa * 0.25 + world.actors[id].intel * 0.08, 5, 98);
+  return clamp(cov - fa * 0.25 + world.actors[id].intel * 0.08 + post, 5, 98);
 }
 
 export function hotlineBetween(world: World, a: ActorId, b: ActorId): Hotline | null {
@@ -126,22 +133,37 @@ export function buildTrack(world: World, from: ActorId, kind: TrackKind): SatTra
         : kind === "test"
           ? nextInt(world, 1, 2)
           : nextInt(world, 1, 6);
+  // Hoisted so the flight profile can read it. Draw order is unchanged
+  // (azimuth then time-to-impact), which is what fixed-seed replay depends on.
+  const azimuth = pick(world, AZ);
+  const profile = flightProfileFor(world, from, kind, azimuth);
   return {
     from,
     boosts,
-    azimuth: pick(world, AZ),
-    minutesToImpact:
-      kind === "anomalous"
-        ? nextInt(world, 12, 28)
-        : kind === "attack"
-          ? nextInt(world, 12, 28)
-          : nextInt(world, 8, 30),
+    azimuth,
+    // Still exactly one draw, as before. Only the bounds are geometric now.
+    minutesToImpact: nextInt(world, profile.lo, profile.hi),
     confidence: round(confidence),
     source,
     notified: Boolean(notice) || Boolean(spoofed),
     real,
     kind,
   };
+}
+
+/**
+ * Range from the launching state to the player decides the flight band, except
+ * for a maritime azimuth (boost off the water implies a submarine, so it is
+ * close aboard whatever the launching capital's range happens to be) and
+ * anomalous returns, which have no ballistic interpretation at all.
+ */
+function flightProfileFor(world: World, from: ActorId, kind: TrackKind, azimuth: string) {
+  if (kind === "anomalous") return unresolvedProfile();
+  const origin = world.actors[from];
+  const you = world.actors[world.playerId];
+  if (!origin || !you) return unresolvedProfile();
+  const km = distanceKm(you.lat, you.lon, origin.lat, origin.lon);
+  return flightProfile(km, isMaritimeAzimuth(azimuth));
 }
 
 export function maybeSpawnCloseCall(world: World): CloseCall | null {

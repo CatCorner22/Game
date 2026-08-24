@@ -5,6 +5,7 @@ import { ActionPanel, NuclearConfirm } from "./ActionPanel";
 import { SituationLog } from "./SituationLog";
 import { CloseCallOverlay } from "./CloseCallOverlay";
 import { useGame } from "@/lib/game/store";
+import { trackClockKey, useTrackClock } from "./useTrackClock";
 import { dateLabel, meters } from "@/lib/game/world";
 import { fmtNum } from "@/lib/game/geo";
 import { EscalationLadder, HudButton, HudChip, HudHeader, HudLabel, HudPanel } from "./ui/Hud";
@@ -67,7 +68,7 @@ function NuclearTimeline({ world }: { world: NonNullable<ReturnType<typeof useGa
       ) : null}
       <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto">
         {[...world.nuclearUses].reverse().slice(0, 12).map((u, i) => (
-          <li key={`${u.turn}-${u.actor}-${i}`} className="font-mono text-[10px] text-subtle">
+          <li key={`${u.turn}-${u.actor}-${i}`} className="font-mono text-micro text-subtle">
             T{u.turn}: {world.actors[u.actor].shortName} → {world.actors[u.target].shortName} · {u.rung}
             {u.outcome ? ` · ${u.outcome}` : ""} · {u.arrived != null ? `${u.arrived} arrived` : u.location}
           </li>
@@ -81,6 +82,9 @@ export function WarScreen() {
   const world = useGame((s) => s.world);
   const confirm = useGame((s) => s.confirmNuclear);
   const setScreen = useGame((s) => s.setScreen);
+  const setConferenceOpen = useGame((s) => s.setConferenceOpen);
+  const clockKey = trackClockKey(world);
+  const clock = useTrackClock(clockKey, world?.closeCall?.track.minutesToImpact ?? 0);
   if (!world) return null;
   const m = meters(world);
 
@@ -91,15 +95,28 @@ export function WarScreen() {
         title="War Watch"
         subtitle={`${dateLabel(world)} · ${world.phase}`}
         right={
-          <HudButton variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setScreen("play")}>
-            Command view
-          </HudButton>
+          <>
+            {/* The conference matters most from here, not least. The overlay is
+                mounted at the GameApp level so it renders over the war screen
+                too -- only the way in was missing. */}
+            <HudButton
+              variant="ghost"
+              className="px-2 py-1 text-micro"
+              aria-label="Advisors"
+              onClick={() => setConferenceOpen(true)}
+            >
+              Advisors
+            </HudButton>
+            <HudButton variant="ghost" className="px-2 py-1 text-micro" onClick={() => setScreen("play")}>
+              Command view
+            </HudButton>
+          </>
         }
       />
       <CasualtyTicker world={world} />
       <div className="relative min-h-[45vh] flex-1">
         <GlobeSlot emphasized />
-        {world.closeCall ? <CloseCallOverlay world={world} /> : null}
+        {world.closeCall ? <CloseCallOverlay world={world} clock={clock} /> : null}
         <div className="pointer-events-none absolute top-3 right-3 w-[min(100%,360px)]">
           <RadarScreen world={world} pulse={world.defcon <= 2} />
         </div>

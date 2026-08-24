@@ -17,7 +17,7 @@ export function SpaceWeatherPanel({ world }: { world: World }) {
           {flare}
         </HudChip>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[10px] text-fg">
+      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-micro text-fg">
         <span>Kp {sw.kp}</span>
         <span>
           CME{" "}
@@ -32,7 +32,7 @@ export function SpaceWeatherPanel({ world }: { world: World }) {
       </div>
       <p className="mt-2 text-xs leading-snug text-subtle">{sw.lastNote}</p>
       {hot ? (
-        <p className="mt-1 text-[10px] leading-snug text-danger">
+        <p className="mt-1 text-micro leading-snug text-danger">
           Second phenomenology. INTEL the sun. KILL on yourself islands transformers. POSTURE reads as EMP.
         </p>
       ) : null}

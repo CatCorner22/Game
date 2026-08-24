@@ -121,7 +121,7 @@ export function ActionPanel({ world }: { world: World }) {
       {world.lastRecap && world.turn > 1 ? (
         <HudPanel glow="accent">
           <HudLabel>Last month · recap</HudLabel>
-          <p className="mt-1 font-mono text-[11px] text-accent uppercase">{world.lastRecap.actionLabel}</p>
+          <p className="mt-1 font-mono text-micro text-accent uppercase">{world.lastRecap.actionLabel}</p>
           {world.lastRecap.because ? <p className="mt-1 text-xs text-muted">{world.lastRecap.because}</p> : null}
           <div className="mt-2 flex flex-wrap gap-1.5">
             {world.lastRecap.deltas.length ? (
@@ -135,7 +135,7 @@ export function ActionPanel({ world }: { world: World }) {
               <HudChip>Meters held</HudChip>
             )}
           </div>
-          <p className="mt-2 text-[11px] text-subtle">Now: {world.lastRecap.nextTitle}</p>
+          <p className="mt-2 text-micro text-subtle">Now: {world.lastRecap.nextTitle}</p>
         </HudPanel>
       ) : null}
       {pinned && (pinned.kind === "critical" || pinned.kind === "you") ? (
@@ -148,7 +148,7 @@ export function ActionPanel({ world }: { world: World }) {
         <HudLabel>This month</HudLabel>
         <h2 className="mt-1 font-display text-2xl tracking-[0.06em] text-glow-accent text-fg">{world.event.title}</h2>
         {world.event.because ? (
-          <p className="mt-2 font-mono text-[11px] tracking-wide text-accent uppercase">{world.event.because}</p>
+          <p className="mt-2 font-mono text-micro tracking-wide text-accent uppercase">{world.event.because}</p>
         ) : null}
         <p className="mt-2 text-sm leading-relaxed text-muted">{world.event.body}</p>
         <p className="mt-2 text-xs leading-relaxed text-subtle">{world.event.ignoreLine}</p>
@@ -212,7 +212,7 @@ export function ActionPanel({ world }: { world: World }) {
             >
               {a.label}
               {a.kind === recommended && a.kind !== kind ? (
-                <span className="mt-0.5 block font-mono text-[8px] tracking-wider text-accent uppercase">Staff lean</span>
+                <span className="mt-0.5 block font-mono text-micro tracking-wider text-accent uppercase">Staff lean</span>
               ) : null}
             </HudButton>
           ))}
@@ -267,7 +267,7 @@ export function ActionPanel({ world }: { world: World }) {
                 onClick={() => setPackageMode(id as PackageMode)}
               >
                 <span className="block font-display text-xs tracking-[0.08em] uppercase">{label}</span>
-                <span className="mt-0.5 block text-[10px] leading-snug opacity-80">{hint}</span>
+                <span className="mt-0.5 block text-micro leading-snug opacity-80">{hint}</span>
               </HudButton>
             ))}
           </div>
@@ -305,7 +305,7 @@ export function ActionPanel({ world }: { world: World }) {
             ))}
           </ul>
         ) : null}
-        <p className="mt-2 text-[11px] text-subtle">
+        <p className="mt-2 text-micro text-subtle">
           {warningLine(world)} · winter {winterLabel(world.nuclearWinter)}
         </p>
       </HudPanel>
@@ -320,7 +320,7 @@ export function ActionPanel({ world }: { world: World }) {
         scripts/mobile-game-smoke.mjs asserts Execute sits ABOVE the bottom nav,
         and the parent already reserves padding for exactly that.
       */}
-      <div className="lg:sticky lg:bottom-0 lg:z-10 lg:-mx-4 lg:mt-1 lg:border-t lg:border-accent/15 lg:bg-bg/95 lg:px-4 lg:py-3 lg:backdrop-blur-md">
+      <div className="lg:sticky lg:bottom-0 lg:z-10 lg:-mx-4 lg:mt-1 lg:border-t lg:border-border lg:bg-bg lg:px-4 lg:py-3">
         <HudButton
           variant={kind === "employ" && intensity >= 2 ? "danger" : "active"}
           className="min-h-12 w-full text-lg tracking-[0.22em]"
@@ -346,7 +346,7 @@ export function ActionPanel({ world }: { world: World }) {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex justify-between gap-3 font-mono text-[11px] uppercase">
+    <div className="flex justify-between gap-3 font-mono text-micro uppercase">
       <span className="text-subtle">{k}</span>
       <span className="text-right text-fg">{v}</span>
     </div>
@@ -432,7 +432,7 @@ export function NuclearConfirm() {
               <span className="font-display text-sm tracking-[0.12em]">
                 {p.letter} · {p.short}
               </span>
-              <span className="mt-0.5 block text-[11px] leading-snug opacity-80">{p.yieldLine}</span>
+              <span className="mt-0.5 block text-micro leading-snug opacity-80">{p.yieldLine}</span>
             </HudButton>
           ))}
         </div>
@@ -449,14 +449,14 @@ export function NuclearConfirm() {
               key={id}
               type="button"
               variant={packageMode === id ? "danger" : "default"}
-              className="min-h-10 px-2 text-[11px] uppercase"
+              className="min-h-11 px-2 text-micro uppercase"
               onClick={() => setPackageMode(id)}
             >
               {label}
             </HudButton>
           ))}
         </div>
-        <p className="mt-2 text-[11px] leading-snug text-subtle">
+        <p className="mt-2 text-micro leading-snug text-subtle">
           {packageMode === "single"
             ? "One RV. A thin defense may still catch it. Buses still fail."
             : packageMode === "mirv"
@@ -469,10 +469,10 @@ export function NuclearConfirm() {
             {page.letter} · {page.name}
           </p>
           <p className="mt-1 text-sm leading-relaxed text-muted">{page.body}</p>
-          <p className="mt-2 font-mono text-[11px] text-fg">Yield {page.yieldLine}</p>
-          <p className="font-mono text-[11px] text-muted">Dead {page.deathsLine}</p>
-          <p className="font-mono text-[11px] text-muted">Recall {page.recall}</p>
-          <p className="font-mono text-[11px] text-accent">Winter {page.winter}</p>
+          <p className="mt-2 font-mono text-micro text-fg">Yield {page.yieldLine}</p>
+          <p className="font-mono text-micro text-muted">Dead {page.deathsLine}</p>
+          <p className="font-mono text-micro text-muted">Recall {page.recall}</p>
+          <p className="font-mono text-micro text-accent">Winter {page.winter}</p>
         </HudPanel>
 
         <p className="mt-4 font-mono text-xs tracking-[0.18em] text-accent uppercase">

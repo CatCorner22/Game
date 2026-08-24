@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function FuturisticShell({
@@ -57,9 +57,20 @@ export function GlassPanel({
   );
 }
 
+/**
+ * The section label used throughout the HUD.
+ *
+ * It was `text-accent/80` at `0.28em`, which is why every screen was one colour:
+ * with each label, value, chip and border in the same cyan, nothing on screen
+ * could be more important than anything else. Labels are structure, so they are
+ * now neutral, and cyan is left to mean something.
+ *
+ * Tracking is also tightened, because the mono face is wider than the display
+ * face it replaced and `0.28em` was pushing "NUCLEAR FOOTBALL" onto two lines.
+ */
 export function HudLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p className={cn("font-mono text-[10px] tracking-[0.28em] text-accent/80 uppercase", className)}>
+    <p className={cn("font-mono text-micro leading-tight tracking-[0.08em] text-muted uppercase", className)}>
       {children}
     </p>
   );
@@ -79,7 +90,7 @@ export function HudChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase tabular",
+        "inline-flex items-center rounded-sm border px-2 py-0.5 font-mono text-micro tracking-wider uppercase tabular",
         active && "border-accent/50 bg-accent/15 text-accent glow-accent-sm",
         danger && "border-danger/50 bg-danger/15 text-danger",
         !active && !danger && "border-border/80 bg-surface/60 text-muted",
@@ -146,7 +157,7 @@ export function HudHeader({
           {title}
         </h1>
         {subtitle ? (
-          <p className="truncate font-mono text-[10px] tracking-[0.16em] text-muted uppercase">{subtitle}</p>
+          <p className="truncate font-mono text-micro tracking-[0.16em] text-muted uppercase">{subtitle}</p>
         ) : null}
       </div>
       {right ? <div className="flex shrink-0 items-center gap-1">{right}</div> : null}
@@ -229,7 +240,7 @@ export function ScenarioCard({
         <span className="font-display text-sm tracking-[0.12em] text-fg uppercase">{`${title} · ${era}`}</span>
       </div>
       <p className="mt-1.5 text-xs leading-snug text-muted">{line}</p>
-      <p className="mt-2 font-mono text-[9px] tracking-wider text-subtle uppercase">
+      <p className="mt-2 font-mono text-micro tracking-wider text-subtle uppercase">
         {seat ? `${seat} · ` : ""}
         {difficulty}
       </p>
@@ -263,7 +274,7 @@ export function EscalationLadder({
           />
         ))}
       </div>
-      <p className="mt-2 font-mono text-[10px] tracking-wider text-muted uppercase">
+      <p className="mt-2 font-mono text-micro tracking-wider text-muted uppercase">
         {phase} · ALERT {defcon} · winter {winter}
       </p>
     </HudPanel>
@@ -318,7 +329,7 @@ export function HudMeter({
   return (
     <div className="mb-3">
       <div className="flex items-baseline justify-between gap-2">
-        <HudLabel className="tracking-[0.18em]">{label}</HudLabel>
+        <HudLabel className="tracking-[0.1em]">{label}</HudLabel>
         <span className={cn("font-mono text-sm tabular", hot ? "text-danger text-glow-danger" : "text-accent")}>
           {alertScale ? value : Math.round(value)}
         </span>
@@ -332,7 +343,34 @@ export function HudMeter({
           style={{ width: `${Math.max(0, Math.min(100, fill))}%` }}
         />
       </div>
-      {help ? <p className="mt-1 text-xs leading-snug text-subtle">{help}</p> : null}
+      {help ? <MeterHelp label={label} help={help} /> : null}
     </div>
+  );
+}
+
+/**
+ * Meter help, collapsed to one line until asked for.
+ *
+ * The design intent ("every meter exposes the variables beneath it") is right,
+ * but rendering all of it permanently meant eight meters filled the entire
+ * status column with three to four lines of prose each — the left rail was
+ * mostly tutorial. Clamping keeps the information one tap away instead of
+ * deleting it.
+ *
+ * The accessible name is "About <meter>", which is unique per meter, so this
+ * never collides with the exact-name controls the mobile smoke test locates.
+ */
+function MeterHelp({ label, help }: { label: string; help: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button
+      type="button"
+      aria-label={`About ${label}`}
+      aria-expanded={open}
+      onClick={() => setOpen((v) => !v)}
+      className="mt-1 block w-full cursor-pointer text-left text-micro leading-snug text-subtle transition-colors hover:text-muted"
+    >
+      <span className={open ? "" : "line-clamp-1"}>{help}</span>
+    </button>
   );
 }

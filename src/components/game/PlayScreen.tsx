@@ -11,6 +11,8 @@ import { ObjectivesPanel } from "./ObjectivesPanel";
 import { HotlinePanel } from "./HotlinePanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { C2Panel } from "./C2Panel";
+import { CommandPostPanel } from "./CommandPostPanel";
+import { LeadershipPanel } from "./LeadershipPanel";
 import { PatrolPanel } from "./PatrolPanel";
 import { DiplomacyPanel } from "./DiplomacyPanel";
 import { SpaceWeatherPanel } from "./SpaceWeatherPanel";
@@ -18,6 +20,8 @@ import { StrategicSystemsPanel } from "./StrategicSystemsPanel";
 import { weatherHostile } from "@/lib/game/spaceWeather";
 import { GLOSSARY } from "@/lib/game/copy";
 import { CloseCallOverlay } from "./CloseCallOverlay";
+import { trackClockKey, useTrackClock } from "./useTrackClock";
+import { formatCountdown } from "@/lib/game/flight";
 import { updateAtmosphere } from "@/lib/game/audio";
 import { resetToTitle, useGame } from "@/lib/game/store";
 import { dateLabel, meters } from "@/lib/game/world";
@@ -67,11 +71,13 @@ export function PlayScreen() {
   const selected = useGame((s) => s.selected);
   const glossaryOpen = useGame((s) => s.glossaryOpen);
   const toggleGlossary = useGame((s) => s.toggleGlossary);
+  const setConferenceOpen = useGame((s) => s.setConferenceOpen);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
   const [muted, setMutedLocal] = useState(() => loadSettings().muted);
+  const [quitArmed, setQuitArmed] = useState(false);
 
   useEffect(() => {
     if (!world) return;
@@ -79,9 +85,19 @@ export function PlayScreen() {
     updateAtmosphere(world.defcon, m.risk);
   }, [world?.defcon, world?.globalRisk, world?.turn]);
 
+  // The live decision clock for the current inbound track. It deliberately
+  // lives here rather than on the World: `forecast()` replays `resolveTurn`
+  // twice per render and replay codes must reproduce a run from (seed,
+  // actions), so nothing that moves with wall time may touch world state.
+  const clockKey = trackClockKey(world);
+  const clock = useTrackClock(clockKey, world?.closeCall?.track.minutesToImpact ?? 0);
+
+  // Keyed on the track's identity. This used to depend on `minutesToImpact`
+  // and `confidence` directly, which slams the radar shut on every change —
+  // fatal once a clock is attached to the same track.
   useEffect(() => {
     if (world?.closeCall) setRadarOpen(false);
-  }, [world?.closeCall?.track.minutesToImpact, world?.closeCall?.track.confidence]);
+  }, [clockKey]);
 
   if (!world) return null;
   const m = meters(world);
@@ -101,6 +117,17 @@ export function PlayScreen() {
   function returnToMenu() {
     setCommandOpen(false);
     resetToTitle();
+  }
+
+  // Desktop only. `Menu` sat in a row of six identical ghost pills next to Mute
+  // and Glossary and abandoned the run on a single click with no warning.
+  function quitFromDesktop() {
+    if (!quitArmed) {
+      setQuitArmed(true);
+      return;
+    }
+    setQuitArmed(false);
+    returnToMenu();
   }
 
   // `lg:h-dvh` bounds this flex container so the three columns can finally scroll
@@ -144,23 +171,37 @@ export function PlayScreen() {
                 BROKEN ARROW
               </HudChip>
             ) : null}
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
               {muted ? "Unmute" : "Mute"}
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={openSettings}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={openSettings}>
               Settings
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={toggleGlossary}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={toggleGlossary}>
               Glossary
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={() => setScreen("briefing")}>
+            <HudButton
+              variant="ghost"
+              className="hidden px-2 py-1 text-micro lg:inline-flex"
+              onClick={() => setConferenceOpen(true)}
+              aria-label="Advisors"
+            >
+              Advisors
+            </HudButton>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={() => setScreen("briefing")}>
               Brief
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={() => setHelpOpen(true)}>
+            <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={() => setHelpOpen(true)}>
               Keys
             </HudButton>
-            <HudButton variant="ghost" className="hidden px-2 py-1 text-[10px] lg:inline-flex" onClick={returnToMenu}>
-              Menu
+            <HudButton
+              variant={quitArmed ? "danger" : "ghost"}
+              className="hidden px-2 py-1 text-micro lg:inline-flex"
+              onClick={quitFromDesktop}
+              onBlur={() => setQuitArmed(false)}
+              aria-label={quitArmed ? "Confirm quit run" : "Quit run"}
+            >
+              {quitArmed ? "Confirm?" : "Quit run"}
             </HudButton>
             <HudButton
               variant="ghost"
@@ -184,6 +225,14 @@ export function PlayScreen() {
           </HudButton>
           <HudButton variant="default" className="min-h-12" onClick={() => { setCommandOpen(false); setScreen("briefing"); }}>
             Briefing
+          </HudButton>
+          <HudButton
+            variant="default"
+            className="min-h-12"
+            aria-label="Advisors"
+            onClick={() => { setCommandOpen(false); setConferenceOpen(true); }}
+          >
+            Advisors
           </HudButton>
           <HudButton variant="default" className="min-h-12" aria-label="Main menu" onClick={returnToMenu}>
             Main menu
@@ -238,6 +287,8 @@ export function PlayScreen() {
             </p>
           </HudPanel>
           <C2Panel world={world} />
+          <CommandPostPanel world={world} />
+          <LeadershipPanel world={world} />
           <StrategicSystemsPanel world={world} />
           <SpaceWeatherPanel world={world} />
           <PatrolPanel world={world} />
@@ -259,19 +310,30 @@ export function PlayScreen() {
         >
           <GlobeSlot />
           <div className="hidden lg:block">
-            {world.closeCall ? (
-              <CloseCallOverlay world={world} />
-            ) : (
-              <div className="pointer-events-none absolute top-3 right-3 w-[min(38vw,320px)]">
-                <RadarScreen world={world} pulse={world.defcon <= 2} />
-              </div>
-            )}
+            {/* The scope stays mounted during a close call. It used to be a
+                ternary against the alert panel, which meant the radar vanished
+                at exactly the moment it mattered. The alert takes the top of
+                the map, the scope drops to the bottom corner to clear it. */}
+            {world.closeCall ? <CloseCallOverlay world={world} clock={clock} /> : null}
+            <div
+              className={cn(
+                "pointer-events-none absolute right-3 z-10 w-[min(38vw,320px)]",
+                world.closeCall ? "bottom-3" : "top-3",
+              )}
+            >
+              <RadarScreen world={world} pulse={world.defcon <= 2} clock={clock} />
+            </div>
           </div>
           <div className="lg:hidden">
             {!radarOpen && world.closeCall ? (
               <div className="absolute inset-x-3 top-3 z-20 rounded-lg border border-danger bg-bg/92 p-4 shadow-[0_0_30px_rgb(180_35_24/0.25)] backdrop-blur-sm">
-                <p className="font-mono text-[10px] tracking-[0.18em] text-danger">Close call · unverified track</p>
-                <p className="mt-1 font-display text-3xl tabular text-fg">{world.closeCall.track.minutesToImpact} min</p>
+                <p className="font-mono text-micro tracking-[0.18em] text-danger">Close call · unverified track</p>
+                <p className="mt-1 font-display text-3xl tabular text-fg">
+                  {clock ? formatCountdown(clock.remainingSec) : `${world.closeCall.track.minutesToImpact}:00`}
+                  <span className="ml-2 font-mono text-xs text-muted">
+                    {clock ? `${Math.ceil(clock.minutesLeft)} min` : "min"}
+                  </span>
+                </p>
                 <p className="mt-2 text-xs leading-relaxed text-muted">
                   Treat confidence and corroboration as separate variables. Open radar for the full evidence view.
                 </p>
@@ -284,7 +346,7 @@ export function PlayScreen() {
                 aria-label="Radar evidence view"
               >
                 <div className="mb-2 flex items-center justify-between gap-3 px-1">
-                  <p className="font-mono text-[10px] tracking-wider text-accent">Radar evidence view</p>
+                  <p className="font-mono text-micro tracking-wider text-accent">Radar evidence view</p>
                   <button
                     type="button"
                     aria-label="Close"
@@ -294,7 +356,7 @@ export function PlayScreen() {
                     Close
                   </button>
                 </div>
-                <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} />
+                <RadarScreen world={world} pulse={Boolean(world.closeCall) || world.defcon <= 2} clock={clock} />
               </div>
             ) : null}
             <button
@@ -308,7 +370,7 @@ export function PlayScreen() {
           </div>
           <div className="pointer-events-none absolute bottom-3 left-3 hidden max-w-[220px] lg:block">
             <EscalationLadder phase={world.phase} defcon={world.defcon} winter={world.winterStage} />
-            <p className="mt-2 font-mono text-[10px] tracking-[0.18em] text-accent/60 uppercase">
+            <p className="mt-2 font-mono text-micro tracking-[0.18em] text-accent/60 uppercase">
               Drag to orbit · click a marker
             </p>
           </div>
@@ -316,7 +378,9 @@ export function PlayScreen() {
 
         <aside
           className={cn(
-            "overflow-y-auto border-accent/10 p-4 lg:block lg:border-l",
+            // `lg:pb-20` keeps the last panel scrollable clear of the pinned
+            // Execute footer, which otherwise sits on top of it.
+            "overflow-y-auto border-border p-4 lg:block lg:border-l lg:pb-20",
             tab === "act" ? "block" : "hidden",
           )}
         >

@@ -115,6 +115,13 @@ export interface PlayerAction {
   book?: "A" | "B" | "C" | "D";
   /** RV / decoy package for nuclear employ. */
   packageMode?: PackageMode;
+  /**
+   * Command post to relocate to, if any. Rides alongside the turn's action
+   * rather than replacing it: relocating does not stop you governing, it makes
+   * you briefly blind and permanently visible. Recorded in `actionHistory`, so
+   * it replays from a code like every other choice.
+   */
+  relocateTo?: string;
 }
 
 export type DoctrineId =

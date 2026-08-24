@@ -76,7 +76,7 @@ export function EndScreen() {
         />
         {timeline[timelineIdx] ? (
           <div className="mt-3">
-            <p className="font-mono text-[10px] text-muted">
+            <p className="font-mono text-micro text-muted">
               {timeline[timelineIdx].date} · turn {timeline[timelineIdx].turn}
             </p>
             <p className="mt-1 text-sm text-fg">{timeline[timelineIdx].text}</p>
@@ -89,7 +89,7 @@ export function EndScreen() {
         <HudButton variant="accent" className="min-h-11 w-full text-xs uppercase" onClick={() => void copyReplay()}>
           {copied ? "Replay code copied" : "Copy replay code"}
         </HudButton>
-        <p className="mt-2 break-all font-mono text-[9px] text-subtle">{replayCode.slice(0, 48)}…</p>
+        <p className="mt-2 break-all font-mono text-micro text-subtle">{replayCode.slice(0, 48)}…</p>
         <HudButton variant="ghost" className="mt-2 min-h-11 w-full text-xs uppercase" onClick={() => startReplay(replayCode)}>
           Watch this replay
         </HudButton>

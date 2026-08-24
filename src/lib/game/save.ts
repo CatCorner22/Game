@@ -5,6 +5,9 @@ import { defaultHotlines, defaultSensors } from "./warning";
 import { makeOfficer, asPlayable } from "./command";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
+import { standingPost } from "./posts";
+import { DEFAULT_LEADER, assignLeaders } from "./leaders";
+import { PLAYABLE_IDS } from "./types";
 import { saveWorldToSlot } from "./slots";
 import { ensureTreaties } from "./treaties";
 import { quietWeather } from "./spaceWeather";
@@ -15,6 +18,10 @@ import { ensureDecisions } from "./decisions";
 const KEY = "threshold.save.v2";
 const BACKUP = "threshold.save.v2.bak";
 const SAVE_VERSION = 2;
+
+function seatOfWorld(world: World) {
+  return (PLAYABLE_IDS as string[]).includes(world.playerId) ? (world.playerId as (typeof PLAYABLE_IDS)[number]) : "US";
+}
 
 export function migrateWorld(world: World): World {
   if (!world.playerId) world.playerId = "US";
@@ -97,6 +104,19 @@ export function migrateWorld(world: World): World {
   if (world.doctrinePending === undefined) world.doctrinePending = false;
   if (!world.doctrineTaken) world.doctrineTaken = [];
   if (!world.actionHistory) world.actionHistory = [];
+  if (!world.commandPost) world.commandPost = standingPost(seatOfWorld(world)).id;
+  if (world.relocation === undefined) world.relocation = null;
+  if (world.relocation && world.relocation.startedTurn === undefined) {
+    world.relocation.startedTurn = -1;
+  }
+  if (world.postureSignature === undefined) world.postureSignature = 0;
+  if (world.conferenceRung === undefined) world.conferenceRung = 0;
+  if (!world.advisorTrust) world.advisorTrust = {};
+  if (!world.overruled) world.overruled = [];
+  if (!world.addressStyle) world.addressStyle = "neutral";
+  if (!world.leaderArchetype) world.leaderArchetype = DEFAULT_LEADER;
+  if (!world.leadersKnown) world.leadersKnown = [];
+  if (!world.leaders) assignLeaders(world);
   if (world.lastAction === undefined) world.lastAction = null;
   if (world.lastDecisionKey === undefined) world.lastDecisionKey = null;
   if (!world.recentDecisionKeys) world.recentDecisionKeys = [];

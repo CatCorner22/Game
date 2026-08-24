@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
-import type { Actor, ActorId, World } from "@/lib/game/types";
+import type { Actor, World } from "@/lib/game/types";
 import { alongTrack, bearingDeg, distanceKm, fmtBearing, fmtLatLon } from "@/lib/game/geo";
+import { flightProfile, formatCountdown, isMaritimeAzimuth } from "@/lib/game/flight";
+import type { TrackClock } from "./useTrackClock";
 
 const MAX_KM = 14000;
 
@@ -13,6 +15,13 @@ type Track = {
   source: string;
   confidence: number;
   ttiMin: number;
+  /** Flight profile label, e.g. "ICBM · minimum-energy". */
+  profile: string;
+  /**
+   * 0..1 along the arc when the sim already knows it (missiles in flight).
+   * Null on the close-call track, which is driven by the live wall clock.
+   */
+  progress: number | null;
   confirmed: boolean;
   kind: string;
 };
@@ -23,6 +32,7 @@ function tracksOf(world: World): Track[] {
   if (world.closeCall) {
     const t = world.closeCall.track;
     const from = world.actors[t.from];
+    const km = distanceKm(you.lat, you.lon, from.lat, from.lon);
     out.push({
       id: "cc",
       label: t.kind === "attack" ? "INBOUND" : t.kind === "anomalous" ? "ANOMALOUS" : t.kind.toUpperCase(),
@@ -32,6 +42,9 @@ function tracksOf(world: World): Track[] {
       source: t.source,
       confidence: t.confidence,
       ttiMin: t.minutesToImpact,
+      profile:
+        t.kind === "anomalous" ? "unresolved phenomenology" : flightProfile(km, isMaritimeAzimuth(t.azimuth)).label,
+      progress: null,
       confirmed: t.real && t.kind === "attack",
       kind: t.kind,
     });
@@ -40,6 +53,9 @@ function tracksOf(world: World): Track[] {
     const from = world.actors[m.from];
     const to = world.actors[m.to];
     if (!from || !to) continue;
+    // The nominal flight for this geometry, rather than the flat 22 minutes
+    // every missile used to report regardless of where it came from.
+    const nominal = flightProfile(distanceKm(from.lat, from.lon, to.lat, to.lon)).hi;
     out.push({
       id: m.id,
       label: m.kind === "detonation" ? "DET" : "TRACK",
@@ -48,7 +64,9 @@ function tracksOf(world: World): Track[] {
       boosts: 1,
       source: "force report",
       confidence: 92,
-      ttiMin: Math.max(1, Math.round((1 - m.progress) * 22)),
+      ttiMin: Math.max(1, Math.round((1 - m.progress) * nominal)),
+      profile: flightProfile(distanceKm(from.lat, from.lon, to.lat, to.lon)).label,
+      progress: m.progress,
       confirmed: true,
       kind: "missile",
     });
@@ -62,12 +80,18 @@ function polar(cx: number, cy: number, km: number, bearing: number, rMax: number
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean }) {
+export function RadarScreen({ world, pulse, clock }: { world: World; pulse?: boolean; clock?: TrackClock | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const tracks = tracksOf(world);
   const you = world.actors[world.playerId];
   const live = tracks[0] ?? null;
+
+  // The clock ticks ~8x/second. Feeding it through effect deps would tear down
+  // and restart the animation frame loop every tick, so the loop reads it off a
+  // ref that render keeps current instead.
+  const clockRef = useRef<TrackClock | null | undefined>(clock);
+  clockRef.current = clock;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -135,21 +159,21 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
       ctx.lineTo(cx + Math.cos(sweepAng - Math.PI / 2) * rMax, cy + Math.sin(sweepAng - Math.PI / 2) * rMax);
       ctx.stroke();
 
-      ctx.fillStyle = "#00e5ff";
+      ctx.fillStyle = "#22d3ee";
       ctx.beginPath();
       ctx.arc(cx, cy, 3, 0, Math.PI * 2);
       ctx.fill();
-
-      const elapsed = (now - t0) / 1000;
 
       for (const tr of tracks) {
         const originKm = distanceKm(you.lat, you.lon, tr.from.lat, tr.from.lon);
         const destKm = distanceKm(you.lat, you.lon, tr.to.lat, tr.to.lon);
         const bFrom = bearingDeg(you.lat, you.lon, tr.from.lat, tr.from.lon);
         const bTo = bearingDeg(you.lat, you.lon, tr.to.lat, tr.to.lon);
-        const duration = Math.max(8, tr.ttiMin * 0.55);
-        const frac = Math.min(0.92, (elapsed % (duration + 4)) / duration);
-        const pos = alongTrack(tr.from.lat, tr.from.lon, tr.to.lat, tr.to.lon, frac);
+        // The close-call track rides the real countdown; missiles ride the
+        // progress the sim already gave them. Neither loops decoratively any
+        // more — the marker actually reaches the target when the clock runs out.
+        const frac = tr.progress ?? clockRef.current?.fraction ?? 0;
+        const pos = alongTrack(tr.from.lat, tr.from.lon, tr.to.lat, tr.to.lon, Math.min(1, frac));
         const hereKm = distanceKm(you.lat, you.lon, pos.lat, pos.lon);
         const hereB = bearingDeg(you.lat, you.lon, pos.lat, pos.lon);
 
@@ -172,12 +196,12 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
         const d = polar(cx, cy, destKm, bTo, rMax);
         const cur = polar(cx, cy, hereKm, hereB, rMax);
 
-        ctx.fillStyle = "#00e5ff";
+        ctx.fillStyle = "#22d3ee";
         ctx.beginPath();
         ctx.arc(o.x, o.y, 3.2, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = "#ff3366";
+        ctx.strokeStyle = "#f2495f";
         ctx.beginPath();
         ctx.moveTo(d.x - 5, d.y - 5);
         ctx.lineTo(d.x + 5, d.y + 5);
@@ -185,11 +209,11 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
         ctx.lineTo(d.x - 5, d.y + 5);
         ctx.stroke();
 
-        const pulse = 2.4 + Math.sin(now / 180) * 1.2;
-        ctx.fillStyle = tr.confirmed ? "#ff3366" : "#00e5ff";
+        const blip = 2.4 + Math.sin(now / 180) * 1.2;
+        ctx.fillStyle = tr.confirmed ? "#f2495f" : "#22d3ee";
         for (let i = 0; i < Math.min(tr.boosts, 6); i++) {
           ctx.beginPath();
-          ctx.arc(cur.x + i * 3.5 - 4, cur.y, pulse, 0, Math.PI * 2);
+          ctx.arc(cur.x + i * 3.5 - 4, cur.y, blip, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -203,44 +227,63 @@ export function RadarScreen({ world, pulse }: { world: World; pulse?: boolean })
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [world.turn, world.closeCall, world.missiles, world.playerId]);
+    // `pulse` was missing here and the loop closed over a stale value, so the
+    // sweep never sped up when DEFCON dropped.
+  }, [world.turn, world.closeCall, world.missiles, world.playerId, pulse]);
 
   return (
     <div className="pointer-events-none flex flex-col overflow-hidden rounded-lg glass-panel neon-border-accent">
       <div className="flex items-center justify-between px-2 py-1">
-        <p className="font-mono text-[10px] tracking-[0.2em] text-accent uppercase">
+        <p className="font-mono text-micro tracking-[0.2em] text-accent uppercase">
           {live ? live.source : you.warning >= 70 ? "SBIRS / BMEWS" : "national technical means"}
         </p>
-        <p className="font-mono text-[10px] tracking-[0.16em] text-accent/80 uppercase">
+        <p className="font-mono text-micro tracking-[0.16em] text-accent/80 uppercase">
           {live ? "LIVE TRACK" : "SCOPE QUIET"}
         </p>
       </div>
       <div ref={wrapRef} className="relative h-[220px] w-full sm:h-[240px]">
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
       </div>
-      <TrackReadout world={world} tracks={tracks} you={you} />
+      <TrackReadout world={world} tracks={tracks} you={you} clock={clock} />
     </div>
   );
 }
 
-function TrackReadout({ world, tracks, you }: { world: World; tracks: Track[]; you: Actor }) {
+function TrackReadout({
+  world,
+  tracks,
+  you,
+  clock,
+}: {
+  world: World;
+  tracks: Track[];
+  you: Actor;
+  clock?: TrackClock | null;
+}) {
   const live = tracks[0];
   if (!live) {
     return (
-      <p className="px-2 pb-2 font-mono text-[10px] leading-relaxed text-muted">
+      <p className="px-2 pb-2 font-mono text-micro leading-relaxed text-muted">
         Center {you.shortName} {fmtLatLon(you.lat, you.lon)}. No boosts. Sweep is infrared + radar fusion.
       </p>
     );
   }
   const km = distanceKm(live.from.lat, live.from.lon, live.to.lat, live.to.lon);
   const brg = bearingDeg(you.lat, you.lon, live.from.lat, live.from.lon);
-  const remaining = live.ttiMin;
+  // Live where a clock is running on this track; the static budget otherwise.
+  const tti =
+    live.progress === null && clock
+      ? clock.expired
+        ? "IMPACT"
+        : `${formatCountdown(clock.remainingSec)} · ${Math.ceil(clock.minutesLeft)} min`
+      : `~${live.ttiMin} min`;
   return (
-    <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pb-2 font-mono text-[10px] uppercase text-muted">
+    <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-2 pb-2 font-mono text-micro uppercase text-muted">
       <Row k="Origin" v={`${live.from.shortName} ${fmtLatLon(live.from.lat, live.from.lon)}`} />
       <Row k="Impact" v={`${live.to.shortName} ${fmtLatLon(live.to.lat, live.to.lon)}`} />
       <Row k="Azimuth" v={`${fmtBearing(brg)} · ${Math.round(km)} km`} />
-      <Row k="TTI" v={`~${remaining} min`} />
+      <Row k="Profile" v={live.profile} />
+      <Row k="TTI" v={tti} />
       <Row k="Boosts" v={String(live.boosts)} />
       <Row k="Conf" v={`${live.confidence}% ${live.kind}`} />
       {world.closeCall?.track.notified ? <Row k="Notice" v="on file" /> : <Row k="Notice" v="none" />}
@@ -256,12 +299,4 @@ function Row({ k, v }: { k: string; v: string }) {
       <dd className="truncate text-right text-fg">{v}</dd>
     </>
   );
-}
-
-export function radarHasTracks(world: World) {
-  return Boolean(world.closeCall) || world.missiles.length > 0;
-}
-
-export function ownerOf(_id: ActorId) {
-  return _id;
 }

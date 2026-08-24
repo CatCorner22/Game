@@ -18,7 +18,7 @@ export function Briefing() {
 
       {page === 0 ? (
         <aside className="mt-6 rounded-lg border border-accent/25 bg-surface p-4">
-          <p className="font-mono text-[10px] tracking-[0.22em] text-accent uppercase">Content and safety note</p>
+          <p className="font-mono text-micro tracking-[0.22em] text-accent uppercase">Content and safety note</p>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             THRESHOLD explores mass-harm crises, institutional failure, and humanitarian consequences through abstract,
             non-graphic mechanics. It does not model real operational weapon, agent, targeting, or trigger procedures.

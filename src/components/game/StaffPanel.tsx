@@ -16,7 +16,7 @@ export function StaffPanel({ world }: { world: World }) {
   return (
     <HudPanel className="mt-1">
       <HudLabel>Staff split · not an order</HudLabel>
-      <p className="mt-1 text-[10px] text-subtle">
+      <p className="mt-1 text-micro text-subtle">
         Desks disagree. Tap a line to load that move. Majority leans {majority.toUpperCase()}.
       </p>
       <ul className="mt-2 space-y-1.5">
@@ -33,17 +33,17 @@ export function StaffPanel({ world }: { world: World }) {
               }}
             >
               <span className="flex items-baseline justify-between gap-2">
-                <span className="font-mono text-[10px] tracking-wider text-accent uppercase">{a.desk}</span>
+                <span className="font-mono text-micro tracking-wider text-accent uppercase">{a.desk}</span>
                 <span
                   className={cn(
-                    "font-mono text-[9px] uppercase",
+                    "font-mono text-micro uppercase",
                     a.tone === "employ" ? "text-danger" : a.tone === "generate" ? "text-accent" : "text-muted",
                   )}
                 >
                   {a.kind} {a.kind !== "hold" ? a.intensity : ""}
                 </span>
               </span>
-              <span className="mt-1 block text-[11px] leading-snug text-fg normal-case tracking-normal">{a.line}</span>
+              <span className="mt-1 block text-micro leading-snug text-fg normal-case tracking-normal">{a.line}</span>
             </HudButton>
           </li>
         ))}

@@ -23,7 +23,7 @@ export function ObjectivesPanel({ world }: { world: World }) {
                 {o.met ? (
                   <span
                     className={cn(
-                      "font-mono text-[10px] tracking-wider uppercase",
+                      "font-mono text-micro tracking-wider uppercase",
                       o.tone === "hazard" ? "text-danger" : "text-olive",
                     )}
                   >
@@ -49,7 +49,7 @@ export function ObjectivesPanel({ world }: { world: World }) {
                   style={{ width: `${o.progress}%` }}
                 />
               </div>
-              <p className="mt-1 text-[10px] leading-snug text-subtle">{o.detail}</p>
+              <p className="mt-1 text-micro leading-snug text-subtle">{o.detail}</p>
             </HudPanel>
           </li>
         ))}

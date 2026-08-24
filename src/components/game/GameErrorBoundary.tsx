@@ -27,7 +27,7 @@ export class GameErrorBoundary extends Component<Props, State> {
         <p className="font-mono text-xs tracking-wider text-danger uppercase">Watch fault</p>
         <h1 className="mt-3 font-display text-4xl text-fg">Command room exception</h1>
         <p className="mt-4 text-sm leading-relaxed text-muted">{this.state.error.message}</p>
-        <pre className="mt-4 max-h-40 overflow-auto rounded-md bg-elevated p-3 font-mono text-[10px] text-subtle">
+        <pre className="mt-4 max-h-40 overflow-auto rounded-md bg-elevated p-3 font-mono text-micro text-subtle">
           {this.state.error.stack?.split("\n").slice(0, 8).join("\n")}
         </pre>
         <button
