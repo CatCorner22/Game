@@ -49,7 +49,12 @@ export function CloseCallOverlay({ world, clock }: { world: World; clock?: Track
         !reduced && urgent && "animate-pulse-glow",
       )}
     >
-      <GlassPanel glow="danger" className="rounded-xl px-6 py-4 backdrop-blur-xl">
+      {/* The root is `pointer-events-none` so the globe stays draggable under
+          the readout, and `pointer-events` inherits -- so every control inside
+          this panel was inert. That was harmless while the panel was pure
+          readout; adding a "Convene the warning conference" button to it made
+          it a bug, and one that presence-in-the-DOM checks do not catch. */}
+      <GlassPanel glow="danger" className="pointer-events-auto rounded-xl px-6 py-4 backdrop-blur-xl">
         <HudLabel className="text-danger">
           {anomalous ? "Close call · unverified return" : "Close call · inbound track"}
         </HudLabel>

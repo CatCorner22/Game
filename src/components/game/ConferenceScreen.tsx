@@ -13,12 +13,12 @@ import {
   RUNGS,
   advisorStance,
   clockSpent,
+  signatureSpent,
   participants,
   roomConsensus,
   unreachable,
 } from "@/lib/game/advisors/conference";
 import {
-  type ConferenceLine,
   openingLine,
   recommendationLine,
   replyLine,
@@ -26,24 +26,10 @@ import {
   tileStatus,
 } from "@/lib/game/advisors/script";
 import { cn } from "@/lib/utils";
+import { CALLS, type Turn, callKey, rememberCall } from "./callMemory";
 import { trackClockKey, useTrackClock } from "./useTrackClock";
 import { elaborate, modelKnownUnavailable } from "@/lib/advisor/client";
 
-interface Turn extends ConferenceLine {
-  key: string;
-  mine?: boolean;
-  /**
-   * The player's question, when this line is an answer to one.
-   *
-   * `elaborate` has always accepted a `playerMessage` and the route has always
-   * handled it -- there is even a test asserting player text arrives as user
-   * content and never as a system instruction. But the one call site passed
-   * three arguments, so the question was dropped on the floor: even with a key
-   * configured, the model re-voiced a regex-routed scripted answer without ever
-   * being shown what was asked. Carrying it on the reply is what closes that.
-   */
-  askedAbout?: string;
-}
 
 /**
  * The room.
@@ -72,8 +58,16 @@ export function ConferenceScreen() {
   const chooseDecision = useGame((s) => s.chooseDecision);
   const setAddressStyle = useGame((s) => s.setAddressStyle);
 
+  // Read once, at mount, from whatever the last visit to this same call left
+  // behind. `clockKey` and `rung` are derived below but only from `world`, so
+  // computing the key here is safe and keeps the restore in the initialiser
+  // rather than in an effect that would flash an empty room first.
+  const restored = world
+    ? CALLS.get(callKey(trackClockKey(world), world.turn, world.conferenceRung ?? 0))
+    : undefined;
+
   const [draft, setDraft] = useState("");
-  const [said, setSaid] = useState<Turn[]>([]);
+  const [said, setSaid] = useState<Turn[]>(restored?.said ?? []);
   const [focused, setFocused] = useState<string | null>(null);
   /**
    * Which half of the room a phone is showing.
@@ -90,7 +84,7 @@ export function ConferenceScreen() {
   // Model-rewritten wording, keyed by line. The scripted line renders first and
   // is replaced in place if a model is configured, so the call is never waiting
   // on the network to be usable.
-  const [voiced, setVoiced] = useState<Record<string, string>>({});
+  const [voiced, setVoiced] = useState<Record<string, string>>(restored?.voiced ?? {});
   const [modelOn, setModelOn] = useState(false);
   /**
    * Whether we know the model is off, as opposed to not yet knowing.
@@ -102,7 +96,7 @@ export function ConferenceScreen() {
    * told about.
    */
   const [modelOff, setModelOff] = useState(false);
-  const attemptedRef = useRef<Set<string>>(new Set());
+  const attemptedRef = useRef<Set<string>>(new Set(restored?.attempted ?? []));
   const railRef = useRef<HTMLDivElement>(null);
 
   const rung = (world?.conferenceRung ?? 0) as 0 | 1 | 2 | 3;
@@ -154,6 +148,11 @@ export function ConferenceScreen() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      // Something layered above the room already consumed this -- the shortcuts
+      // overlay claims Escape while it is open. Leaving the call as well would
+      // make one keypress do two things, the second of which throws away the
+      // conversation.
+      if (e.defaultPrevented) return;
       const el = document.activeElement;
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return;
       setOpen(false);
@@ -168,12 +167,31 @@ export function ConferenceScreen() {
   // declaration order, so with this second it cleared `attemptedRef` on the
   // very render the elaboration effect had just populated it, and every line
   // was requested twice. Ordering is the fix, not a guard.
+  // Fires on a change of call identity, not on mount: `useEffect` runs after the
+  // first render too, and blanket-clearing there would throw away the transcript
+  // the initialisers just restored. The ref carries the identity the current
+  // state belongs to, so the first run is a no-op and a genuine change still
+  // clears.
+  const belongsToRef = useRef<string>(callKey(clockKey, world?.turn ?? 0, rung));
   useEffect(() => {
+    const key = callKey(clockKey, world?.turn ?? 0, rung);
+    if (belongsToRef.current === key) return;
+    belongsToRef.current = key;
     setSaid([]);
     setDraft("");
     setVoiced({});
     attemptedRef.current = new Set();
-  }, [clockKey, rung]);
+  }, [clockKey, rung, world?.turn]);
+
+  // Write back on every change, so walking out mid-conversation keeps it.
+  useEffect(() => {
+    if (!world) return;
+    rememberCall(callKey(clockKey, world.turn, rung), {
+      said,
+      voiced,
+      attempted: [...attemptedRef.current],
+    });
+  }, [world, clockKey, rung, said, voiced]);
 
   // Hand each new advisor line to the server to be re-voiced. Failure, a
   // timeout, and "no key configured" all resolve to the scripted line, so this
@@ -344,21 +362,30 @@ export function ConferenceScreen() {
       ) : null}
 
       {rung === 0 ? (
-        <ConveneGate onConvene={conveneAt} hasClock={remaining !== null} body={body.name} />
+        <ConveneGate
+          onConvene={conveneAt}
+          hasClock={remaining !== null}
+          body={body.name}
+          seats={[1, 2, 3].map((r) => participants(world, r as 1 | 2 | 3).length)}
+          post={post.short}
+        />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           {/* ── Participant grid ──────────────────────────────────── */}
-          {/* `shrink-0` with no height cap meant nine tiles at US rung three
-              pushed the transcript, the composer and the decide tray off a
-              667px screen entirely -- the room was unusable on a phone at
-              exactly the rung you convene it for. Capped to roughly a third of
-              the viewport on mobile and allowed to scroll; unchanged on
-              desktop, where the column is a fixed 42% and has the room. */}
+          {/* On a phone this is one of two panes and takes the height the
+              transcript is not using; on desktop it is a fixed 42% column
+              beside the transcript, which is the only width at which both are
+              readable at once. */}
           <div
             className={cn(
               "min-h-0 overflow-y-auto border-b border-border p-3",
-              pane === "room" ? "flex-1" : "hidden",
-              "lg:block lg:w-[42%] lg:flex-none lg:border-r lg:border-b-0",
+              // A floor, because the transcript column below is `flex-none`
+              // when this pane is up: it is sized by the composer plus the
+              // decision tray and cannot shrink, so every pixel of a height
+              // deficit came out of this column. A decision card starved it to
+              // zero and clipped the tray it was protecting.
+              pane === "room" ? "min-h-[9rem] flex-1" : "hidden",
+              "lg:block lg:min-h-0 lg:w-[42%] lg:flex-none lg:border-r lg:border-b-0",
             )}
           >
             {speaker ? (
@@ -400,7 +427,11 @@ export function ConferenceScreen() {
                   Convene {nextRung.name}
                 </span>
                 <span className="mt-1 block text-xs leading-relaxed text-subtle">
-                  {nextRung.detail} Costs {nextRung.clockCost}s of the clock and raises your observable signature.
+                  {nextRung.detail} Costs {nextRung.clockCost}s of the clock and{" "}
+                  {signatureSpent(nextRung.rung) - signatureSpent(rung)} observable signature.
+                  {participants(world, nextRung.rung as 1 | 2 | 3).length <= room.length
+                    ? ` Nobody new: ${post.short} cannot reach the rest of them.`
+                    : ""}
                 </span>
               </button>
             ) : (
@@ -436,9 +467,9 @@ export function ConferenceScreen() {
               able to speak, and to take the decision, from either view. */}
           <div
             className={cn(
-              "flex min-h-0 flex-col",
-              pane === "transcript" ? "flex-1" : "flex-none",
-              "lg:flex-1",
+              "flex min-h-0 flex-col overflow-y-auto",
+              pane === "transcript" ? "flex-1" : "shrink",
+              "lg:flex-1 lg:overflow-visible",
             )}
           >
             <div
@@ -535,18 +566,32 @@ export function ConferenceScreen() {
   );
 }
 
+/** Clock the ladder costs to reach a rung, mirroring `clockSpent`. */
+function cumulativeClock(rung: number): number {
+  return RUNGS.filter((r) => r.rung <= rung).reduce((n, r) => n + r.clockCost, 0);
+}
+
 function ConveneGate({
   onConvene,
   hasClock,
   body,
+  seats,
+  post,
 }: {
   onConvene: (rung: 1 | 2 | 3) => void;
   hasClock: boolean;
   body: string;
+  /** How many people each rung would actually seat from where you are sitting. */
+  seats: number[];
+  post: string;
 }) {
   return (
-    <div className="flex flex-1 items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6">
-      <div className="w-full max-w-lg">
+    // `items-center` inside a scroller whose height is capped by the `h-dvh
+    // overflow-hidden` root puts the top of an overflowing card *above* the
+    // scroll origin, where it cannot be reached by scrolling. `my-auto` centres
+    // the same card when it fits and lets it start at the top when it does not.
+    <div className="flex min-h-0 flex-1 justify-center overflow-y-auto p-4 sm:p-6">
+      <div className="my-auto w-full max-w-lg">
         <p className="font-mono text-micro tracking-[0.2em] text-accent uppercase">Warning conference</p>
         <p className="mt-1 font-display text-lg tracking-wide text-fg">{body}</p>
         <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -572,16 +617,32 @@ function ConveneGate({
                   <span className="font-display text-sm tracking-wider text-accent uppercase">
                     {r.name}
                   </span>
+                  {/* The ladder is billed cumulatively -- convening the third
+                      rung convenes the first two on the way. Quoting the rung's
+                      own price here would have understated what the button
+                      actually charges. */}
                   <span className="shrink-0 font-mono text-micro text-subtle uppercase">
-                    {r.signature ? `+${r.signature} signature` : "no cost"}
+                    {signatureSpent(r.rung)
+                      ? `+${signatureSpent(r.rung)} signature`
+                      : "no cost"}
                   </span>
                 </span>
                 <span className="mt-1 block text-xs leading-relaxed text-subtle">{r.detail}</span>
-                {r.clockCost ? (
+                {/* A rung that adds nobody still costs signature. From a
+                    degraded post that is the honest answer -- the E-4B survives
+                    almost anything and cannot hold the whole cabinet -- but the
+                    player should learn it before paying, not after. */}
+                <span className="mt-1 block font-mono text-micro text-subtle uppercase">
+                  {seats[r.rung - 1]} on the call
+                  {r.rung > 1 && seats[r.rung - 1] <= seats[r.rung - 2]
+                    ? ` \u00b7 adds nobody ${post} can reach`
+                    : ""}
+                </span>
+                {cumulativeClock(r.rung) ? (
                   <span className="mt-1 block font-mono text-micro text-warn uppercase">
                     {hasClock
-                      ? `costs ${r.clockCost}s of the decision clock`
-                      : `${r.clockCost}s of a decision clock, when one is running`}
+                      ? `costs ${cumulativeClock(r.rung)}s of the decision clock`
+                      : `${cumulativeClock(r.rung)}s of a decision clock, when one is running`}
                   </span>
                 ) : null}
               </button>
