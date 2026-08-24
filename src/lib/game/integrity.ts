@@ -746,14 +746,11 @@ export function runIntegrityChecks(): IntegrityResult {
   check("advisor-stance-is-deterministic-and-rng-free", () => {
     // Same contract as staffAdvice: forecast() replays through this twice per
     // render, so a draw here would diverge the stream.
-    const w = createWorld("standard", 23, "US", "blue");
-    let guard = 0;
-    let staged = w;
-    while (!currentDecision(staged) && guard < 14) {
-      staged = resolveTurn(structuredClone(staged), hold());
-      guard += 1;
-    }
-    if (!currentDecision(staged)) throw new Error("never reached a decision card");
+    // Deliberately the deterministic fixture rather than playing forward until
+    // a close call happens to spawn: how quickly one spawns is a balance
+    // property, and this check is about determinism.
+    const staged = worldWithCard(23);
+    if (!currentDecision(staged)) throw new Error("fixture produced no decision card");
     convene(staged, 3);
     const before = staged.rngState;
     const first = participants(staged, 3).map((a) => advisorStance(staged, a)?.optionId);

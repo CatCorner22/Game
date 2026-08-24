@@ -1,6 +1,7 @@
 import type { ActorId, OfficerStance, PlayerAction, World } from "./types";
 import { chance, clamp, pick } from "./rng";
 import { log } from "./simLog";
+import { hostility } from "./world";
 
 function hostilityOf(world: World, a: ActorId, b: ActorId): number {
   return world.actors[a]?.hostility[b] ?? 50;
@@ -158,12 +159,20 @@ function reactionFor(world: World, id: ActorId, action: PlayerAction): HumanReac
           ? `${a.shortName} ${desk}: talks are time. They generate while you speak — but they take the call.`
           : `${a.shortName} ${desk}: matching you, plus one. Aggression is the policy.`;
     why = "Hawks want the shot. HOLD and DIPLOMACY both look like openings unless you are already hotter than they are.";
-    // Scaled by remaining headroom rather than flat. A hawk with room to move
-    // escalates hard; a hawk who already hates you as much as it is possible to
-    // hate you cannot get much angrier. Flat +7 every turn regardless pinned
-    // every relationship at 100 within three turns and took the board away from
-    // the player entirely.
-    a.hostility[world.playerId] = clamp(vs + escalationRoom(vs) * 7, 0, 100);
+    // Scaled by headroom AND by what the player actually did.
+    //
+    // Headroom alone was not enough: a hawk still added the same amount every
+    // turn whatever you chose, so crossing any hostility threshold was merely
+    // delayed rather than avoidable, and the player had no lever at all. Every
+    // branch of this reaction escalated -- HOLD read as weakness, DIPLOMACY read
+    // as stalling, everything else read as provocation -- which meant a hawkish
+    // adversary reached its firing gate on a schedule the player could not
+    // influence.
+    //
+    // A hawk still escalates against force and still reads restraint as an
+    // opening. But talking actually cools things slightly, which is the whole
+    // reason hotlines exist, and it gives restraint somewhere to go.
+    a.hostility[world.playerId] = clamp(vs + escalationRoom(vs) * 7 * provocationOf(action), 0, 100);
     a.alert = clamp(a.alert + (action.kind === "posture" || action.kind === "employ" ? 2 : 1), 0, 5);
     a.nationalism = clamp(a.nationalism + 4, 0, 100);
   } else {
@@ -172,7 +181,7 @@ function reactionFor(world: World, id: ActorId, action: PlayerAction): HumanReac
       "Cowardice that fires. They are not eager for war. They are eager not to be the one who waited. Nasr, DPRK law, Perimeter — this is that person.";
     a.preDelegation = true;
     a.alert = clamp(a.alert + 2, 0, 5);
-    a.hostility[world.playerId] = clamp(vs + escalationRoom(vs) * 10, 0, 100);
+    a.hostility[world.playerId] = clamp(vs + escalationRoom(vs) * 10 * Math.max(0.3, provocationOf(action)), 0, 100);
   }
 
   void you;
@@ -208,6 +217,36 @@ export function syncPlayerDesk(world: World) {
   const me = world.actors[world.playerId];
   if (!me || world.secondOfficer.stance === "machine") return;
   world.secondOfficer.stance = stanceFromNerve(me.nerve ?? 50, false);
+}
+
+/**
+ * How provocative this action looks from the other side.
+ *
+ * Negative for diplomacy: a channel that is being used lowers the temperature a
+ * little even with someone who has no intention of being reassured. That is the
+ * lever the player was missing -- without it, every action escalated and the
+ * only variable was how fast.
+ */
+function provocationOf(action: PlayerAction): number {
+  switch (action.kind) {
+    case "employ":
+    case "kill":
+      return 1.4;
+    case "pressure":
+      return 1.15;
+    case "posture":
+      return 1;
+    case "covert":
+      return 0.8;
+    case "intelligence":
+      return 0.5;
+    case "hold":
+      return 0.35;
+    case "diplomacy":
+      return -0.4;
+    default:
+      return 0.5;
+  }
 }
 
 /**
@@ -251,6 +290,30 @@ export function panicMayFire(world: World, id: ActorId): boolean {
   const a = world.actors[id];
   if (!a?.nuclear && !a?.hasDevice) return false;
   if (temperOf(a.nerve ?? 50) !== "panic") return false;
+
+  // A panicking state fires at somebody it is actually in a confrontation with.
+  //
+  // Without this gate the function asked only "is this leadership panicking?"
+  // and then rolled, every turn, forever, against whoever the player happened
+  // to be -- no hostility condition, no alert condition, nothing the player
+  // could influence. And because tickNerve adds +3 nerve a turn while DEFCON is
+  // at 2 or below, any actor with a high risk tolerance drifts into permanent
+  // panic a few turns into any crisis and stays there. Measured, this single
+  // path produced 18 of 18 nuclear first-uses in do-nothing runs; the gated
+  // aiChoose employ branch produced none of them.
+  const vs = hostility(world, id, world.playerId);
+  if (vs < PANIC_HOSTILITY_FLOOR) return false;
+
   const heat = Math.max(0, ...world.flashpoints.filter((f) => f.actors.includes(id)).map((f) => f.heat));
-  return chance(world, 0.06 + heat / 900 + (world.defcon <= 2 ? 0.08 : 0));
+  return chance(
+    world,
+    0.03 + (vs - PANIC_HOSTILITY_FLOOR) / 700 + heat / 900 + (world.defcon <= 2 ? 0.06 : 0),
+  );
 }
+
+/**
+ * How hostile a panicking state has to be toward you before it fires at you.
+ * High, but reachable during a real crisis -- which is the point: it should be
+ * something the run arrives at, not something true on turn one.
+ */
+const PANIC_HOSTILITY_FLOOR = 65;
