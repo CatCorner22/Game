@@ -3,6 +3,7 @@ import { resolveTurn, forecast } from "./sim";
 import { applyScenario, SCENARIOS } from "./scenarios";
 import { SCENARIO_BRIEFS, briefFor } from "./scenarioBriefs";
 import { buildArchive, lockedLine } from "./archive";
+import { TUTORIAL_STEPS, shouldShowTutorial } from "./tutorial";
 import { makeActors } from "./actors";
 import { seatObjectives } from "./objectives";
 import { encodeReplay, decodeReplay, recordTurn } from "./replay";
@@ -1130,6 +1131,36 @@ export function runIntegrityChecks(): IntegrityResult {
     const headlines = new Set(SCENARIOS.map((d) => briefFor(d.id)?.headline));
     if (headlines.size !== SCENARIOS.length) throw new Error("two scenarios share a headline");
     return `${SCENARIOS.length} scenarios, all briefed`;
+  });
+
+  check("first-watch-tutorial-runs-on-a-scenario", () => {
+    // The gate used to require !world.scenarioId, so picking any scenario turned
+    // the tutorial off entirely -- and scenarios are the front door. This is the
+    // regression guard for the path a new player actually takes.
+    const scenario = applyScenario(createWorld("standard", 5, "US", "blue"), "alaska-drones-2027");
+    if (scenario.turn !== 1) throw new Error(`scenario world opens on turn ${scenario.turn}`);
+    if (!scenario.scenarioId) throw new Error("fixture is not a scenario world");
+    if (!shouldShowTutorial(scenario, false, 0)) throw new Error("tutorial suppressed on a scenario watch");
+    // And a sandbox watch, which is where it used to be the only thing showing.
+    if (!shouldShowTutorial(createWorld("standard", 5, "US", "blue"), false, 0)) {
+      throw new Error("tutorial suppressed on a sandbox watch");
+    }
+    // It is a *first* watch feature and it stays dismissible.
+    if (shouldShowTutorial({ turn: 2 }, false, 0)) throw new Error("tutorial showed after turn one");
+    if (shouldShowTutorial(scenario, true, 0)) throw new Error("dismissal did not stick");
+    if (shouldShowTutorial(scenario, false, -1)) throw new Error("negative step still showed");
+    if (shouldShowTutorial(scenario, false, TUTORIAL_STEPS.length)) throw new Error("ran past the last step");
+    // The steps have to cover the game as it now is, not as it was three
+    // features ago. Naming them here means deleting one fails loudly.
+    if (TUTORIAL_STEPS.length < 6) throw new Error(`${TUTORIAL_STEPS.length} steps`);
+    const copy = TUTORIAL_STEPS.map((s) => `${s.title} ${s.body}`.toLowerCase()).join(" ");
+    for (const topic of ["forecast", "hold", "advisors", "countdown", "mandate"]) {
+      if (!copy.includes(topic)) throw new Error(`tutorial never mentions ${topic}`);
+    }
+    for (const s of TUTORIAL_STEPS) {
+      if (!s.title.trim() || !s.body.trim()) throw new Error("a tutorial step is empty");
+    }
+    return `${TUTORIAL_STEPS.length} steps, shown on scenario and sandbox watches`;
   });
 
   check("archive-opens-only-what-you-finished", () => {
