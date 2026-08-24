@@ -71,9 +71,9 @@ const POSTS: CommandPost[] = [
   {
     id: "US:cheyenne",
     seat: "US",
-    name: "Cheyenne Mountain Complex",
-    short: "Cheyenne",
-    role: "The sensory organ. Warning feeds arrive here first and get correlated here first.",
+    name: "Cheyenne Mountain Complex · NORAD",
+    short: "NORAD",
+    role: "The sensory organ. Missile-warning feeds arrive here first and get correlated here first.",
     cost: "A mountain in Colorado is a long way from the people who make policy.",
     warning: 14,
     survivability: 72,
