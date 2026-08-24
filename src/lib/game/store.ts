@@ -21,6 +21,8 @@ import { recordTurn } from "./replay";
 import { applyScenario, scenarioById, type ScenarioId } from "./scenarios";
 import { recordGameEnd } from "./stats";
 import { applyDoctrine } from "./doctrine";
+import { convene as conveneAt } from "./advisors/conference";
+import type { AddressStyle } from "./advisors/address";
 import { currentDecision, optionById } from "./decisions";
 import { applyC2Stance, type C2StanceId } from "./c2";
 import { replayFromCode } from "./replayRun";
@@ -99,6 +101,12 @@ interface GameState {
   /** Post the player has queued a relocation to, applied on the next commit. */
   pendingRelocation: string | null;
   setPendingRelocation: (id: string | null) => void;
+  /** Whether the advisor conference overlay is open. */
+  conferenceOpen: boolean;
+  setConferenceOpen: (open: boolean) => void;
+  /** Climb the warning conference ladder. Out-of-band, like `applyC2`. */
+  convene: (rung: 1 | 2 | 3) => void;
+  setAddressStyle: (style: AddressStyle) => void;
 }
 
 export const useGame = create<GameState>((set, get) => ({
@@ -115,6 +123,7 @@ export const useGame = create<GameState>((set, get) => ({
   whyId: null,
   confirmNuclear: false,
   pendingRelocation: null,
+  conferenceOpen: false,
   fileOpen: false,
   glossaryOpen: false,
   tutorialStep: -1,
@@ -143,6 +152,7 @@ export const useGame = create<GameState>((set, get) => ({
         packageMode: "mirv-decoy",
         confirmNuclear: false,
         pendingRelocation: null,
+        conferenceOpen: false,
         fileOpen: false,
         whyId: null,
         tutorialStep: world.turn === 1 && !scenarioId ? 0 : -1,
@@ -262,6 +272,33 @@ export const useGame = create<GameState>((set, get) => ({
     };
   },
   setPendingRelocation: (id) => set({ pendingRelocation: id }),
+  setConferenceOpen: (open) => set({ conferenceOpen: open }),
+  // Same clone -> mutate -> persist -> set shape as `applyC2` and
+  // `pickDoctrine`: convening is a within-turn action, not a turn commitment.
+  convene: (rung) => {
+    const w = get().world;
+    if (!w) return;
+    try {
+      const next = structuredClone(w);
+      conveneAt(next, rung);
+      saveWorld(next, get().saveSlot);
+      set({ world: next, lastError: null });
+    } catch (err) {
+      set({ lastError: err instanceof Error ? err.message : String(err) });
+    }
+  },
+  setAddressStyle: (style) => {
+    const w = get().world;
+    if (!w) return;
+    try {
+      const next = structuredClone(w);
+      next.addressStyle = style;
+      saveWorld(next, get().saveSlot);
+      set({ world: next, lastError: null });
+    } catch (err) {
+      set({ lastError: err instanceof Error ? err.message : String(err) });
+    }
+  },
   execute: () => {
     const { actionKind, intensity } = get();
     const world = get().world;
@@ -309,6 +346,7 @@ export const useGame = create<GameState>((set, get) => ({
         intensity: 1,
         notify: false,
         pendingRelocation: null,
+        conferenceOpen: false,
         selected: next.ended ? st.selected : next.event.actor,
         screen: screenForWorld(next),
         whyId: next.log[0]?.id ?? null,
@@ -369,6 +407,7 @@ export function resetToTitle() {
     notify: false,
     confirmNuclear: false,
     pendingRelocation: null,
+    conferenceOpen: false,
     briefingPage: 0,
     tutorialStep: -1,
     scenarioId: null,

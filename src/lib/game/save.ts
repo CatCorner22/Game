@@ -109,6 +109,10 @@ export function migrateWorld(world: World): World {
     world.relocation.startedTurn = -1;
   }
   if (world.postureSignature === undefined) world.postureSignature = 0;
+  if (world.conferenceRung === undefined) world.conferenceRung = 0;
+  if (!world.advisorTrust) world.advisorTrust = {};
+  if (!world.overruled) world.overruled = [];
+  if (!world.addressStyle) world.addressStyle = "neutral";
   if (world.lastAction === undefined) world.lastAction = null;
   if (world.lastDecisionKey === undefined) world.lastDecisionKey = null;
   if (!world.recentDecisionKeys) world.recentDecisionKeys = [];

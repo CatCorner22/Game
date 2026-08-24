@@ -17,6 +17,18 @@ import { buildTrack, resolveCloseCallHold } from "./warning";
 import { flightProfile, isMaritimeAzimuth, unresolvedProfile, wallSecondsFor } from "./flight";
 import { distanceKm } from "./geo";
 import { currentPost, postEffects, postsFor, standingPost, tickRelocation } from "./posts";
+import { ageOf, hawkishness, rosterFor } from "./advisors/roster";
+import { addressFor, addressVariants } from "./advisors/address";
+import {
+  advisorStance,
+  candorOf,
+  convene,
+  participants,
+  recordDecision,
+  roomConsensus,
+  trustOf,
+} from "./advisors/conference";
+import { openingLine, recommendationLine, situationLine } from "./advisors/script";
 import {
   DEFEAT_CONDITIONS,
   MIN_VICTORY_MONTH,
@@ -35,6 +47,16 @@ import {
 export interface IntegrityResult {
   ok: boolean;
   checks: { name: string; ok: boolean; detail: string }[];
+}
+
+
+/** A world with a close call AND a decision card open, for conference checks. */
+function worldWithCard(seed: number): World {
+  const w = applyScenario(createWorld("extreme", seed, "US", "blue"), "petrov-1983");
+  w.playerId = "US";
+  w.turn = Math.max(w.turn, FIRST_DECISION_TURN);
+  openDecisionIfWarranted(w);
+  return w;
 }
 
 function hold(): PlayerAction {
@@ -620,6 +642,245 @@ export function runIntegrityChecks(): IntegrityResult {
       if (seen.size < 2) throw new Error(`${id} has only ${seen.size} desk name(s)`);
     }
     return `${PLAYABLE_IDS.length} seats have named desks`;
+  });
+
+  check("advisor-ages-plausible", () => {
+    // The band serving flag officers and cabinet-level civilians occupy. US
+    // statutory flag-officer retirement is 64; a four-star service chief is
+    // typically 55-60, which is what "a USMC general in their 50s" means.
+    let youngest = 99;
+    let oldest = 0;
+    for (const id of PLAYABLE_IDS) {
+      for (const a of rosterFor(id)) {
+        if (a.age < 45 || a.age > 67) throw new Error(`${a.id} is ${a.age}`);
+        youngest = Math.min(youngest, a.age);
+        oldest = Math.max(oldest, a.age);
+      }
+    }
+    // The specific case Blake asked about.
+    const usmc = rosterFor("US").find((a) => a.rank.includes("USMC"));
+    if (!usmc) throw new Error("no USMC general on the US roster");
+    if (usmc.age < 50 || usmc.age > 59) throw new Error(`USMC general is ${usmc.age}, not in their 50s`);
+    return `${youngest}-${oldest}, USMC general ${usmc.age}`;
+  });
+
+  check("advisor-ages-survive-historical-scenarios", () => {
+    // Ages are stored directly, not as birth years, because eight scenarios
+    // reset world.year -- as far back as 1962. A birth-year model would have
+    // every advisor unborn in half the campaign, so ageOf must ignore the year
+    // entirely and drift off elapsed turns instead.
+    const modern = createWorld("standard", 12, "US", "blue");
+    const historical = structuredClone(modern);
+    historical.year = 1962;
+    for (const a of rosterFor("US")) {
+      if (ageOf(a, historical) !== ageOf(a, modern)) throw new Error(`${a.id} ages with the calendar`);
+      if (ageOf(a, historical) < 45) throw new Error(`${a.id} is ${ageOf(a, historical)} in 1962`);
+    }
+    // And they do age over a long campaign.
+    const late = structuredClone(modern);
+    late.turn = 25;
+    const first = rosterFor("US")[0];
+    if (ageOf(first, late) <= ageOf(first, modern)) throw new Error("nobody ages over two years of turns");
+    return `stable across 1962/2027, +${ageOf(first, late) - ageOf(first, modern)}y over 24 turns`;
+  });
+
+  check("advisor-roster-covers-playable-seats", () => {
+    for (const id of PLAYABLE_IDS) {
+      const roster = rosterFor(id);
+      if (roster.length < 5) throw new Error(`${id} has ${roster.length} advisors`);
+      if (roster.some((a) => a.seat !== id)) throw new Error(`${id} roster has a foreign seat`);
+      for (const rung of [1, 2, 3] as const) {
+        if (!roster.some((a) => a.rung === rung)) throw new Error(`${id} has nobody at rung ${rung}`);
+      }
+      const ids = new Set(roster.map((a) => a.id));
+      if (ids.size !== roster.length) throw new Error(`${id} has duplicate advisor ids`);
+      // Personality must actually vary, or every tile reads the same.
+      const hawks = new Set(roster.map((a) => hawkishness(a)));
+      if (hawks.size < 3) throw new Error(`${id} roster has ${hawks.size} distinct dispositions`);
+    }
+    return `${PLAYABLE_IDS.length} seats · ${PLAYABLE_IDS.reduce((n, id) => n + rosterFor(id).length, 0)} advisors`;
+  });
+
+  check("address-forms-cover-every-seat", () => {
+    for (const id of PLAYABLE_IDS) {
+      const forms = addressVariants(id);
+      for (const key of ["neutral", "masculine", "feminine", "office"] as const) {
+        if (!forms[key] || !forms[key].trim()) throw new Error(`${id} missing ${key} form`);
+      }
+      const w = createWorld("standard", 21, id, "blue");
+      if (addressFor(w) !== forms.neutral) throw new Error(`${id} default is not the neutral form`);
+      w.addressStyle = "feminine";
+      if (addressFor(w) !== forms.feminine) throw new Error(`${id} does not honour the chosen style`);
+    }
+    return `${PLAYABLE_IDS.length} seats addressed correctly`;
+  });
+
+  check("advisor-lines-render-the-chosen-address", () => {
+    // A hardcoded "Mr." anywhere would misaddress the player forever.
+    const w = worldWithCard(22);
+    w.addressStyle = "feminine";
+    convene(w, 2);
+    const room = participants(w, 2);
+    if (!room.length) throw new Error("nobody joined a rung-2 conference");
+    let checked = 0;
+    for (const a of room) {
+      const line = openingLine(w, a, advisorStance(w, a));
+      if (/\bMr\. President\b/.test(line.text)) throw new Error(`${a.id} hardcodes a masculine address`);
+      if (line.text.includes("Madam President")) checked += 1;
+    }
+    if (!checked) throw new Error("no line rendered the chosen address at all");
+    return `${checked}/${room.length} lines used the chosen form`;
+  });
+
+  check("advisor-stance-is-deterministic-and-rng-free", () => {
+    // Same contract as staffAdvice: forecast() replays through this twice per
+    // render, so a draw here would diverge the stream.
+    const w = createWorld("standard", 23, "US", "blue");
+    let guard = 0;
+    let staged = w;
+    while (!currentDecision(staged) && guard < 14) {
+      staged = resolveTurn(structuredClone(staged), hold());
+      guard += 1;
+    }
+    if (!currentDecision(staged)) throw new Error("never reached a decision card");
+    convene(staged, 3);
+    const before = staged.rngState;
+    const first = participants(staged, 3).map((a) => advisorStance(staged, a)?.optionId);
+    const second = participants(staged, 3).map((a) => advisorStance(staged, a)?.optionId);
+    if (staged.rngState !== before) throw new Error("advisorStance consumed RNG");
+    if (JSON.stringify(first) !== JSON.stringify(second)) throw new Error("advisorStance is not deterministic");
+    if (!first.length) throw new Error("no stances produced");
+    return `${first.length} stances, rngState untouched`;
+  });
+
+  check("conference-world-stays-cloneable", () => {
+    // The Stage 1 regression that started all of this: functions on the World
+    // make structuredClone throw and save.ts silently drop state.
+    const w = worldWithCard(24);
+    convene(w, 3);
+    recordDecision(w, "hold-window");
+    const cloned = structuredClone(w);
+    if (cloned.conferenceRung !== w.conferenceRung) throw new Error("rung did not survive the clone");
+    const round = JSON.parse(JSON.stringify(w)) as World;
+    if (Object.keys(round.advisorTrust ?? {}).length !== Object.keys(w.advisorTrust ?? {}).length) {
+      throw new Error("advisorTrust did not survive JSON");
+    }
+    return `rung ${w.conferenceRung} · ${Object.keys(w.advisorTrust ?? {}).length} trust entries`;
+  });
+
+  check("overruling-costs-trust-and-candor", () => {
+    // The failure mode this models: a room you stop listening to stops telling
+    // you the unwelcome thing.
+    const w = worldWithCard(25);
+    convene(w, 3);
+    const room = participants(w, 3);
+    const subject = room[0];
+    const candorBefore = candorOf(w, subject);
+    const trustBefore = trustOf(w, subject.id);
+    for (let i = 0; i < 12; i += 1) recordDecision(w, "no-such-option-nobody-recommends");
+    const trustAfter = trustOf(w, subject.id);
+    const candorAfter = candorOf(w, subject);
+    if (trustAfter >= trustBefore) throw new Error(`trust ${trustBefore} -> ${trustAfter}`);
+    if (candorAfter >= candorBefore) throw new Error(`candor ${candorBefore} -> ${candorAfter}`);
+    if (!(w.overruled ?? []).length) throw new Error("nothing recorded as overruled");
+    // And once candor is low enough, they start deferring.
+    const stance = advisorStance(w, subject);
+    if (stance && !stance.deferring) throw new Error("advisor never started deferring");
+    return `trust ${trustBefore} -> ${trustAfter}, candor ${Math.round(candorBefore)} -> ${Math.round(candorAfter)}`;
+  });
+
+  check("conference-rungs-cost-signature-and-reset", () => {
+    const w = worldWithCard(26);
+    const base = w.postureSignature ?? 0;
+    convene(w, 1);
+    if ((w.postureSignature ?? 0) !== base) throw new Error("a technical call cost signature");
+    convene(w, 3);
+    if ((w.postureSignature ?? 0) <= base) throw new Error("convening leadership cost nothing");
+    if (participants(w, 3).length <= participants(w, 1).length) throw new Error("rung 3 did not widen the room");
+    const after = resolveTurn(structuredClone(w), hold());
+    if (after.conferenceRung !== 0) throw new Error("conference survived the turn");
+    return `rung 3 signature ${Math.round(w.postureSignature ?? 0)} · ${participants(w, 3).length} on the call`;
+  });
+
+  check("post-comms-gates-the-room", () => {
+    // The E-4B trade: survives almost anything, cannot hold the whole cabinet.
+    const w = worldWithCard(27);
+    convene(w, 3);
+    const atPeoc = participants(w, 3).length;
+    const airborne = structuredClone(w);
+    airborne.commandPost = "US:e4b";
+    airborne.relocation = null;
+    const aloft = participants(airborne, 3).length;
+    if (aloft >= atPeoc) throw new Error(`E-4B held ${aloft} of ${atPeoc}`);
+    if (!aloft) throw new Error("E-4B could not hold anyone at all");
+    return `PEOC ${atPeoc} on the call, E-4B ${aloft}`;
+  });
+
+  check("room-consensus-and-recommendations-render", () => {
+    const w = worldWithCard(28);
+    convene(w, 3);
+    const card = currentDecision(w);
+    if (!card) throw new Error("petrov-1983 produced no decision card");
+    const consensus = roomConsensus(w, 3);
+    if (!consensus) throw new Error("no consensus produced");
+    if (!card.options.some((o) => o.id === consensus.optionId)) {
+      throw new Error(`consensus ${consensus.optionId} is not an option on the card`);
+    }
+    for (const a of participants(w, 3)) {
+      const stance = advisorStance(w, a);
+      if (!stance) throw new Error(`${a.id} had no stance`);
+      const line = recommendationLine(w, a, stance);
+      if (!line.text.trim()) throw new Error(`${a.id} produced an empty recommendation`);
+      if (line.text.includes("undefined")) throw new Error(`${a.id} line has an unrendered value`);
+    }
+    return `${consensus.optionId} at ${Math.round(consensus.share * 100)}%`;
+  });
+
+  check("room-does-not-speak-in-one-voice", () => {
+    // Five advisors delivering the same sentence is the fastest way to make a
+    // room of characters read as one template.
+    const w = worldWithCard(29);
+    convene(w, 3);
+    const room = participants(w, 3);
+    if (room.length < 5) throw new Error(`only ${room.length} on the call`);
+    for (const [label, lines] of [
+      ["opening", room.map((a) => openingLine(w, a, advisorStance(w, a)).text)],
+      ["situation", room.map((a) => situationLine(w, a).text)],
+    ] as const) {
+      const unique = new Set(lines);
+      if (unique.size < Math.ceil(room.length * 0.6)) {
+        throw new Error(`${label}: ${unique.size} distinct lines across ${room.length} advisors`);
+      }
+      if (lines.some((l) => !l.trim() || l.includes("undefined"))) throw new Error(`${label}: bad line`);
+    }
+    return `${room.length} advisors, distinct openings and situation reads`;
+  });
+
+  check("advisor-lines-agree-with-their-numbers", () => {
+    // A room that says "1 boosts" is not a room of professionals.
+    const w = worldWithCard(30);
+    convene(w, 3);
+    if (!w.closeCall) throw new Error("fixture has no close call");
+    let sampled = 0;
+    for (const boosts of [0, 1, 2, 7]) {
+      w.closeCall.track.boosts = boosts;
+      for (const a of participants(w, 3)) {
+        const texts = [
+          openingLine(w, a, advisorStance(w, a)).text,
+          situationLine(w, a).text,
+        ];
+        for (const text of texts) {
+          sampled += 1;
+          // Exactly the two failure modes: a plural noun on one, and a
+          // singular noun on more than one.
+          if (/\b1 boosts\b/.test(text)) throw new Error(`"1 boosts" in ${a.id}`);
+          const singular = text.match(/\b(\d+) boost event\b(?!s)/);
+          if (singular && singular[1] !== "1") throw new Error(`"${singular[0]}" in ${a.id}`);
+          if (boosts === 0 && /\b0 boost/.test(text)) throw new Error(`${a.id} says "0 boost" instead of naming the absence`);
+        }
+      }
+    }
+    return `${sampled} lines checked across 0/1/2/7 boosts`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };

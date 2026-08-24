@@ -70,6 +70,7 @@ export function PlayScreen() {
   const selected = useGame((s) => s.selected);
   const glossaryOpen = useGame((s) => s.glossaryOpen);
   const toggleGlossary = useGame((s) => s.toggleGlossary);
+  const setConferenceOpen = useGame((s) => s.setConferenceOpen);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -178,6 +179,14 @@ export function PlayScreen() {
             <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={toggleGlossary}>
               Glossary
             </HudButton>
+            <HudButton
+              variant="ghost"
+              className="hidden px-2 py-1 text-micro lg:inline-flex"
+              onClick={() => setConferenceOpen(true)}
+              aria-label="Advisors"
+            >
+              Advisors
+            </HudButton>
             <HudButton variant="ghost" className="hidden px-2 py-1 text-micro lg:inline-flex" onClick={() => setScreen("briefing")}>
               Brief
             </HudButton>
@@ -215,6 +224,14 @@ export function PlayScreen() {
           </HudButton>
           <HudButton variant="default" className="min-h-12" onClick={() => { setCommandOpen(false); setScreen("briefing"); }}>
             Briefing
+          </HudButton>
+          <HudButton
+            variant="default"
+            className="min-h-12"
+            aria-label="Advisors"
+            onClick={() => { setCommandOpen(false); setConferenceOpen(true); }}
+          >
+            Advisors
           </HudButton>
           <HudButton variant="default" className="min-h-12" aria-label="Main menu" onClick={returnToMenu}>
             Main menu

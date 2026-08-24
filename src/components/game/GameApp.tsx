@@ -9,6 +9,7 @@ import { WarScreen } from "./WarScreen";
 import { EndScreen } from "./EndScreen";
 import { StatsScreen } from "./StatsScreen";
 import { MultiplayerScreen } from "./MultiplayerScreen";
+import { AdvisorConference } from "./AdvisorConference";
 import { TutorialOverlay, useKeyboardShortcuts } from "./TutorialOverlay";
 import { GameErrorBoundary } from "./GameErrorBoundary";
 import { ErrorBanner } from "./ErrorBanner";
@@ -54,6 +55,7 @@ export function GameApp() {
         {screen === "end" ? <EndScreen /> : null}
         {screen === "stats" ? <StatsScreen /> : null}
         {screen === "multiplayer" ? <MultiplayerScreen /> : null}
+        <AdvisorConference />
         <TutorialOverlay />
         <HelpLayer />
       </FuturisticShell>

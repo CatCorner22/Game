@@ -57,6 +57,7 @@ import {
 } from "./terminator";
 import { applySpyCovert, applySpyIntel, applySpyPosture, tickSpies } from "./spies";
 import { beginRelocation, tickRelocation } from "./posts";
+import { recordDecision, tickConference } from "./advisors/conference";
 import { panicMayFire, reactToAction, tickNerve } from "./humans";
 import {
   applyKill,
@@ -608,6 +609,9 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   // Relocation rides alongside the turn's action, so it lands before anything
   // reads warning quality or release integrity this turn. Deterministic.
   if (action.relocateTo) beginRelocation(world, action.relocateTo);
+  // The room's reaction to what you chose. Reads `decisionOptionId`, which is
+  // already on the action, so it replays from a code with no extra state.
+  if (action.decisionOptionId) recordDecision(world, action.decisionOptionId);
   applyAction(world, world.playerId, action);
   reactToAction(world, action);
 
@@ -673,6 +677,7 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   }
   tickPolitics(world);
   tickRelocation(world);
+  tickConference(world);
   tickWinter(world);
   tickUncontrolled(world);
   tickCasual(world);
