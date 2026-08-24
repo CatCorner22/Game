@@ -48,6 +48,7 @@ import {
   trustOf,
 } from "./advisors/conference";
 import { openingLine, recommendationLine, situationLine } from "./advisors/script";
+import { asPlayable } from "./command";
 import {
   DEFEAT_CONDITIONS,
   MIN_VICTORY_MONTH,
@@ -1461,6 +1462,73 @@ export function runIntegrityChecks(): IntegrityResult {
       }
     }
     return "no draws, identical across repeated calls, 3 seeds x 8 turns";
+  });
+
+  check("the-room-argues-about-this-crisis", () => {
+    // Nothing in advisors/ used to reference world.event or the scenario, so
+    // roughly seventy templates served every seat, every advisor, every
+    // scenario and every turn -- Petrov-1983 and a 2027 Taiwan contingency
+    // produced the same sentences and the room was demonstrably not listening
+    // to the game it was in.
+    //
+    // The scenario dossier fixed that at the source. Each advisor takes the
+    // uncertainty their own branch would own, names it, and says what would
+    // settle it, so the room argues about the same specific thing the player is
+    // deciding under.
+    let rooms = 0;
+    let aware = 0;
+    let worstSpread = 1;
+    let worstId = "";
+    for (const def of SCENARIOS) {
+      const w = applyScenario(createWorld("standard", 9, def.playerId, def.intent), def.id);
+      // A live track is its own situation; those rooms speak to the board.
+      if (w.closeCall) continue;
+      rooms += 1;
+      const room = rosterFor(asPlayable(w.playerId));
+      const lines = room.map((a) => situationLine(w, a).text);
+      if (lines.some((l) => /I own here|my brief in this|answer one thing|not my desk|outside my brief/.test(l))) {
+        aware += 1;
+      }
+      // Several people caring about the same question is realistic. A room
+      // where most of them say the same thing is the monologue problem wearing
+      // different clothes, which is exactly what an earlier draft did.
+      const spread = new Set(lines).size / lines.length;
+      if (spread < worstSpread) {
+        worstSpread = spread;
+        worstId = def.id;
+      }
+    }
+    if (aware !== rooms) throw new Error(`${rooms - aware} of ${rooms} rooms ignore their own scenario`);
+    if (worstSpread < 0.5) {
+      throw new Error(`${worstId}: only ${Math.round(worstSpread * 100)}% of the room said something distinct`);
+    }
+    return `${rooms} rooms all cite their dossier, worst spread ${Math.round(worstSpread * 100)}%`;
+  });
+
+  check("nuclear-seats-seat-a-whole-body", () => {
+    // The rosters were real institutions with principals missing. The US had no
+    // National Security Advisor -- the person who actually runs the NSC process
+    // -- Russia no Secretary of its Security Council, and France, India, Israel,
+    // North Korea and Iran had no diplomatic voice at all, which meant the
+    // "Partners desk" line every turn fell back to whoever was nearest.
+    const NUCLEAR = ["US", "RU", "CN", "FR", "UK", "IN", "PK", "IL", "KP", "IR"] as const;
+    for (const seat of NUCLEAR) {
+      const roster = rosterFor(seat);
+      const branches = new Set(roster.map((a) => a.branch));
+      // Somebody has to speak for the channel, or talking is nobody's brief.
+      if (!branches.has("diplomatic")) throw new Error(`${seat} has no diplomatic voice`);
+      // Somebody has to speak for the state rather than for a service.
+      if (!branches.has("civilian")) throw new Error(`${seat} has no civilian principal`);
+      if (!branches.has("intel")) throw new Error(`${seat} has nobody who collects`);
+      if (!branches.has("watch")) throw new Error(`${seat} has nobody on the board`);
+      // A body needs people at every rung, or climbing the ladder adds nobody.
+      for (const rung of [1, 2, 3]) {
+        if (!roster.some((a) => a.rung === rung)) throw new Error(`${seat} has nobody at rung ${rung}`);
+      }
+      if (roster.length < 7) throw new Error(`${seat} seats only ${roster.length}`);
+    }
+    const total = PLAYABLE_IDS.reduce((n, s) => n + rosterFor(s).length, 0);
+    return `${NUCLEAR.length} nuclear bodies complete · ${total} advisors across ${PLAYABLE_IDS.length} seats`;
   });
 
   check("every-seat-has-a-named-decision-body", () => {

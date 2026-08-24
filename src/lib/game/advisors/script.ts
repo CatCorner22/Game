@@ -1,9 +1,12 @@
-import type { World } from "../types";
+import type { ActionKind, World } from "../types";
+import { actionDef } from "../actions";
+import { briefFor } from "../scenarioBriefs";
+import type { ScenarioId } from "../scenarios";
 import { currentDecision } from "../decisions";
 import { currentPost, inTransit } from "../posts";
 import { leaderKnown, leaderOf, playerLeader } from "../leaders";
 import { addressFor, officeFor } from "./address";
-import { type Advisor, ageOf, hawkishness } from "./roster";
+import { type Advisor, ageOf, hawkishness, rosterFor } from "./roster";
 import { type AdvisorStance, RUNGS, candorOf, trustOf } from "./conference";
 
 /**
@@ -320,12 +323,111 @@ export function replyLine(
  * otherwise be a room of people with nothing to say. They give their read of
  * the situation instead, which is what a watch-floor call actually is.
  */
+/**
+ * Which uncertainties a given kind of professional actually owns.
+ *
+ * An intelligence officer argues about what can be collected. A diplomat argues
+ * about what a channel could establish. Giving each branch the unknowns it would
+ * really be responsible for is what turns a row of monologues into a room --
+ * they disagree because they are looking at different parts of the same problem,
+ * which is how these arguments go in life.
+ */
+const BRANCH_OWNS: Record<string, ActionKind[]> = {
+  watch: ["hold", "intelligence"],
+  intel: ["intelligence", "covert"],
+  diplomatic: ["diplomacy", "pressure"],
+  civilian: ["diplomacy", "hold"],
+  legal: ["hold", "diplomacy"],
+  strategic: ["posture", "employ"],
+  ground: ["posture", "employ"],
+  air: ["posture", "intelligence"],
+  sea: ["posture", "hold"],
+};
+
+/**
+ * What this advisor makes of *this* crisis.
+ *
+ * Nothing in this directory used to reference `world.event` or the scenario at
+ * all. Seventy-odd templates served every seat, every advisor, every scenario
+ * and every turn, so Petrov-1983 and a 2027 Taiwan contingency produced the
+ * same sentences and the room was demonstrably not listening to the game.
+ *
+ * The scenario dossier fixed that at the source: it enumerates what cannot be
+ * known and which action would settle each item. So an advisor now picks the
+ * uncertainty their own branch would own, names it, and says what they would do
+ * about it. The room ends up arguing about the same specific thing the player is
+ * deciding under, which is the whole reason to convene it.
+ *
+ * Returns null when there is no scenario dossier to draw on -- a sandbox run --
+ * and the caller falls through to the general lines.
+ */
+export function crisisLine(world: World, advisor: Advisor): string | null {
+  const id = world.scenarioId as ScenarioId | null | undefined;
+  if (!id) return null;
+  const brief = briefFor(id);
+  if (!brief) return null;
+
+  const you = addressFor(world);
+  const key = `crisis:${advisor.id}:${world.turn}:${world.event.id}`;
+  const owns = BRANCH_OWNS[advisor.branch] ?? ["hold"];
+
+  // Prefer an unknown this branch would answer for; otherwise take any, because
+  // having a view on somebody else's question is also how these rooms work.
+  const mine = brief.unknowns.filter((u) => owns.includes(u.settledBy));
+  const pool = mine.length ? mine : brief.unknowns;
+  if (!pool.length) return null;
+  // Offset by the advisor's own position in the roster, not by the hash alone.
+  // Hashing on advisor id looks like it spreads them and does not: with two or
+  // three unknowns and several people who do not own one, collisions are near
+  // even odds, and measured it put three of four advisors on the same question
+  // -- the monologue problem in different clothes. The offset guarantees
+  // neighbours in the roster take different questions while staying pure.
+  const seatRoster = rosterFor(advisor.seat);
+  const spread = Math.max(0, seatRoster.findIndex((a) => a.id === advisor.id));
+  const unknown = pool[(hash(key) + spread) % pool.length];
+  const verb = actionDef(unknown.settledBy).label;
+  const owned = mine.length > 0;
+
+  const openings = owned
+    ? [
+        `${you}, the question I own here is this: ${unknown.question}`,
+        `${you}, my brief in this is one question. ${unknown.question}`,
+        `${you}, I am here to answer one thing. ${unknown.question}`,
+      ]
+    : [
+        `${you}, this is not my desk, but somebody should say it. ${unknown.question}`,
+        `${you}, outside my brief and still worth the room's time. ${unknown.question}`,
+      ];
+
+  const closes = owned
+    ? [
+        `${unknown.whyItMatters} ${verb} is what would settle it, and I would spend the turn on that.`,
+        `${unknown.whyItMatters} I would put this turn into ${verb} and come back to you with an answer instead of a guess.`,
+        `${unknown.whyItMatters} ${verb} answers it. Nothing else on the table does.`,
+      ]
+    : [
+        `${unknown.whyItMatters} ${verb} would settle it, and it is not me who would be doing it.`,
+        `${unknown.whyItMatters} That is a ${verb} problem, and I would rather it were named than assumed.`,
+      ];
+
+  return `${choose(openings, key)} ${choose(closes, `${key}:close`)}`;
+}
+
 export function situationLine(world: World, advisor: Advisor): ConferenceLine {
   const you = addressFor(world);
   const key = `sit:${advisor.id}:${world.turn}`;
   const cc = world.closeCall;
   const post = currentPost(world);
   let text: string;
+
+  // With no track on the board the old lines were "boards are quiet, nothing
+  // requires a call" -- true, generic, and identical in every scenario in the
+  // game. If the run has a dossier, the room has something specific to argue
+  // about instead, so that comes first.
+  if (!cc) {
+    const crisis = crisisLine(world, advisor);
+    if (crisis) return { advisorId: advisor.id, name: advisor.name, role: advisor.role, text: crisis, deferring: false };
+  }
 
   if (cc) {
     // Branch-specific, because five people delivering the same sentence is the

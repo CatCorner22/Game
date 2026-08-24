@@ -5,9 +5,11 @@ import { formatCountdown } from "@/lib/game/flight";
 import { loadSettings } from "@/lib/game/settings";
 import { cn } from "@/lib/utils";
 import type { TrackClock } from "./useTrackClock";
-import { GlassPanel, HudLabel } from "./ui/Hud";
+import { useGame } from "@/lib/game/store";
+import { GlassPanel, HudButton, HudLabel } from "./ui/Hud";
 
 export function CloseCallOverlay({ world, clock }: { world: World; clock?: TrackClock | null }) {
+  const setConferenceOpen = useGame((s) => s.setConferenceOpen);
   const cc = world.closeCall;
   const reduced = loadSettings().reducedMotion;
   const heartbeatRef = useRef<string | null>(null);
@@ -66,6 +68,17 @@ export function CloseCallOverlay({ world, clock }: { world: World; clock?: Track
         <p className="mt-3 font-mono text-micro text-subtle uppercase">
           Confidence {cc.track.confidence}% · {cc.track.source}
         </p>
+        {/* The one moment the room is most useful, and the game never mentioned
+            it. The warning conference is the historical answer to exactly this
+            situation -- duty officers, then commanders, then the principals --
+            and it sat behind a ghost pill nobody found. */}
+        <HudButton
+          variant="accent"
+          className="mt-3 min-h-11 w-full text-xs uppercase"
+          onClick={() => setConferenceOpen(true)}
+        >
+          Convene the warning conference
+        </HudButton>
       </GlassPanel>
     </div>
   );
