@@ -1,6 +1,7 @@
 import type { ActorId, OfficerStance, PlayableId, World } from "./types";
 import { chance, clamp, nextInt, pick } from "./rng";
 import { postEffects } from "./posts";
+import { playerLeader } from "./leaders";
 import { log } from "./simLog";
 import { stanceFromNerve } from "./humans";
 
@@ -509,6 +510,10 @@ export function attemptPlayerRelease(world: World, firstUse: boolean): ReleaseRe
   // leadership that has gone dark is where authentication quietly stops
   // happening. `postEffects` folds in the penalty for being in transit.
   refuseP = Math.max(0, refuseP + postEffects(world).releaseIntegrity / 100);
+  // And who you are. A chain of command checks a careful principal's order
+  // more readily than it checks one who has made clear what happens to people
+  // who slow them down.
+  refuseP = Math.max(0, refuseP + playerLeader(world).refusal / 100);
   if (world.terminator && (world.secondOfficer.stance === "machine" || you.aiInC2 >= 62)) {
     refuseP = 0.03;
   }
@@ -565,7 +570,8 @@ export function maybeRogueLaunch(world: World): boolean {
       (world.terminator ? world.aiTakeover / 400 : 0) -
       // The other side of release integrity: a hardened command centre keeps
       // the chain answering to you, a dark or dispersed one does not.
-      postEffects(world).releaseIntegrity / 150,
+      postEffects(world).releaseIntegrity / 150 +
+      playerLeader(world).preDel / 100,
   );
   if (!chance(world, p)) return false;
   log(

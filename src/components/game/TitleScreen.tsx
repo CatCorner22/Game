@@ -8,6 +8,7 @@ import { DEADHAND_CONFIGS, STRATEGIC_AI_CONFIGS, type DeadhandMode, type Strateg
 import { useMemo, useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
+import { DEFAULT_LEADER, LEADERS, leaderById } from "@/lib/game/leaders";
 
 const DIFFS: { id: Difficulty; label: string; line: string }[] = [
   { id: "standard", label: "STANDARD", line: "Readable files. Hostile world." },
@@ -32,6 +33,7 @@ export function TitleScreen() {
   const [team, setTeam] = useState<Team | null>("blue");
   const [country, setCountry] = useState<PlayableId | null>("US");
   const [scenario, setScenario] = useState<ScenarioId | null>(null);
+  const [leader, setLeader] = useState<string>(DEFAULT_LEADER);
   const [terminator, setTerminator] = useState(false);
   const [aiMode, setAiMode] = useState<StrategicAIMode>("human");
   const [deadhand, setDeadhand] = useState<DeadhandMode>("off");
@@ -66,6 +68,7 @@ export function TitleScreen() {
       strategicAI: terminator ? "skynet" : aiMode,
       deadhand: def?.defaultDeadhand ?? deadhand,
       scenarioId: scenario ?? undefined,
+      leaderArchetype: leader,
     });
   }
 
@@ -160,6 +163,27 @@ export function TitleScreen() {
               </select>
             </label>
             {selectedDef ? <p className="mt-2 text-sm text-fg">{selectedDef.title}</p> : null}
+
+            {/* Deliberately AFTER the scenario select: the mobile smoke reaches
+                the scenario picker as `select` nth(1), so a new control must not
+                be inserted above it. */}
+            <label className="mt-3 block">
+              <span className="sr-only">Choose your temperament</span>
+              <select
+                value={leader}
+                onChange={(event) => setLeader(event.target.value)}
+                className="min-h-12 w-full rounded-md border border-accent/20 bg-bg/60 px-3 text-sm text-fg outline-none focus:neon-border-accent"
+              >
+                {LEADERS.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                    {l.volatile ? " — volatile" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="mt-2 text-sm text-fg">{leaderById(leader).line}</p>
+            <p className="mt-1 text-xs leading-relaxed text-subtle">{leaderById(leader).detail}</p>
 
             <div className="mt-8 space-y-6">
               <section>
@@ -299,6 +323,7 @@ export function TitleScreen() {
                             strategicAI: terminator ? "skynet" : aiMode,
                             deadhand: def?.defaultDeadhand ?? deadhand,
                             scenarioId: scenario ?? undefined,
+                            leaderArchetype: leader,
                           });
                         }}
                       >

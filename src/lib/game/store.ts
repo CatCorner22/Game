@@ -50,6 +50,8 @@ interface StartOptions {
   strategicAI?: StrategicAIMode;
   deadhand?: DeadhandMode;
   scenarioId?: ScenarioId;
+  /** The player's own temperament. Defaults to the neutral institutionalist. */
+  leaderArchetype?: string;
 }
 
 interface GameState {
@@ -130,13 +132,14 @@ export const useGame = create<GameState>((set, get) => ({
   scenarioId: null,
   saveSlot: 0,
   lastError: null,
-  start: ({ difficulty, playerId, intent, terminator, strategicAI, deadhand, scenarioId }) => {
+  start: ({ difficulty, playerId, intent, terminator, strategicAI, deadhand, scenarioId, leaderArchetype }) => {
     unlockAudio();
     try {
       const scenario = scenarioById(scenarioId);
       const aiMode = strategicAI ?? (terminator ? "skynet" : scenario?.defaultAI ?? "human");
       const deadhandMode = deadhand ?? scenario?.defaultDeadhand ?? "off";
       let world = createWorld(difficulty, Date.now() | 0, playerId, intent, aiMode === "skynet" || Boolean(terminator));
+      if (leaderArchetype) world.leaderArchetype = leaderArchetype;
       if (scenarioId) world = applyScenario(world, scenarioId);
       configureStrategicSystems(world, aiMode, deadhandMode);
       saveWorld(world, 0);

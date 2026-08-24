@@ -1,6 +1,7 @@
 import type { World } from "../types";
 import { currentDecision } from "../decisions";
 import { currentPost, inTransit } from "../posts";
+import { leaderKnown, leaderOf, playerLeader } from "../leaders";
 import { addressFor, officeFor } from "./address";
 import { type Advisor, ageOf, hawkishness } from "./roster";
 import { type AdvisorStance, RUNGS, candorOf, trustOf } from "./conference";
@@ -70,14 +71,27 @@ export function openingLine(world: World, advisor: Advisor, stance: AdvisorStanc
 
   let text: string;
   if (deferring) {
-    text = choose(
-      [
-        `${you}, I think you already have the right instinct on this one.`,
-        `${you}, I'd follow your read. It matches where we've been.`,
-        `Whatever you're inclined toward, ${you}, I can support it.`,
-      ],
-      key,
-    );
+    // A room that has stopped telling you things sounds different depending on
+    // why. Overruled advisors hedge; a room managing a volatile principal
+    // performs agreement.
+    const leader = playerLeader(world);
+    text = leader.volatile
+      ? choose(
+          [
+            `${you}, I think you've already read this correctly.`,
+            `${you}, nobody here is going to argue with your instinct on this.`,
+            `${you}, whatever you decide, the staff will make it work.`,
+          ],
+          key,
+        )
+      : choose(
+          [
+            `${you}, I think you already have the right instinct on this one.`,
+            `${you}, I'd follow your read. It matches where we've been.`,
+            `Whatever you're inclined toward, ${you}, I can support it.`,
+          ],
+          key,
+        );
   } else {
     switch (advisor.branch) {
       case "watch":
@@ -266,6 +280,16 @@ export function replyLine(
     text = inTransit(world)
       ? `${you}, we are between sites. Warning and control are both degraded until we are established.`
       : `${you}, we are at ${currentPost(world).short}. ${currentPost(world).role}`;
+  } else if (/who is|what kind of|their leader|other side|president|leadership|temperament/.test(m)) {
+    const from = t?.from;
+    if (from && leaderKnown(world, from)) {
+      const l = leaderOf(world, from);
+      text = `${you}, our assessment of ${world.actors[from]?.shortName ?? from} is ${l.name.toLowerCase()}. ${l.line}`;
+    } else if (from) {
+      text = `${you}, we do not have an established leadership assessment on ${world.actors[from]?.shortName ?? from}. Sustained collection would give us one. Guessing would not.`;
+    } else {
+      text = `${you}, no counterpart to assess right now.`;
+    }
   } else if (/who else|room|on the call|conference/.test(m)) {
     const spec = RUNGS.find((r) => r.rung === (world.conferenceRung ?? 1));
     text = `${you}, this is a ${spec?.name ?? "Missile Display Conference"}. ${spec?.detail ?? ""}`;

@@ -6,6 +6,7 @@ import { makeOfficer, asPlayable } from "./command";
 import { makeSites, seedSpies } from "./spies";
 import { emptyTrickery } from "./trickery";
 import { standingPost } from "./posts";
+import { DEFAULT_LEADER, assignLeaders } from "./leaders";
 import { PLAYABLE_IDS } from "./types";
 import { saveWorldToSlot } from "./slots";
 import { ensureTreaties } from "./treaties";
@@ -113,6 +114,9 @@ export function migrateWorld(world: World): World {
   if (!world.advisorTrust) world.advisorTrust = {};
   if (!world.overruled) world.overruled = [];
   if (!world.addressStyle) world.addressStyle = "neutral";
+  if (!world.leaderArchetype) world.leaderArchetype = DEFAULT_LEADER;
+  if (!world.leadersKnown) world.leadersKnown = [];
+  if (!world.leaders) assignLeaders(world);
   if (world.lastAction === undefined) world.lastAction = null;
   if (world.lastDecisionKey === undefined) world.lastDecisionKey = null;
   if (!world.recentDecisionKeys) world.recentDecisionKeys = [];

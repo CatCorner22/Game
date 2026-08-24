@@ -57,6 +57,7 @@ import {
 } from "./terminator";
 import { applySpyCovert, applySpyIntel, applySpyPosture, tickSpies } from "./spies";
 import { beginRelocation, tickRelocation } from "./posts";
+import { establishLeader, leaderKnown, leaderOf, misreadRisk, tickLeader } from "./leaders";
 import { recordDecision, tickConference } from "./advisors/conference";
 import { panicMayFire, reactToAction, tickNerve } from "./humans";
 import {
@@ -600,6 +601,51 @@ function tickCasual(world: World) {
   }
 }
 
+/**
+ * Two leaders who cannot read each other drift hostile without either of them
+ * doing anything. That gap is the mechanism behind most of the incidents in the
+ * corpus: nobody escalated on purpose, they escalated because the other side's
+ * behaviour did not parse. Deterministic and draw-free.
+ */
+/**
+ * Work out who is actually in the chair on the other side.
+ *
+ * A leadership assessment is an intelligence product rather than something the
+ * player simply knows, but gating it behind an explicit INTEL action meant a
+ * player who never spent one would never see the feature at all. It lands when
+ * an actor is well enough characterised, by whatever route got them there.
+ * Deterministic and draw-free.
+ */
+const LEADER_ASSESSMENT_INTEL = 55;
+
+function tickLeaderAssessments(world: World) {
+  for (const id of ACTOR_IDS) {
+    if (id === world.playerId) continue;
+    const actor = world.actors[id];
+    if (!actor || leaderKnown(world, id)) continue;
+    if (actor.intel < LEADER_ASSESSMENT_INTEL) continue;
+    establishLeader(world, id);
+    const l = leaderOf(world, id);
+    log(
+      world,
+      "you",
+      `Leadership assessment on ${actor.shortName}: ${l.name.toLowerCase()}.`,
+      `${l.line} ${l.detail} Knowing this does not change what they do — it changes how much of it you can anticipate.`,
+    );
+  }
+}
+
+function tickMisreads(world: World) {
+  for (const id of ACTOR_IDS) {
+    if (id === world.playerId) continue;
+    const actor = world.actors[id];
+    if (!actor || !actor.nuclear) continue;
+    const risk = misreadRisk(world, id);
+    if (risk < 0.25) continue;
+    addHostility(world, world.playerId, id, risk * 2.2);
+  }
+}
+
 export function resolveTurn(world: World, action: PlayerAction): World {
   const prevMeters = meters(world);
   const prevEvent = world.event;
@@ -680,6 +726,9 @@ export function resolveTurn(world: World, action: PlayerAction): World {
     maybeRetaliate(world, machineTarget, world.playerId, "tactical");
   }
   tickPolitics(world);
+  tickLeader(world);
+  tickLeaderAssessments(world);
+  tickMisreads(world);
   tickRelocation(world);
   tickConference(world);
   tickWinter(world);

@@ -4,6 +4,7 @@ import { log } from "../simLog";
 import { availableOptions, currentDecision } from "../decisions";
 import type { DecisionOption } from "../decisions";
 import { postEffects } from "../posts";
+import { playerLeader } from "../leaders";
 import { PLAYABLE_IDS } from "../types";
 import type { PlayableId } from "../types";
 import { type Advisor, type ConferenceRung, hawkishness, rosterFor } from "./roster";
@@ -90,7 +91,12 @@ export function trustOf(world: World, advisorId: string): number {
  */
 export function candorOf(world: World, advisor: Advisor): number {
   const trust = trustOf(world, advisor.id);
-  return clamp(advisor.candor * (0.55 + trust / 160), 0, 100);
+  // Temperament is the other half of this, and the more dangerous half. Trust
+  // is something you spend by overruling people; candor is something a room
+  // loses just from reading who is in the chair. A leader nobody wants to
+  // contradict gets a room that agrees with them.
+  const temperament = playerLeader(world).candor;
+  return clamp(advisor.candor * (0.55 + trust / 160) + temperament, 0, 100);
 }
 
 /** Whether the advisor is reachable from the player's current command post. */

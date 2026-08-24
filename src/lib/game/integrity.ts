@@ -17,6 +17,16 @@ import { buildTrack, resolveCloseCallHold } from "./warning";
 import { flightProfile, isMaritimeAzimuth, unresolvedProfile, wallSecondsFor } from "./flight";
 import { distanceKm } from "./geo";
 import { currentPost, postEffects, postsFor, standingPost, tickRelocation } from "./posts";
+import {
+  DEFAULT_LEADER,
+  LEADERS,
+  assignLeaders,
+  establishLeader,
+  leaderKnown,
+  leaderOf,
+  misreadRisk,
+  playerLeader,
+} from "./leaders";
 import { ageOf, hawkishness, rosterFor } from "./advisors/roster";
 import { addressFor, addressVariants } from "./advisors/address";
 import {
@@ -909,6 +919,133 @@ export function runIntegrityChecks(): IntegrityResult {
     }
     if (!closing) throw new Error("fixture only covered stalling options, which is the passing case");
     return `${options.length} options, ${closing} of them card-closing, all recorded`;
+  });
+
+  check("leader-archetypes-wellformed", () => {
+    const ids = new Set(LEADERS.map((l) => l.id));
+    if (ids.size !== LEADERS.length) throw new Error("duplicate archetype id");
+    if (!ids.has(DEFAULT_LEADER)) throw new Error("no default archetype");
+    const base = LEADERS.find((l) => l.id === DEFAULT_LEADER)!;
+    // The default has to be mechanically inert or every existing seed shifts.
+    if (base.refusal || base.preDel || base.candor || base.legitimacy) throw new Error("default is not neutral");
+    if (base.escalation !== 1 || base.diplomacy !== 1) throw new Error("default biases behaviour");
+    for (const l of LEADERS) {
+      if (l.escalation <= 0 || l.diplomacy <= 0) throw new Error(`${l.id} has a non-positive multiplier`);
+      if (l.predictability < 0 || l.predictability > 100) throw new Error(`${l.id} predictability out of range`);
+      if (!l.line.trim() || !l.detail.trim()) throw new Error(`${l.id} has no character`);
+    }
+    const volatile = LEADERS.filter((l) => l.volatile);
+    if (volatile.length < 4) throw new Error(`only ${volatile.length} volatile temperaments`);
+    // A volatile temperament that costs nothing is just flavour text.
+    for (const l of volatile) {
+      if (l.candor >= 0) throw new Error(`${l.id} is volatile but the room still speaks freely`);
+      if (l.predictability > 65) throw new Error(`${l.id} is volatile but perfectly readable`);
+    }
+    return `${LEADERS.length} temperaments, ${volatile.length} volatile`;
+  });
+
+  check("adversary-leaders-are-deterministic-and-varied", () => {
+    // Derived from the seed by hash, never drawn, so a replay faces the same
+    // cast and no fixed seed shifts.
+    const a = createWorld("standard", 7, "US", "blue");
+    const b = createWorld("standard", 7, "US", "blue");
+    const c = createWorld("standard", 8, "US", "blue");
+    const cast = (w: World) =>
+      (Object.keys(w.actors) as ActorId[])
+        .filter((id) => id !== w.playerId)
+        .map((id) => `${id}:${leaderOf(w, id).id}`)
+        .join(",");
+    if (cast(a) !== cast(b)) throw new Error("same seed produced a different cast");
+    if (cast(a) === cast(c)) throw new Error("every seed produces the same cast");
+    const rngBefore = a.rngState;
+    assignLeaders(a);
+    if (a.rngState !== rngBefore) throw new Error("assignLeaders consumed RNG");
+    const distinct = new Set(
+      (Object.keys(a.actors) as ActorId[]).filter((id) => id !== a.playerId).map((id) => leaderOf(a, id).id),
+    );
+    if (distinct.size < 4) throw new Error(`only ${distinct.size} distinct temperaments in the world`);
+    // Seats whose command culture implies a temperament keep it.
+    if (leaderOf(a, "KP").id !== "ideologue") throw new Error("KP drew a random temperament");
+    return `${distinct.size} distinct temperaments, KP fixed, rngState untouched`;
+  });
+
+  check("volatile-leader-costs-the-room-its-candor", () => {
+    // The headline effect: a leader nobody wants to contradict gets a room
+    // that agrees with them, without a single advisor being overruled.
+    const advisor = rosterFor("US").find((x) => x.branch === "intel");
+    if (!advisor) throw new Error("no intelligence advisor on the US roster");
+    const at = (id: string) => {
+      const w = worldWithCard(41);
+      w.leaderArchetype = id;
+      return { candor: candorOf(w, advisor), stance: advisorStance(w, advisor) };
+    };
+    const base = at(DEFAULT_LEADER);
+    const loud = at("showman");
+    const suspicious = at("paranoid");
+    if (loud.candor >= base.candor) throw new Error("a showman costs the room nothing");
+    if (suspicious.candor >= loud.candor) throw new Error("paranoia is not worse than volume");
+    if (!loud.stance?.deferring) throw new Error("the room does not defer to a showman");
+    if (base.stance?.deferring) throw new Error("the room already defers to an institutionalist");
+    return `candor ${Math.round(base.candor)} -> ${Math.round(loud.candor)} -> ${Math.round(suspicious.candor)}`;
+  });
+
+  check("temperament-moves-release-and-misreads", () => {
+    const w = createWorld("standard", 42, "US", "blue");
+    const institution = structuredClone(w);
+    const impulsive = structuredClone(w);
+    impulsive.leaderArchetype = "impulsive";
+    if (playerLeader(impulsive).refusal >= playerLeader(institution).refusal) {
+      throw new Error("impulsive does not weaken the check on an order");
+    }
+    if (playerLeader(impulsive).preDel <= playerLeader(institution).preDel) {
+      throw new Error("impulsive does not raise pre-delegation risk");
+    }
+    const before = misreadRisk(institution, "RU");
+    const after = misreadRisk(impulsive, "RU");
+    if (after <= before) throw new Error(`misread ${before} -> ${after}`);
+    // Both sides unreadable is the worst case, and must be worse than one.
+    const both = structuredClone(impulsive);
+    both.leaders = { ...both.leaders, RU: "impulsive" };
+    if (misreadRisk(both, "RU") <= after) throw new Error("two unreadable leaders are no worse than one");
+    return `misread RU ${before.toFixed(2)} -> ${after.toFixed(2)} -> ${misreadRisk(both, "RU").toFixed(2)}`;
+  });
+
+  check("adversary-temperament-must-be-earned", () => {
+    // It is an intelligence product, not something the player simply knows.
+    let w = createWorld("standard", 43, "US", "blue");
+    if (leaderKnown(w, "RU")) throw new Error("RU leadership known at turn 1 for free");
+    for (let i = 0; i < 8 && !leaderKnown(w, "RU") && !w.ended; i += 1) {
+      w = resolveTurn(structuredClone(w), { kind: "intelligence", intensity: 3, target: "RU" });
+    }
+    if (!leaderKnown(w, "RU")) throw new Error("sustained collection never established it");
+    // And it survives a save round-trip.
+    const round = JSON.parse(JSON.stringify(w)) as World;
+    if (!leaderKnown(round, "RU")) throw new Error("assessment did not survive serialization");
+    establishLeader(w, "RU");
+    if ((w.leadersKnown ?? []).filter((id) => id === "RU").length !== 1) throw new Error("duplicate assessment");
+    return `established after collection, ${(w.leadersKnown ?? []).length} on file`;
+  });
+
+  check("volatile-world-is-measurably-more-dangerous", () => {
+    // If temperaments do not change outcomes they are decoration.
+    const run = (volatile: boolean): number => {
+      let uses = 0;
+      for (let seed = 1; seed <= 10; seed += 1) {
+        let w = createWorld("standard", seed, "US", "blue");
+        if (!volatile) {
+          w.leaders = Object.fromEntries(
+            (Object.keys(w.actors) as ActorId[]).map((id) => [id, DEFAULT_LEADER]),
+          );
+        }
+        for (let i = 0; i < 12 && !w.ended; i += 1) w = resolveTurn(structuredClone(w), hold());
+        uses += w.nuclearUses.length;
+      }
+      return uses;
+    };
+    const calm = run(false);
+    const wild = run(true);
+    if (wild <= calm) throw new Error(`assigned temperaments were not more dangerous (${wild} vs ${calm})`);
+    return `${calm} nuclear uses institutional vs ${wild} with temperaments, 10 seeds`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };

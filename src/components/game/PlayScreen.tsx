@@ -12,6 +12,7 @@ import { HotlinePanel } from "./HotlinePanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { C2Panel } from "./C2Panel";
 import { CommandPostPanel } from "./CommandPostPanel";
+import { LeadershipPanel } from "./LeadershipPanel";
 import { PatrolPanel } from "./PatrolPanel";
 import { DiplomacyPanel } from "./DiplomacyPanel";
 import { SpaceWeatherPanel } from "./SpaceWeatherPanel";
@@ -287,6 +288,7 @@ export function PlayScreen() {
           </HudPanel>
           <C2Panel world={world} />
           <CommandPostPanel world={world} />
+          <LeadershipPanel world={world} />
           <StrategicSystemsPanel world={world} />
           <SpaceWeatherPanel world={world} />
           <PatrolPanel world={world} />
