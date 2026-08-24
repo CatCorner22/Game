@@ -5,7 +5,7 @@ import { HudButton, HudChip, HudLabel, HudPanel } from "./ui/Hud";
 import { cn } from "@/lib/utils";
 
 /**
- * Forty-nine incident files, opened by playing the watch each one belongs to.
+ * One incident file per scenario, opened by playing the watch it belongs to.
  *
  * The completion goal is the point. Every file carries dates, counts and
  * outcomes from the research corpus, so working through the list is the same

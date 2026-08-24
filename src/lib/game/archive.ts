@@ -5,7 +5,7 @@ import { getCareerStats, type CareerStats } from "./stats";
 /**
  * The Archive.
  *
- * Forty-nine incident files, one per scenario, drawn from the research corpus
+ * One incident file per scenario, drawn from the research corpus
  * the game was built out of. A file opens when you finish the watch it belongs
  * to -- not when you start one, and not when you abandon one. That is the whole
  * mechanic, and it is the reason the ending fields can live in the brief from
