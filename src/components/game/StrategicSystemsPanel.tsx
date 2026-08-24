@@ -120,7 +120,10 @@ export function StrategicSystemsPanel({ world }: { world: World }) {
       </div>
 
       <p className="mt-3 text-micro leading-relaxed text-subtle">
-        Fictional local simulation only. No external LLM, real command interface, operational trigger logic, or targeting model is used.
+        Fictional local simulation only. These systems are deterministic game logic and are never driven by a
+        language model. No real command interface, operational trigger logic, or targeting model is used.
+        (Human advisors&rsquo; dialogue in the warning conference may be generated if you configure a provider;
+        their recommendations and every consequence are still computed here.)
       </p>
     </section>
   );

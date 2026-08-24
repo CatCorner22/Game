@@ -24,6 +24,7 @@ import {
 } from "@/lib/game/advisors/script";
 import { cn } from "@/lib/utils";
 import { trackClockKey, useTrackClock } from "./useTrackClock";
+import { elaborate, modelKnownUnavailable } from "@/lib/advisor/client";
 
 interface Turn extends ConferenceLine {
   key: string;
@@ -52,6 +53,11 @@ export function AdvisorConference() {
   const [draft, setDraft] = useState("");
   const [said, setSaid] = useState<Turn[]>([]);
   const [focused, setFocused] = useState<string | null>(null);
+  // Model-rewritten wording, keyed by line. The scripted line renders first and
+  // is replaced in place if a model is configured, so the call is never waiting
+  // on the network to be usable.
+  const [voiced, setVoiced] = useState<Record<string, string>>({});
+  const [modelOn, setModelOn] = useState(false);
   const railRef = useRef<HTMLDivElement>(null);
 
   const rung = (world?.conferenceRung ?? 0) as 0 | 1 | 2 | 3;
@@ -87,16 +93,48 @@ export function AdvisorConference() {
     }));
   }, [world, room, rung, stances]);
 
-  const transcript = useMemo(() => [...openings, ...said], [openings, said]);
+  const transcript = useMemo(
+    () => [...openings, ...said].map((t) => (voiced[t.key] ? { ...t, text: voiced[t.key] } : t)),
+    [openings, said, voiced],
+  );
 
   useEffect(() => {
     railRef.current?.scrollTo({ top: railRef.current.scrollHeight });
   }, [transcript.length]);
 
+  // Hand each new advisor line to the server to be re-voiced. Failure, a
+  // timeout, and "no key configured" all resolve to the scripted line, so this
+  // can only ever change wording -- never what is offered or what happens.
+  useEffect(() => {
+    if (!world || !open) return;
+    if (modelKnownUnavailable()) return;
+    const pending = [...openings, ...said].filter((t) => !t.mine && !voiced[t.key]);
+    if (!pending.length) return;
+    let live = true;
+    void (async () => {
+      for (const turn of pending.slice(0, 12)) {
+        const advisor = room.find((a) => a.id === turn.advisorId);
+        if (!advisor) continue;
+        const reply = await elaborate(world, advisor, turn);
+        if (!live) return;
+        if (reply.mode === "model") {
+          setModelOn(true);
+          setVoiced((prev) => (prev[turn.key] ? prev : { ...prev, [turn.key]: reply.text }));
+        } else if (reply.note?.includes("ADVISOR_API_KEY")) {
+          return;
+        }
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [world, open, openings, said, room, voiced]);
+
   // Reset the local transcript whenever the call itself changes.
   useEffect(() => {
     setSaid([]);
     setDraft("");
+    setVoiced({});
   }, [clockKey, rung]);
 
   if (!world || !open) return null;
@@ -162,6 +200,7 @@ export function AdvisorConference() {
             {post.short}
             {inTransit(world) ? " · in transit · degraded" : ""} · {room.length} on the call
             {missing.length ? ` · ${missing.length} unreachable` : ""}
+            {modelOn ? " · voices generated" : ""}
           </p>
         </div>
         {remaining !== null ? (

@@ -55,4 +55,7 @@ runNode([
   "--test",
   join(root, "src/lib/app-data/app-data.test.ts"),
   join(root, "src/lib/auth/gate-identity.test.ts"),
+  // TypeScript tests are not auto-discovered -- only scripts/**/*.test.mjs is --
+  // so anything added here has to be listed or it silently never runs.
+  join(root, "src/lib/advisor/advisor-route.test.ts"),
 ]);
