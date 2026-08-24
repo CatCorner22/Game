@@ -99,6 +99,9 @@ export function TitleScreen() {
             <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("multiplayer")}>
               Multiplayer
             </HudButton>
+            <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("archive")}>
+              Archive
+            </HudButton>
             <HudButton variant="ghost" className="px-3 py-2 text-xs" onClick={() => setScreen("briefing")}>
               Briefing
             </HudButton>

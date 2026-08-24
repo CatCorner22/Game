@@ -2,6 +2,7 @@ import { createWorld } from "./world";
 import { resolveTurn, forecast } from "./sim";
 import { applyScenario, SCENARIOS } from "./scenarios";
 import { SCENARIO_BRIEFS, briefFor } from "./scenarioBriefs";
+import { buildArchive, lockedLine } from "./archive";
 import { makeActors } from "./actors";
 import { seatObjectives } from "./objectives";
 import { encodeReplay, decodeReplay, recordTurn } from "./replay";
@@ -1129,6 +1130,44 @@ export function runIntegrityChecks(): IntegrityResult {
     const headlines = new Set(SCENARIOS.map((d) => briefFor(d.id)?.headline));
     if (headlines.size !== SCENARIOS.length) throw new Error("two scenarios share a headline");
     return `${SCENARIOS.length} scenarios, all briefed`;
+  });
+
+  check("archive-opens-only-what-you-finished", () => {
+    // A file opens when a run ends, not when one starts. buildArchive is pure
+    // and takes the stats as an argument precisely so the rule can be proved
+    // here, with no localStorage to read.
+    const fresh = buildArchive({ scenarioBest: {} });
+    if (fresh.opened !== 0) throw new Error(`${fresh.opened} files open on a fresh career`);
+    if (fresh.total !== SCENARIOS.length) {
+      throw new Error(`${fresh.total} files for ${SCENARIOS.length} scenarios`);
+    }
+    for (const e of fresh.entries) {
+      if (e.best !== null) throw new Error(`${e.id} carries a best score with no games played`);
+    }
+    const one = buildArchive({ scenarioBest: { "petrov-1983": 812 } });
+    const petrov = one.entries.find((e) => e.id === "petrov-1983");
+    if (!petrov?.opened) throw new Error("finishing petrov-1983 did not open its file");
+    if (petrov.best !== 812) throw new Error(`best recorded as ${petrov.best}`);
+    if (one.opened !== 1) throw new Error(`${one.opened} files open after one finished run`);
+    // Zero is a real score, not a missing one. A truthiness test here would
+    // seal the file of anyone who finished a run badly enough.
+    const zero = buildArchive({ scenarioBest: { "cuba-1962": 0 } });
+    if (!zero.entries.find((e) => e.id === "cuba-1962")?.opened) {
+      throw new Error("a score of zero failed to open the file");
+    }
+    return `${fresh.total} files, sealed until finished`;
+  });
+
+  check("archive-sealed-files-reveal-nothing", () => {
+    // The locked line is the only string a player sees before playing, so it
+    // has to stay a template. Interpolating the headline or the situation into
+    // it would hand over the scenario the archive exists to reward.
+    const shape = /^(Historical|2027 theater|Threshold) · [a-z-]+ · challenge [1-5] of 5\. Finish this watch to open the file\.$/;
+    for (const e of buildArchive({ scenarioBest: {} }).entries) {
+      const line = lockedLine(e);
+      if (!shape.test(line)) throw new Error(`${e.id} sealed line is not a template: "${line}"`);
+    }
+    return `${SCENARIOS.length} sealed files say only era, category and challenge`;
   });
 
   check("after-action-reveals-only-what-it-should", () => {
