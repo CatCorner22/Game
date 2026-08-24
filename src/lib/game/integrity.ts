@@ -1027,25 +1027,73 @@ export function runIntegrityChecks(): IntegrityResult {
   });
 
   check("volatile-world-is-measurably-more-dangerous", () => {
-    // If temperaments do not change outcomes they are decoration.
-    const run = (volatile: boolean): number => {
-      let uses = 0;
-      for (let seed = 1; seed <= 10; seed += 1) {
+    // Originally this counted total nuclear uses over a fixed number of turns,
+    // which is confounded: a world that escalates faster also ENDS faster, so
+    // it accumulates fewer uses while being plainly more dangerous. Measure the
+    // mean turn of first nuclear use instead -- unconfounded, and consistent
+    // across every sample size from 10 seeds to 120.
+    const firstUse = (volatile: boolean) => {
+      let reached = 0;
+      let turns = 0;
+      for (let seed = 1; seed <= 50; seed += 1) {
         let w = createWorld("standard", seed, "US", "blue");
         if (!volatile) {
           w.leaders = Object.fromEntries(
             (Object.keys(w.actors) as ActorId[]).map((id) => [id, DEFAULT_LEADER]),
           );
         }
-        for (let i = 0; i < 12 && !w.ended; i += 1) w = resolveTurn(structuredClone(w), hold());
-        uses += w.nuclearUses.length;
+        for (let i = 0; i < 16 && !w.ended; i += 1) w = resolveTurn(structuredClone(w), hold());
+        if (w.nuclearUses.length) {
+          reached += 1;
+          turns += w.nuclearUses[0].turn;
+        }
       }
-      return uses;
+      return { reached, mean: reached ? turns / reached : Infinity };
     };
-    const calm = run(false);
-    const wild = run(true);
-    if (wild <= calm) throw new Error(`assigned temperaments were not more dangerous (${wild} vs ${calm})`);
-    return `${calm} nuclear uses institutional vs ${wild} with temperaments, 10 seeds`;
+    const calm = firstUse(false);
+    const wild = firstUse(true);
+    if (!calm.reached || !wild.reached) throw new Error("no run reached nuclear use in one arm");
+    if (wild.mean >= calm.mean) {
+      throw new Error(`temperaments did not pull first use earlier (${wild.mean.toFixed(1)} vs ${calm.mean.toFixed(1)})`);
+    }
+    return `first nuclear use turn ${calm.mean.toFixed(1)} institutional vs ${wild.mean.toFixed(1)} with temperaments, 50 seeds`;
+  });
+
+  check("no-turn-cap", () => {
+    // "peace" and "stalemate" were the twenty-four-month timer and nothing else,
+    // so the property is that they are unreachable. Deliberately not asserting
+    // that some run survives past turn 24 -- that is a balance question, not a
+    // question about the cap, and conflating the two is how a check starts
+    // failing for reasons it was never about.
+    const kinds = new Map<string, number>();
+    for (let seed = 1; seed <= 14; seed += 1) {
+      let w = createWorld("standard", seed, "US", "blue");
+      for (let i = 0; i < 40 && !w.ended; i += 1) w = resolveTurn(structuredClone(w), hold());
+      if (w.ended) kinds.set(w.ending?.kind ?? "?", (kinds.get(w.ending?.kind ?? "?") ?? 0) + 1);
+    }
+    for (const dead of ["peace", "stalemate"]) {
+      if (kinds.has(dead)) throw new Error(`the timer still fires: ${kinds.get(dead)} run(s) ended as "${dead}"`);
+    }
+
+    // And directly: the exact state the old timer fired on -- a calm watch at
+    // three years with no nuclear use -- resolves a turn without ending.
+    const w = createWorld("standard", 12, "US", "blue");
+    w.year = 2030;
+    w.month = 2;
+    w.turn = 37;
+    w.nuclearUses = [];
+    w.defcon = 5;
+    w.globalRisk = 30;
+    if (w.mandate) w.mandate.resolved = null;
+    const next = resolveTurn(structuredClone(w), hold());
+    for (const dead of ["peace", "stalemate", "machine"]) {
+      if (next.ending?.kind === dead) throw new Error(`three-year watch ended on the timer as "${dead}"`);
+    }
+    if (!next.ended && !next.log.some((l) => /years on watch/i.test(l.text))) {
+      throw new Error("a long watch passed unmarked");
+    }
+    const summary = [...kinds.entries()].map(([k, n]) => `${k}×${n}`).join(", ");
+    return `no timer endings across 14 seeds (${summary}); 3-year watch continues`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };

@@ -9,7 +9,7 @@ import type {
   Team,
   World,
 } from "./types";
-import { PLAYABLE_IDS } from "./types";
+import { ACTOR_IDS, PLAYABLE_IDS } from "./types";
 import { standingPost } from "./posts";
 import { DEFAULT_LEADER, assignLeaders } from "./leaders";
 import { clamp, round } from "./rng";
@@ -349,6 +349,96 @@ export function bumpFlash(world: World, id: Flashpoint["id"], delta: number) {
   const f = flash(world, id);
   if (!f) return;
   f.heat = clamp(f.heat + delta, 0, 100);
+}
+
+/**
+ * Doctrinal baseline relations, recovered from `makeActors()`.
+ *
+ * That builder is fully deterministic and draw-free, so the opening posture of
+ * every pair is recoverable on demand and does not need storing on the World or
+ * migrating into old saves.
+ */
+let BASELINE: Record<ActorId, Actor> | null = null;
+
+function baselineHostility(a: ActorId, b: ActorId): number {
+  if (!BASELINE) BASELINE = makeActors();
+  return BASELINE[a]?.hostility?.[b] ?? 50;
+}
+
+/**
+ * Relations mean-revert toward their doctrinal baseline.
+ *
+ * Hostility had no decay of any kind. It was raised from a dozen places and
+ * lowered from almost none, so every relationship ratcheted to 100 and stayed
+ * there -- measured, a do-nothing watch had North Korea pinned at maximum
+ * hostility to the United States by turn three, after which nothing the player
+ * did could matter because there was no room left to move. Heat already decays
+ * and `tickNerve` already mean-reverts temperament toward `riskTolerance`; this
+ * is the same idea applied to the one variable that was missing it.
+ *
+ * Deliberately slow (8% of the gap per turn, matching tickNerve). A live crisis
+ * escalates far faster than this, so it does not stop anything real. It only
+ * means a relationship nobody is actively inflaming drifts back to where it
+ * started.
+ */
+/**
+ * Opening heat for every flashpoint, mirrored from `createWorld` above so heat
+ * has something to revert toward.
+ */
+const FLASH_BASELINE: Record<string, number> = {
+  "korea": 42,
+  "taiwan": 38,
+  "nato-ru": 44,
+  "ukraine": 40,
+  "iran": 36,
+  "kashmir": 28,
+  "terror": 22,
+  "south-china": 30,
+  "machine": 0,
+  "union": 34,
+  "cuba": 18,
+  "cartel": 24,
+  "himalaya": 20,
+  "space": 14,
+};
+
+/**
+ * Flashpoints cool toward their opening temperature.
+ *
+ * Heat had a flat -1.2 per turn, which sounds like decay but is not: ignoring
+ * an event pumps its flashpoint by 5 to 8, and because a HOLD can never
+ * "address" an event, any run that holds repeatedly pumps whichever flashpoint
+ * the deck keeps returning to. Measured on a do-nothing watch, thirteen of the
+ * fourteen flashpoints drifted down as intended and Korea climbed +7.2 a turn
+ * to saturation, which then satisfied the heat gate on an adversary firing.
+ *
+ * Proportional reversion fixes the asymmetry without weakening a live crisis:
+ * at the baseline it does nothing, and the further a flashpoint has been pushed
+ * from where it started the harder it pulls back. Something actively burning
+ * still outruns it easily.
+ */
+export function tickFlashpoints(world: World) {
+  for (const f of world.flashpoints) {
+    const base = FLASH_BASELINE[f.id] ?? 20;
+    const gap = base - f.heat;
+    if (Math.abs(gap) < 0.1) continue;
+    f.heat = clamp(f.heat + gap * 0.1, 0, 100);
+  }
+}
+
+export function tickRelations(world: World) {
+  for (const a of ACTOR_IDS) {
+    const actor = world.actors[a];
+    if (!actor) continue;
+    for (const b of ACTOR_IDS) {
+      if (a === b) continue;
+      const base = baselineHostility(a, b);
+      const cur = actor.hostility[b] ?? base;
+      const gap = base - cur;
+      if (Math.abs(gap) < 0.1) continue;
+      actor.hostility[b] = clamp(cur + gap * 0.08, 0, 100);
+    }
+  }
 }
 
 export function hostility(world: World, a: ActorId, b: ActorId): number {

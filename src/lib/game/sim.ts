@@ -31,6 +31,8 @@ import {
   meters,
   recompute,
   setDefcon,
+  tickFlashpoints,
+  tickRelations,
 } from "./world";
 import {
   aiReleaseOk,
@@ -254,7 +256,16 @@ function applyIgnore(world: World, action: PlayerAction) {
     action.kind !== "hold" && (action.target === ev.actor || ev.actor === you);
   if (addressed) return;
   const fp = eventFlash(ev.actor);
-  if (fp) bumpFlash(world, fp, ev.heat === "critical" ? 8 : ev.heat === "high" ? 5 : 3);
+  if (fp) {
+    // Ignoring an event heats its flashpoint -- that pressure to engage is the
+    // point. But a HOLD can never count as addressing an event, and the deck
+    // returns to the same actor for several turns running, so a flat bump meant
+    // one corner of the board ran to saturation and then decided the game.
+    // Scaled by remaining headroom it still bites hard early and cannot run away.
+    const base = ev.heat === "critical" ? 8 : ev.heat === "high" ? 5 : 3;
+    const current = world.flashpoints.find((f) => f.id === fp)?.heat ?? 0;
+    bumpFlash(world, fp, base * clamp((100 - current) / 55, 0.15, 1));
+  }
 
   if (ev.id === "nk-notam" || ev.id === "nk-fizzle") {
     world.actors.KP.systems.forEach((s) => {
@@ -589,9 +600,15 @@ function tickPolitics(world: World) {
     }
   }
   world.actors.CN.stockpile = clamp(world.actors.CN.stockpile + 1.2, 0, 2000);
-  world.flashpoints.forEach((f) => {
-    f.heat = clamp(f.heat - 1.2 + (world.defcon <= 2 ? 1 : 0), 0, 100);
-  });
+  // Proportional reversion toward each flashpoint's opening temperature. The
+  // old flat -1.2 could not keep up with an ignored event pumping +5 to +8 into
+  // the same flashpoint every turn, so one corner of the board always saturated.
+  tickFlashpoints(world);
+  if (world.defcon <= 2) {
+    world.flashpoints.forEach((f) => {
+      f.heat = clamp(f.heat + 1, 0, 100);
+    });
+  }
 }
 
 function tickCasual(world: World) {
@@ -726,6 +743,7 @@ export function resolveTurn(world: World, action: PlayerAction): World {
     maybeRetaliate(world, machineTarget, world.playerId, "tactical");
   }
   tickPolitics(world);
+  tickRelations(world);
   tickLeader(world);
   tickLeaderAssessments(world);
   tickMisreads(world);
@@ -1071,46 +1089,38 @@ export function finishIfNeeded(world: World) {
     return;
   }
 
+  // There is no turn cap.
+  //
+  // This used to end every run at twenty-four months with a peace, stalemate,
+  // machine or red-win screen, whatever was happening at the time. That is a
+  // strange thing to do to a crisis game: it stopped watches mid-crisis, and it
+  // meant the calendar rather than the player decided when a run was over. A
+  // watch now ends exactly two ways -- a catastrophe, or the mandate you were
+  // given resolving one way or the other. Both are handled above, and both can
+  // happen on any turn.
+  //
+  // The milestone still gets marked, because two quiet years is a real
+  // achievement in this game and should be said out loud. It just is not an
+  // ending any more.
+  markLongWatch(world);
+}
+
+/**
+ * Note the passage of a long, quiet watch. Deterministic and draw-free; fires
+ * at two years and once a year after that, and never ends the run.
+ */
+function markLongWatch(world: World) {
+  if (world.nuclearUses.length) return;
   const months = (world.year - 2027) * 12 + (world.month - 2);
-  if (months >= 24 && world.nuclearUses.length === 0) {
-    const m = meters(world);
-    if (world.terminator && world.aiTakeover >= 55) {
-      end(world, {
-        kind: "machine",
-        title: "NO WAR. NO KEYS.",
-        body: `Two years without a mushroom cloud. Takeover ended at ${round(world.aiTakeover)}. The model still sits on the path. You kept the species. You did not keep the watch.`,
-        score: scorePeace(world) * 0.4,
-      });
-      return;
-    }
-    if (world.intent === "red") {
-      if (redObjectivesMet(world)) {
-        end(world, {
-          kind: "red-win",
-          title: "OBJECTIVES ADVANCED",
-          body: `Two years, no mushroom cloud, and your hostile aims moved. Risk ended at ${round(m.risk)}. Coercion without spasm is the red-team win. It is still a world with nine nuclear states.`,
-          score: scorePeace(world) * 0.85,
-        });
-      } else {
-        end(world, {
-          kind: "stalemate",
-          title: "STALEMATE",
-          body: `Two years without nuclear use. Your red-team aims did not land. Risk ${round(m.risk)}. You did not lose the country. You also did not get what you came for.`,
-          score: scorePeace(world) * 0.55,
-        });
-      }
-      return;
-    }
-    end(world, {
-      kind: "peace",
-      title: m.risk < 40 ? "BELOW THE LINE" : "HELD — BARELY",
-      body:
-        m.risk < 40
-          ? `Two years without nuclear use. Risk ended at ${round(m.risk)}.${world.terminator ? ` Machine takeover ${round(world.aiTakeover)}.` : ""} That was the mission. History is quieter than a war you won.`
-          : `You avoided nuclear use for two years, with risk still at ${round(m.risk)}. Survival is not the same as settlement. It still counts.`,
-      score: scorePeace(world),
-    });
-  }
+  if (months < 24 || months % 12 !== 0) return;
+  const m = meters(world);
+  log(
+    world,
+    "info",
+    `${Math.floor(months / 12)} years on watch. No nuclear use.`,
+    `Risk is at ${round(m.risk)}.${world.terminator ? ` Machine takeover ${round(world.aiTakeover)}.` : ""} ` +
+      "Surviving this long does not oblige you to stop. The watch ends when your mandate resolves, or when something ends it.",
+  );
 }
 
 function end(world: World, ending: Ending) {
