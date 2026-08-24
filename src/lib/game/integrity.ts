@@ -1103,9 +1103,17 @@ export function runIntegrityChecks(): IntegrityResult {
       const brief = briefFor(def.id);
       if (!brief) throw new Error(`${def.id} has no brief`);
       for (const [field, value] of Object.entries(brief)) {
-        if (!value.trim()) throw new Error(`${def.id}.${field} is empty`);
-        if (value.includes("undefined")) throw new Error(`${def.id}.${field} has an unrendered value`);
+        const parts = Array.isArray(value) ? value : [value];
+        for (const part of parts) {
+          if (typeof part !== "string" || !part.trim()) throw new Error(`${def.id}.${field} is empty`);
+          if (part.includes("undefined")) throw new Error(`${def.id}.${field} has an unrendered value`);
+        }
       }
+      // Facts have to be facts: at least three, and each carrying something
+      // checkable rather than atmosphere.
+      if (brief.facts.length < 3) throw new Error(`${def.id} has ${brief.facts.length} facts`);
+      const checkable = brief.facts.filter((f) => /\d/.test(f)).length;
+      if (checkable < 2) throw new Error(`${def.id} has ${checkable} facts carrying a number or date`);
       // A headline is a sentence about something that happened, not a label.
       if (!/[.!?]$/.test(brief.headline)) throw new Error(`${def.id} headline is not a sentence: "${brief.headline}"`);
       // Crude on purpose. What this is really catching is the label-style

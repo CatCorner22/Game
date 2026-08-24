@@ -9,7 +9,7 @@ import { useMemo, useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 import { DEFAULT_LEADER, LEADERS, leaderById } from "@/lib/game/leaders";
-import { briefFor } from "@/lib/game/scenarioBriefs";
+import { briefFor, type ScenarioBrief } from "@/lib/game/scenarioBriefs";
 
 const DIFFS: { id: Difficulty; label: string; line: string }[] = [
   { id: "standard", label: "STANDARD", line: "Readable files. Hostile world." },
@@ -178,12 +178,15 @@ export function TitleScreen() {
                   {briefFor(selectedDef.id)?.headline ?? selectedDef.title}
                 </p>
                 {briefFor(selectedDef.id) ? (
-                  <dl className="mt-2 space-y-1.5">
-                    <BriefRow label="Situation" value={briefFor(selectedDef.id)!.situation} />
-                    <BriefRow label="You are" value={briefFor(selectedDef.id)!.youAre} />
-                    <BriefRow label="You decide" value={briefFor(selectedDef.id)!.decision} />
-                    <BriefRow label="If you get it wrong" value={briefFor(selectedDef.id)!.stakes} />
-                  </dl>
+                  <>
+                    <dl className="mt-2 space-y-1.5">
+                      <BriefRow label="Situation" value={briefFor(selectedDef.id)!.situation} />
+                      <BriefRow label="You are" value={briefFor(selectedDef.id)!.youAre} />
+                      <BriefRow label="You decide" value={briefFor(selectedDef.id)!.decision} />
+                      <BriefRow label="If you get it wrong" value={briefFor(selectedDef.id)!.stakes} />
+                    </dl>
+                    <BriefRecord brief={briefFor(selectedDef.id)!} />
+                  </>
                 ) : null}
               </div>
             ) : null}
@@ -516,6 +519,45 @@ export function TitleScreen() {
 }
 
 /** One labelled line of a scenario brief. */
+/**
+ * The record behind the scenario, collapsed by default.
+ *
+ * The repository carries a 1,584-line corpus of a hundred real incidents and
+ * until now not one line of it reached a player. This is where it arrives: the
+ * dates, counts and distances that make a scenario something you can check
+ * rather than something you have to take on trust.
+ *
+ * Collapsed because it is depth, not the pitch -- the headline sells the
+ * evening and this is for the player who wants to know whether any of it is
+ * true. `whatHappened` and `afterward` are deliberately NOT here: those are the
+ * ending, and they belong on the after-action screen.
+ */
+function BriefRecord({ brief }: { brief: ScenarioBrief }) {
+  return (
+    <details className="group mt-2 border-t border-border pt-2">
+      <summary className="cursor-pointer list-none font-mono text-micro tracking-wider text-subtle uppercase hover:text-accent">
+        <span className="group-open:hidden">▸ </span>
+        <span className="hidden group-open:inline">▾ </span>
+        The record · {brief.facts.length} facts
+      </summary>
+      <ul className="mt-1.5 space-y-1.5">
+        {brief.facts.map((fact) => (
+          <li key={fact} className="flex gap-2 text-xs leading-relaxed text-muted">
+            <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60" />
+            <span className="min-w-0">{fact}</span>
+          </li>
+        ))}
+      </ul>
+      {brief.precedent ? (
+        <p className="mt-2 text-xs leading-relaxed text-subtle">
+          <span className="font-mono text-micro tracking-wider uppercase">Precedent · </span>
+          {brief.precedent}
+        </p>
+      ) : null}
+    </details>
+  );
+}
+
 function BriefRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
