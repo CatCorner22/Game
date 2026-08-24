@@ -52,6 +52,16 @@ interface StartOptions {
   scenarioId?: ScenarioId;
   /** The player's own temperament. Defaults to the neutral institutionalist. */
   leaderArchetype?: string;
+  /**
+   * Fixed world seed. Defaults to the clock.
+   *
+   * The Daily Watch passes the day's seed so that everybody playing on a given
+   * date plays the same run. Read once here, at start, which is outside
+   * `resolveTurn` -- the determinism contract is about the turn pipeline.
+   */
+  seed?: number;
+  /** Set when this run is the Daily Watch, so the ending can be shared. */
+  dailyKey?: string;
 }
 
 interface GameState {
@@ -132,14 +142,15 @@ export const useGame = create<GameState>((set, get) => ({
   scenarioId: null,
   saveSlot: 0,
   lastError: null,
-  start: ({ difficulty, playerId, intent, terminator, strategicAI, deadhand, scenarioId, leaderArchetype }) => {
+  start: ({ difficulty, playerId, intent, terminator, strategicAI, deadhand, scenarioId, leaderArchetype, seed, dailyKey }) => {
     unlockAudio();
     try {
       const scenario = scenarioById(scenarioId);
       const aiMode = strategicAI ?? (terminator ? "skynet" : scenario?.defaultAI ?? "human");
       const deadhandMode = deadhand ?? scenario?.defaultDeadhand ?? "off";
-      let world = createWorld(difficulty, Date.now() | 0, playerId, intent, aiMode === "skynet" || Boolean(terminator));
+      let world = createWorld(difficulty, seed ?? (Date.now() | 0), playerId, intent, aiMode === "skynet" || Boolean(terminator));
       if (leaderArchetype) world.leaderArchetype = leaderArchetype;
+      if (dailyKey) world.dailyKey = dailyKey;
       if (scenarioId) world = applyScenario(world, scenarioId);
       configureStrategicSystems(world, aiMode, deadhandMode);
       saveWorld(world, 0);

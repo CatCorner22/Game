@@ -8,11 +8,14 @@ import { defeatOf, victoryOf } from "@/lib/game/mandate";
 import { encodeReplay } from "@/lib/game/replay";
 import { GlassPanel, HudButton, HudChip, HudLabel, HudPanel, HudRow } from "./ui/Hud";
 import { AfterAction } from "./AfterAction";
+import { defconSpark, shareText } from "@/lib/game/daily";
+import { getCareerStats } from "@/lib/game/stats";
 
 export function EndScreen() {
   const world = useGame((s) => s.world);
   const startReplay = useGame((s) => s.startReplay);
   const [copied, setCopied] = useState(false);
+  const [sharedCopied, setSharedCopied] = useState(false);
   const [timelineIdx, setTimelineIdx] = useState(0);
   if (!world?.ending) return null;
   const e = world.ending;
@@ -23,6 +26,19 @@ export function EndScreen() {
   const won = isWin(e.kind);
   const mandate = world.mandate;
   const mandateCond = mandate?.resolved === "victory" ? victoryOf(world) : mandate?.resolved === "defeat" ? defeatOf(world) : undefined;
+
+  const dailyShare = world.dailyKey
+    ? shareText(world, getCareerStats().daily?.streak ?? 0, defconSpark(world.defconHistory ?? []))
+    : "";
+
+  async function copyDaily() {
+    try {
+      await navigator.clipboard.writeText(dailyShare);
+      setSharedCopied(true);
+    } catch {
+      setSharedCopied(false);
+    }
+  }
 
   async function copyReplay() {
     try {
@@ -87,6 +103,25 @@ export function EndScreen() {
           </div>
         ) : null}
       </HudPanel>
+
+      {world.dailyKey ? (
+        <HudPanel className="mt-8">
+          <HudLabel>Daily watch</HudLabel>
+          {/* Spoiler-free by construction: the scenario name and how it went
+              for you, and nothing about how the real incident ended. Somebody
+              who has not played today should read this and still want to. */}
+          <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed whitespace-pre text-fg">
+            {dailyShare}
+          </pre>
+          <HudButton
+            variant="accent"
+            className="mt-3 min-h-11 w-full text-xs uppercase"
+            onClick={() => void copyDaily()}
+          >
+            {sharedCopied ? "Result copied" : "Copy result"}
+          </HudButton>
+        </HudPanel>
+      ) : null}
 
       <div className="mt-6">
         <HudButton variant="accent" className="min-h-11 w-full text-xs uppercase" onClick={() => void copyReplay()}>

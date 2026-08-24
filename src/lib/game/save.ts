@@ -117,6 +117,8 @@ export function migrateWorld(world: World): World {
   if (!world.leaderArchetype) world.leaderArchetype = DEFAULT_LEADER;
   if (!world.leadersKnown) world.leadersKnown = [];
   if (!world.leaders) assignLeaders(world);
+  if (!world.defconHistory) world.defconHistory = [];
+  if (world.dailyKey === undefined) world.dailyKey = undefined;
   if (world.lastAction === undefined) world.lastAction = null;
   if (world.lastDecisionKey === undefined) world.lastDecisionKey = null;
   if (!world.recentDecisionKeys) world.recentDecisionKeys = [];

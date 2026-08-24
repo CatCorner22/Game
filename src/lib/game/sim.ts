@@ -756,6 +756,11 @@ export function resolveTurn(world: World, action: PlayerAction): World {
   world.closeCall = null;
   world.authCode = nextAuthCode(world);
 
+  // The shape of the run, one number a turn, for the Daily Watch share block.
+  // Pure bookkeeping -- no draw, no branch on it -- so replay is unaffected.
+  // Capped because a very long watch should not grow the save without bound.
+  world.defconHistory = [...(world.defconHistory ?? []), world.defcon].slice(-120);
+
   if (strategicSpasm(world)) {
     finishIfNeeded(world);
   } else {

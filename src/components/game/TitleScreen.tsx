@@ -5,11 +5,13 @@ import { SCENARIO_CATEGORIES, SCENARIOS, type ScenarioCategory, type ScenarioEra
 import type { Difficulty, PlayableId, Team } from "@/lib/game/types";
 import { PLAYABLE } from "@/lib/game/command";
 import { DEADHAND_CONFIGS, STRATEGIC_AI_CONFIGS, type DeadhandMode, type StrategicAIMode } from "@/lib/game/strategicSystems";
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 import { DEFAULT_LEADER, LEADERS, leaderById } from "@/lib/game/leaders";
 import { briefFor, type ScenarioBrief } from "@/lib/game/scenarioBriefs";
+import { dailyWatch, type DailyWatch } from "@/lib/game/daily";
+import { getCareerStats, type DailyRecord } from "@/lib/game/stats";
 
 const DIFFS: { id: Difficulty; label: string; line: string }[] = [
   { id: "standard", label: "STANDARD", line: "Readable files. Hostile world." },
@@ -132,6 +134,9 @@ export function TitleScreen() {
             >
               Begin watch
             </HudButton>
+
+            <DailyWatchPanel />
+
             <label className="mt-4 block">
               <span className="sr-only">Command seat</span>
               <select
@@ -558,6 +563,73 @@ function BriefRecord({ brief }: { brief: ScenarioBrief }) {
         </p>
       ) : null}
     </details>
+  );
+}
+
+/**
+ * One watch a day, the same one for everybody.
+ *
+ * The engine has been fully deterministic since replay codes shipped, so this
+ * needs no server and no account: the date decides the seed and the scenario,
+ * and two people on opposite sides of the world get the same evening without
+ * ever talking to each other.
+ *
+ * Rendered from an effect rather than during the first render because the
+ * streak lives in localStorage and the date comes from the client clock —
+ * reading either while server-rendering would produce markup the browser then
+ * disagrees with.
+ */
+function DailyWatchPanel() {
+  const start = useGame((s) => s.start);
+  const [today, setToday] = useState<DailyWatch | null>(null);
+  const [record, setRecord] = useState<DailyRecord | null>(null);
+
+  useEffect(() => {
+    const watch = dailyWatch();
+    setToday(watch);
+    setRecord(getCareerStats().daily ?? null);
+  }, []);
+
+  if (!today) return null;
+  const def = SCENARIOS.find((s) => s.id === today.scenarioId);
+  const playedToday = record?.lastKey === today.key;
+
+  return (
+    <div className="mt-4 rounded-lg border border-accent/25 bg-surface/50 p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="font-mono text-micro tracking-wider text-accent uppercase">Daily watch · {today.key}</p>
+        {record && record.streak > 0 ? (
+          <p className="font-mono text-micro text-subtle uppercase">
+            streak {record.streak}
+            {record.bestStreak > record.streak ? ` · best ${record.bestStreak}` : ""}
+          </p>
+        ) : null}
+      </div>
+      <p className="mt-1 text-sm leading-snug text-fg">{today.title}</p>
+      <p className="mt-0.5 text-xs leading-snug text-subtle">
+        {playedToday
+          ? "Played today. Your result is on the end screen, ready to copy."
+          : "One seed, one scenario, the same for everyone today."}
+      </p>
+      <HudButton
+        variant={playedToday ? "ghost" : "accent"}
+        className="mt-2 min-h-11 w-full text-xs uppercase"
+        onClick={() =>
+          start({
+            difficulty: def?.difficulty ?? "standard",
+            playerId: def?.playerId ?? "US",
+            intent: def?.intent ?? "blue",
+            scenarioId: today.scenarioId,
+            seed: today.seed,
+            dailyKey: today.key,
+            deadhand: def?.defaultDeadhand,
+            strategicAI: def?.defaultAI,
+          })
+        }
+      >
+        {playedToday ? "Play today's watch again" : "Play today's watch"}
+      </HudButton>
+    </div>
   );
 }
 

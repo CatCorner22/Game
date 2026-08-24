@@ -1,9 +1,11 @@
 import { createWorld } from "./world";
 import { resolveTurn, forecast } from "./sim";
-import { applyScenario, SCENARIOS } from "./scenarios";
+import { applyScenario, SCENARIOS, SCENARIO_IDS } from "./scenarios";
 import { SCENARIO_BRIEFS, briefFor } from "./scenarioBriefs";
 import { buildArchive, lockedLine } from "./archive";
 import { TUTORIAL_STEPS, shouldShowTutorial } from "./tutorial";
+import { dailyWatch, defconSpark, shareText } from "./daily";
+import { foldDaily } from "./stats";
 import { makeActors } from "./actors";
 import { seatObjectives } from "./objectives";
 import { encodeReplay, decodeReplay, recordTurn } from "./replay";
@@ -1131,6 +1133,100 @@ export function runIntegrityChecks(): IntegrityResult {
     const headlines = new Set(SCENARIOS.map((d) => briefFor(d.id)?.headline));
     if (headlines.size !== SCENARIOS.length) throw new Error("two scenarios share a headline");
     return `${SCENARIOS.length} scenarios, all briefed`;
+  });
+
+  check("daily-watch-is-stable-for-a-date", () => {
+    // Everybody playing on a given day has to get the same evening, computed
+    // from the date alone with no server and nothing stored. Both hashes are
+    // pure, so this is the whole contract.
+    const a = dailyWatch(new Date(Date.UTC(2026, 7, 24)));
+    const b = dailyWatch(new Date(Date.UTC(2026, 7, 24, 23, 59, 59)));
+    if (a.key !== "2026-08-24") throw new Error(`key ${a.key}`);
+    if (a.seed !== b.seed || a.scenarioId !== b.scenarioId) throw new Error("same day gave two watches");
+    if (a.seed <= 0) throw new Error(`seed ${a.seed} is not usable`);
+    const next = dailyWatch(new Date(Date.UTC(2026, 7, 25)));
+    if (next.seed === a.seed) throw new Error("consecutive days share a seed");
+    // And the rotation must actually rotate rather than clump on a few
+    // scenarios, which is what a single hash for both seed and scenario does.
+    const seen = new Set<string>();
+    for (let i = 0; i < 120; i += 1) {
+      seen.add(dailyWatch(new Date(Date.UTC(2026, 0, 1 + i))).scenarioId);
+    }
+    if (seen.size < 20) throw new Error(`only ${seen.size} distinct scenarios across 120 days`);
+    if (!SCENARIO_IDS.includes(a.scenarioId)) throw new Error(`${a.scenarioId} is not a scenario`);
+    return `${seen.size} distinct watches across 120 days`;
+  });
+
+  check("daily-watch-adds-no-draws-and-replays", () => {
+    // The daily seed is read once at start, outside resolveTurn. A run built
+    // from it has to behave exactly like any other run on that seed -- if it
+    // did not, the shared date would not produce a shared game.
+    const w = dailyWatch(new Date(Date.UTC(2026, 7, 24)));
+    const def = SCENARIOS.find((s) => s.id === w.scenarioId);
+    if (!def) throw new Error("daily scenario is not in the list");
+    const one = applyScenario(createWorld(def.difficulty, w.seed, def.playerId, def.intent), w.scenarioId);
+    const two = applyScenario(createWorld(def.difficulty, w.seed, def.playerId, def.intent), w.scenarioId);
+    if (one.rngState !== two.rngState) throw new Error("same seed diverged before turn one");
+    const a = runTurns(structuredClone(one), 6);
+    const b = runTurns(structuredClone(two), 6);
+    if (a.rngState !== b.rngState) throw new Error("same seed diverged across six turns");
+    if (a.turn !== b.turn || a.ended !== b.ended) throw new Error("same seed produced different runs");
+    // DEFCON history is bookkeeping and must not have cost a draw.
+    if ((a.defconHistory ?? []).length < 1) throw new Error("defcon history never recorded");
+    return `seed ${w.seed} · ${w.scenarioId} · reproduces across ${a.turn} turns`;
+  });
+
+  check("daily-streak-counts-days-not-plays", () => {
+    // Pure, so the rules are provable here. Replaying the same day must not
+    // advance the streak, the next day extends it, and a gap resets to one --
+    // the day you came back still counts as a day.
+    let rec = foldDaily(undefined, "2026-08-24", 500);
+    if (rec.streak !== 1 || rec.played !== 1) throw new Error(`first daily gave streak ${rec.streak}`);
+    rec = foldDaily(rec, "2026-08-24", 700);
+    if (rec.streak !== 1) throw new Error("replaying a day advanced the streak");
+    if (rec.best !== 700) throw new Error(`best did not improve: ${rec.best}`);
+    if (rec.played !== 1) throw new Error("replaying a day counted as a second play");
+    rec = foldDaily(rec, "2026-08-25", 400);
+    if (rec.streak !== 2) throw new Error(`next day gave streak ${rec.streak}`);
+    if (rec.best !== 700) throw new Error("a worse score lowered the best");
+    rec = foldDaily(rec, "2026-08-28", 100);
+    if (rec.streak !== 1) throw new Error(`a gap gave streak ${rec.streak}`);
+    if (rec.bestStreak !== 2) throw new Error(`best streak lost: ${rec.bestStreak}`);
+    // Month and year boundaries are the classic place this breaks.
+    let edge = foldDaily(undefined, "2026-08-31", 1);
+    edge = foldDaily(edge, "2026-09-01", 1);
+    if (edge.streak !== 2) throw new Error("streak broke across a month boundary");
+    edge = foldDaily(foldDaily(undefined, "2026-12-31", 1), "2027-01-01", 1);
+    if (edge.streak !== 2) throw new Error("streak broke across a year boundary");
+    return "same day holds, next day extends, gap resets to one";
+  });
+
+  check("daily-share-block-spoils-nothing", () => {
+    // The block is the thing a player pastes in public. It must never carry an
+    // ending: someone who has not played today should read it and still want to.
+    const w = dailyWatch(new Date(Date.UTC(2026, 7, 24)));
+    const def = SCENARIOS.find((s) => s.id === w.scenarioId);
+    if (!def) throw new Error("daily scenario is not in the list");
+    let world = applyScenario(createWorld(def.difficulty, w.seed, def.playerId, def.intent), w.scenarioId);
+    world.dailyKey = w.key;
+    world = runTurns(world, 8);
+    const text = shareText(world, 3, defconSpark(world.defconHistory ?? []));
+    if (!text.includes(w.key)) throw new Error("share block does not name the day");
+    for (const brief of Object.values(SCENARIO_BRIEFS)) {
+      for (const secret of [brief.whatHappened, brief.afterward, brief.precedent]) {
+        if (secret && text.includes(secret)) throw new Error("share block leaks an ending");
+      }
+    }
+    if (/\n\n/.test(text)) throw new Error("share block has a blank line");
+    if (text.split("\n").length > 5) throw new Error("share block is too tall to paste");
+    // The spark has to read the right way round: DEFCON 1 is the worst state
+    // and must be the tallest bar, or the picture means the opposite of itself.
+    const calm = defconSpark([5, 5, 5]);
+    const dire = defconSpark([1, 1, 1]);
+    if (calm === dire) throw new Error("spark does not distinguish DEFCON 5 from 1");
+    if (dire.charCodeAt(0) <= calm.charCodeAt(0)) throw new Error("spark is inverted: DEFCON 1 is not the tallest");
+    if (defconSpark(new Array(60).fill(3)).length > 12) throw new Error("spark does not fit one line");
+    return `${text.split("\n").length} lines, spark ${dire}`;
   });
 
   check("first-watch-tutorial-runs-on-a-scenario", () => {

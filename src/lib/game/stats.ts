@@ -11,6 +11,60 @@ export interface CareerStats {
   endings: Partial<Record<EndingKind, number>>;
   achievements: string[];
   scenarioBest: Partial<Record<string, number>>;
+  /**
+   * The Daily Watch record. Lives here rather than in its own store because a
+   * daily result is a finished run like any other, and a second store keyed on
+   * the same event would be a second thing to migrate and to get out of sync.
+   */
+  daily?: DailyRecord;
+}
+
+export interface DailyRecord {
+  /** The last date key played, YYYY-MM-DD in UTC. */
+  lastKey: string;
+  /** Consecutive days played, counting the last one. */
+  streak: number;
+  /** Longest streak ever reached. */
+  bestStreak: number;
+  /** Best score on any daily. */
+  best: number;
+  /** Total dailies finished. */
+  played: number;
+}
+
+/**
+ * Whether `key` is the calendar day immediately after `prev`. Pure string
+ * arithmetic on UTC dates, so it does not care what timezone the player is in
+ * and does not drift across a daylight-saving boundary.
+ */
+export function isNextDay(prev: string, key: string): boolean {
+  const a = Date.parse(`${prev}T00:00:00Z`);
+  const b = Date.parse(`${key}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return false;
+  return b - a === 86_400_000;
+}
+
+/**
+ * Fold a finished daily into the record.
+ *
+ * Pure and exported so the integrity suite can prove the streak rules without a
+ * localStorage to read: replaying the same day never advances the streak, the
+ * next day extends it, and a gap resets it to one rather than to zero -- the
+ * day you came back still counts.
+ */
+export function foldDaily(prev: DailyRecord | undefined, key: string, score: number): DailyRecord {
+  const base: DailyRecord = prev ?? { lastKey: "", streak: 0, bestStreak: 0, best: 0, played: 0 };
+  if (base.lastKey === key) {
+    return { ...base, best: Math.max(base.best, score) };
+  }
+  const streak = isNextDay(base.lastKey, key) ? base.streak + 1 : 1;
+  return {
+    lastKey: key,
+    streak,
+    bestStreak: Math.max(base.bestStreak, streak),
+    best: Math.max(base.best, score),
+    played: base.played + 1,
+  };
 }
 
 export interface AchievementDef {
@@ -96,6 +150,7 @@ export function recordGameEnd(world: World, scenarioId: ScenarioId | null) {
   if (scenarioId) {
     s.scenarioBest[scenarioId] = Math.max(s.scenarioBest[scenarioId] ?? 0, world.ending.score);
   }
+  if (world.dailyKey) s.daily = foldDaily(s.daily, world.dailyKey, world.ending.score);
   const seats = new Set(Object.keys(s.bestScore));
   for (const a of ACHIEVEMENTS) {
     if (s.achievements.includes(a.id)) continue;
