@@ -71,7 +71,16 @@ export type OfficerStance = "professional" | "eager" | "shaken" | "loyalist" | "
 export type Phase = "peacetime" | "crisis" | "conventional" | "nuclear" | "aftermath";
 export type Difficulty = "standard" | "hard" | "extreme";
 export type Disclosure = "acknowledged" | "reported" | "suspected" | "unacknowledged";
-export type Screen = "title" | "briefing" | "play" | "war" | "end" | "stats" | "multiplayer" | "archive";
+export type Screen =
+  | "title"
+  | "briefing"
+  | "play"
+  | "war"
+  | "conference"
+  | "end"
+  | "stats"
+  | "multiplayer"
+  | "archive";
 
 export type DeliveryKind =
   | "icbm"
@@ -243,6 +252,16 @@ export interface GameEvent {
   actor: ActorId;
   heat: "low" | "med" | "high" | "critical";
   ignoreLine: string;
+  /**
+   * One or two sentences of context, glossing any jargon the body uses.
+   *
+   * The deck was written before the briefs were, and it still carries the exact
+   * density the briefs were rewritten to remove -- "NOTAM", "Iskander
+   * batteries", "Hwasong-17/18", all unglossed. A player reads about fifty
+   * words per ordinary turn, and roughly a fifth of them mean nothing unless
+   * you already work in the field.
+   */
+  background?: string;
   tags: string[];
   /** Causal line from last month's decision. */
   because?: string;

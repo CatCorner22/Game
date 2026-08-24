@@ -11,7 +11,9 @@ import { foldDaily } from "./stats";
 import { makeActors } from "./actors";
 import { seatObjectives } from "./objectives";
 import { encodeReplay, decodeReplay, recordTurn } from "./replay";
-import { PLAYABLE_IDS } from "./types";
+import { ACTIONS } from "./actions";
+import { bodyFor } from "./advisors/bodies";
+import { ACTOR_IDS, PLAYABLE_IDS } from "./types";
 import type { ActorId, PlayerAction, World } from "./types";
 import { applyNuclearUse } from "./nuclear";
 import { replayFromCode } from "./replayRun";
@@ -34,7 +36,7 @@ import {
   misreadRisk,
   playerLeader,
 } from "./leaders";
-import { ageOf, hawkishness, rosterFor } from "./advisors/roster";
+import { advisorById, ageOf, hawkishness, rosterFor } from "./advisors/roster";
 import { addressFor, addressVariants } from "./advisors/address";
 import {
   advisorStance,
@@ -46,6 +48,7 @@ import {
   trustOf,
 } from "./advisors/conference";
 import { openingLine, recommendationLine, situationLine } from "./advisors/script";
+import { asPlayable } from "./command";
 import {
   DEFEAT_CONDITIONS,
   MIN_VICTORY_MONTH,
@@ -1108,13 +1111,25 @@ export function runIntegrityChecks(): IntegrityResult {
     for (const def of SCENARIOS) {
       const brief = briefFor(def.id);
       if (!brief) throw new Error(`${def.id} has no brief`);
-      for (const [field, value] of Object.entries(brief)) {
-        const parts = Array.isArray(value) ? value : [value];
-        for (const part of parts) {
-          if (typeof part !== "string" || !part.trim()) throw new Error(`${def.id}.${field} is empty`);
-          if (part.includes("undefined")) throw new Error(`${def.id}.${field} has an unrendered value`);
+      // Every string leaf on the brief has to be real. This used to assume a
+      // brief was flat -- string or string[] -- and threw on anything else,
+      // which is the right guarantee expressed against the wrong shape. The
+      // dossier fields are arrays of small records, so the walk recurses.
+      // Nothing is relaxed: an empty string or an unrendered `undefined`
+      // anywhere in the tree still fails, and a non-string leaf still fails.
+      const walk = (value: unknown, path: string): void => {
+        if (Array.isArray(value)) {
+          value.forEach((item, i) => walk(item, `${path}[${i}]`));
+          return;
         }
-      }
+        if (value && typeof value === "object") {
+          for (const [k, v] of Object.entries(value)) walk(v, `${path}.${k}`);
+          return;
+        }
+        if (typeof value !== "string" || !value.trim()) throw new Error(`${def.id}.${path} is empty`);
+        if (value.includes("undefined")) throw new Error(`${def.id}.${path} has an unrendered value`);
+      };
+      for (const [field, value] of Object.entries(brief)) walk(value, field);
       // Facts have to be facts: at least three, and each carrying something
       // checkable rather than atmosphere.
       if (brief.facts.length < 3) throw new Error(`${def.id} has ${brief.facts.length} facts`);
@@ -1131,6 +1146,39 @@ export function runIntegrityChecks(): IntegrityResult {
       // The situation has to actually situate.
       if (brief.situation.split(/[.!?]\s/).length < 2) throw new Error(`${def.id} situation is one sentence`);
       if (!/^You are\b/.test(brief.youAre)) throw new Error(`${def.id} does not say who the player is`);
+
+      // The dossier. A crisis with one actor is a puzzle, not a crisis.
+      if (brief.actors.length < 2) throw new Error(`${def.id} has ${brief.actors.length} other actors`);
+      for (const a of brief.actors) {
+        if (!ACTOR_IDS.includes(a.id)) throw new Error(`${def.id} names unknown actor "${a.id}"`);
+        if (a.id === def.playerId) throw new Error(`${def.id} lists the player's own seat as another actor`);
+      }
+      if (new Set(brief.actors.map((a) => a.id)).size !== brief.actors.length) {
+        throw new Error(`${def.id} lists the same actor twice`);
+      }
+      // Horizons have to actually conflict, which they cannot do if they are
+      // all the same horizon. The move that is right in six hours is often the
+      // one that costs the decade, and that tension is the whole point.
+      if (brief.consequences.length < 2) throw new Error(`${def.id} has ${brief.consequences.length} consequences`);
+      if (new Set(brief.consequences.map((c) => c.horizon)).size < 2) {
+        throw new Error(`${def.id} consequences all sit on one horizon`);
+      }
+      // Unknowns are the field this game most needed. `settledBy` has to name a
+      // real verb or it is decoration rather than a decision aid.
+      if (brief.unknowns.length < 2) throw new Error(`${def.id} has ${brief.unknowns.length} unknowns`);
+      for (const u of brief.unknowns) {
+        if (!ACTIONS.some((act) => act.kind === u.settledBy)) {
+          throw new Error(`${def.id} unknown settled by "${u.settledBy}", which is not an action`);
+        }
+        if (!/\?$/.test(u.question)) throw new Error(`${def.id} unknown is not a question: "${u.question}"`);
+      }
+      // At least one unknown must be answerable by collecting rather than by
+      // acting. A scenario where every uncertainty resolves only by escalating
+      // is not teaching restraint, it is punishing it.
+      if (!brief.unknowns.some((u) => u.settledBy === "intelligence" || u.settledBy === "diplomacy")) {
+        throw new Error(`${def.id} has no unknown that collection or talking would settle`);
+      }
+      if (!/[.!?]$/.test(brief.theTrap)) throw new Error(`${def.id} theTrap is not a sentence`);
     }
     const headlines = new Set(SCENARIOS.map((d) => briefFor(d.id)?.headline));
     if (headlines.size !== SCENARIOS.length) throw new Error("two scenarios share a headline");
@@ -1347,6 +1395,214 @@ export function runIntegrityChecks(): IntegrityResult {
     if (dire.charCodeAt(0) <= calm.charCodeAt(0)) throw new Error("spark is inverted: DEFCON 1 is not the tallest");
     if (defconSpark(new Array(60).fill(3)).length > 12) throw new Error("spark does not fit one line");
     return `${text.split("\n").length} lines, spark ${dire}`;
+  });
+
+  check("every-event-glosses-what-it-names", () => {
+    // The deck was written before the briefs were and still carried the exact
+    // density the briefs were rewritten to remove. A player reads about fifty
+    // words on an ordinary turn and roughly a fifth of them meant nothing
+    // unless you already worked in the field.
+    let glossed = 0;
+    for (const ev of DECK) {
+      if (!ev.background) throw new Error(`${ev.id} has no background`);
+      if (ev.background.length < 120) throw new Error(`${ev.id} background is a fragment`);
+      if (ev.background.length > 320) throw new Error(`${ev.id} background is a paragraph, not a note`);
+      // The body already speaks to the player; this is the desk note under it.
+      if (/\byou\b/i.test(ev.background)) throw new Error(`${ev.id} background addresses the player`);
+      if (ev.background === ev.body) throw new Error(`${ev.id} background repeats the body`);
+      glossed += 1;
+    }
+    // Every background must be distinct -- the same sentence on two events is
+    // filler, and filler is what this whole exercise is against.
+    const texts = new Set(DECK.map((e) => e.background));
+    if (texts.size !== DECK.length) throw new Error(`${DECK.length - texts.size} events share a background`);
+    return `${glossed} deck events glossed`;
+  });
+
+  check("staff-advice-is-attributed-to-real-people", () => {
+    // The panel a player sees every turn used to sign its lines "Grid / J4"
+    // while eighty-five named advisors sat behind a button labelled "More".
+    // This is the join, and it has to hold for every seat: a seat whose roster
+    // lacks the branch a desk asks for must still land on somebody.
+    let checked = 0;
+    for (const seat of PLAYABLE_IDS) {
+      const w = createWorld("standard", 40 + seat.charCodeAt(0), seat, "blue");
+      const advice = staffAdvice(w);
+      if (!advice.length) throw new Error(`${seat} produced no advice`);
+      const ids = new Set<string>();
+      for (const a of advice) {
+        if (!a.advisorId) throw new Error(`${seat} desk "${a.desk}" is still anonymous`);
+        const advisor = advisorById(a.advisorId);
+        if (!advisor) throw new Error(`${seat} names unknown advisor "${a.advisorId}"`);
+        if (advisor.seat !== seat) throw new Error(`${seat} borrowed ${advisor.id} from ${advisor.seat}`);
+        // Three lines from the same person is a monologue, not a room.
+        if (ids.has(a.advisorId)) throw new Error(`${seat} used ${a.advisorId} twice in one turn`);
+        ids.add(a.advisorId);
+        checked += 1;
+      }
+    }
+    return `${checked} attributed lines across ${PLAYABLE_IDS.length} seats`;
+  });
+
+  check("staff-advice-is-deterministic-and-rng-free", () => {
+    // forecast() deep-clones the world and replays this twice on every
+    // ActionPanel render, so a draw here would diverge the stream and the
+    // forecast would stop matching the turn it is predicting.
+    for (const seed of [7, 21, 63]) {
+      let w = createWorld("standard", seed, "US", "blue");
+      for (let i = 0; i < 8 && !w.ended; i += 1) {
+        w = resolveTurn(structuredClone(w), hold());
+        const before = w.rngState;
+        const a = staffAdvice(w);
+        const b = staffAdvice(w);
+        if (w.rngState !== before) throw new Error(`staffAdvice drew from the rng on turn ${w.turn}`);
+        if (JSON.stringify(a) !== JSON.stringify(b)) {
+          throw new Error(`staffAdvice gave two answers for the same world on turn ${w.turn}`);
+        }
+      }
+    }
+    return "no draws, identical across repeated calls, 3 seeds x 8 turns";
+  });
+
+  check("the-room-argues-about-this-crisis", () => {
+    // Nothing in advisors/ used to reference world.event or the scenario, so
+    // roughly seventy templates served every seat, every advisor, every
+    // scenario and every turn -- Petrov-1983 and a 2027 Taiwan contingency
+    // produced the same sentences and the room was demonstrably not listening
+    // to the game it was in.
+    //
+    // The scenario dossier fixed that at the source. Each advisor takes the
+    // uncertainty their own branch would own, names it, and says what would
+    // settle it, so the room argues about the same specific thing the player is
+    // deciding under.
+    let rooms = 0;
+    let aware = 0;
+    let worstSpread = 1;
+    let worstId = "";
+    for (const def of SCENARIOS) {
+      const w = applyScenario(createWorld("standard", 9, def.playerId, def.intent), def.id);
+      // A live track is its own situation; those rooms speak to the board.
+      if (w.closeCall) continue;
+      rooms += 1;
+      const room = rosterFor(asPlayable(w.playerId));
+      const lines = room.map((a) => situationLine(w, a).text);
+      if (lines.some((l) => /I own here|my brief in this|answer one thing|not my desk|outside my brief/.test(l))) {
+        aware += 1;
+      }
+      // Several people caring about the same question is realistic. A room
+      // where most of them say the same thing is the monologue problem wearing
+      // different clothes, which is exactly what an earlier draft did.
+      const spread = new Set(lines).size / lines.length;
+      if (spread < worstSpread) {
+        worstSpread = spread;
+        worstId = def.id;
+      }
+    }
+    if (aware !== rooms) throw new Error(`${rooms - aware} of ${rooms} rooms ignore their own scenario`);
+    if (worstSpread < 0.5) {
+      throw new Error(`${worstId}: only ${Math.round(worstSpread * 100)}% of the room said something distinct`);
+    }
+    return `${rooms} rooms all cite their dossier, worst spread ${Math.round(worstSpread * 100)}%`;
+  });
+
+  check("nuclear-seats-seat-a-whole-body", () => {
+    // The rosters were real institutions with principals missing. The US had no
+    // National Security Advisor -- the person who actually runs the NSC process
+    // -- Russia no Secretary of its Security Council, and France, India, Israel,
+    // North Korea and Iran had no diplomatic voice at all, which meant the
+    // "Partners desk" line every turn fell back to whoever was nearest.
+    const NUCLEAR = ["US", "RU", "CN", "FR", "UK", "IN", "PK", "IL", "KP", "IR"] as const;
+    for (const seat of NUCLEAR) {
+      const roster = rosterFor(seat);
+      const branches = new Set(roster.map((a) => a.branch));
+      // Somebody has to speak for the channel, or talking is nobody's brief.
+      if (!branches.has("diplomatic")) throw new Error(`${seat} has no diplomatic voice`);
+      // Somebody has to speak for the state rather than for a service.
+      if (!branches.has("civilian")) throw new Error(`${seat} has no civilian principal`);
+      if (!branches.has("intel")) throw new Error(`${seat} has nobody who collects`);
+      if (!branches.has("watch")) throw new Error(`${seat} has nobody on the board`);
+      // A body needs people at every rung, or climbing the ladder adds nobody.
+      for (const rung of [1, 2, 3]) {
+        if (!roster.some((a) => a.rung === rung)) throw new Error(`${seat} has nobody at rung ${rung}`);
+      }
+      if (roster.length < 7) throw new Error(`${seat} seats only ${roster.length}`);
+    }
+    const total = PLAYABLE_IDS.reduce((n, s) => n + rosterFor(s).length, 0);
+    return `${NUCLEAR.length} nuclear bodies complete · ${total} advisors across ${PLAYABLE_IDS.length} seats`;
+  });
+
+  check("the-room-is-never-empty", () => {
+    // The conference used to be an overlay whose participant grid could render
+    // zero tiles without anybody noticing -- you saw a transcript and a rung
+    // ladder and assumed the call was still assembling. It is a full screen
+    // now, with the last speaker holding a stage, so an empty room is a blank
+    // screen rather than a missing widget.
+    //
+    // The failure is reachable in principle: `participants` filters the roster
+    // by rung AND by what the current post's comms can carry, so a seat whose
+    // roster happened to put nobody at rung one, played from its most degraded
+    // post, would seat nobody at all. Checked across every seat, every post
+    // that seat can command from, and every rung.
+    let worst = { seat: "", post: "", n: Infinity };
+    for (const seat of PLAYABLE_IDS) {
+      for (const post of postsFor(seat)) {
+        const w = createWorld("standard", 11, seat, "blue");
+        w.commandPost = post.id;
+        w.relocation = null;
+        for (const rung of [1, 2, 3] as const) {
+          const n = participants(w, rung).length;
+          if (!n) throw new Error(`${seat} seats nobody at rung ${rung} from ${post.short}`);
+          if (rung === 1 && n < worst.n) worst = { seat, post: post.short, n };
+        }
+        if (participants(w, 3).length < participants(w, 1).length) {
+          throw new Error(`${seat} from ${post.short}: rung 3 is smaller than rung 1`);
+        }
+      }
+    }
+    const posts = PLAYABLE_IDS.reduce((n, s) => n + postsFor(s).length, 0);
+    return `${PLAYABLE_IDS.length} seats \u00b7 ${posts} posts \u00b7 thinnest room ${worst.n} (${worst.seat} from ${worst.post})`;
+  });
+
+  check("every-seat-has-a-named-decision-body", () => {
+    // Naming the body is most of the education: a player should learn that
+    // Pakistan decides this in a National Command Authority whose secretariat
+    // is the Strategic Plans Division, and that Iran's council seats the
+    // Supreme Leader's representatives above the President who chairs it.
+    const names = new Set<string>();
+    for (const seat of PLAYABLE_IDS) {
+      const body = bodyFor(seat);
+      if (!body.name.trim() || !body.short.trim() || !body.note.trim()) {
+        throw new Error(`${seat} has an incomplete decision body`);
+      }
+      if (!/[.!?]$/.test(body.note)) throw new Error(`${seat} body note is not a sentence`);
+      names.add(body.name);
+    }
+    // Two names are genuinely shared and both are correct: the US and the UK
+    // each call theirs a National Security Council, and China and North Korea
+    // each call theirs a Central Military Commission. This check first asserted
+    // at most one collision, which was an assumption about the world rather
+    // than about the code, and the world won.
+    //
+    // What actually has to be distinct is the note, because that is the
+    // seat-specific part -- how *this* room works. Two seats sharing a note
+    // would mean one of them was filled in by copying the other.
+    const SHARED_BY_DESIGN = new Set(["National Security Council", "Central Military Commission"]);
+    for (const [name, seats] of Object.entries(
+      PLAYABLE_IDS.reduce<Record<string, string[]>>((acc, seat) => {
+        const n = bodyFor(seat).name;
+        acc[n] = [...(acc[n] ?? []), seat];
+        return acc;
+      }, {}),
+    )) {
+      if (seats.length > 1 && !SHARED_BY_DESIGN.has(name)) {
+        throw new Error(`${seats.join(" and ")} share the body name "${name}"`);
+      }
+    }
+    const notes = new Set(PLAYABLE_IDS.map((s) => bodyFor(s).note));
+    if (notes.size !== PLAYABLE_IDS.length) {
+      throw new Error(`${PLAYABLE_IDS.length - notes.size} seats share a body note`);
+    }
+    return `${names.size} named bodies across ${PLAYABLE_IDS.length} seats, ${notes.size} distinct notes`;
   });
 
   check("first-watch-tutorial-runs-on-a-scenario", () => {

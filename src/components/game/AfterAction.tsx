@@ -73,6 +73,21 @@ export function AfterAction({ world }: { world: World }) {
         ))}
       </ul>
 
+      {/* Named after the run, not before it. Knowing a scenario has a trap and
+          seeing it coming are different skills, and only the second one is the
+          game -- so this is a debrief line, not a briefing one. */}
+      <p className="mt-3 font-mono text-micro tracking-wider text-subtle uppercase">What this one was built around</p>
+      <p className="mt-1 text-sm leading-relaxed text-warn">{brief.theTrap}</p>
+
+      <p className="mt-3 font-mono text-micro tracking-wider text-subtle uppercase">What you could not have known</p>
+      <ul className="mt-1.5 space-y-1.5">
+        {brief.unknowns.map((u) => (
+          <li key={u.question} className="text-xs leading-relaxed text-muted">
+            <span className="text-fg">{u.question}</span> {u.whyItMatters}
+          </li>
+        ))}
+      </ul>
+
       <p className="mt-3 text-xs leading-relaxed text-subtle">
         Everyone in these files had less information than you were given here, and less time to use it.
       </p>

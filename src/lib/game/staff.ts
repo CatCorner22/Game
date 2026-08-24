@@ -1,9 +1,20 @@
 import type { ActionIntensity, ActionKind, ActorId, World } from "./types";
 import { COMMAND, asPlayable } from "./command";
+import { rosterFor, type AdvisorBranch } from "./advisors/roster";
 import { weatherHostile } from "./spaceWeather";
 
 export interface StaffAdvice {
   desk: string;
+  /**
+   * Which kind of professional is saying this.
+   *
+   * The desks were anonymous strings -- "Grid / J4", "Partners desk" -- while
+   * eighty-five named advisors sat unreachable behind a button labelled "More".
+   * Two advice systems, built past each other. The branch is what joins them.
+   */
+  branch: AdvisorBranch;
+  /** The advisor this is attributed to, resolved from the seat's roster. */
+  advisorId?: string;
   kind: ActionKind;
   intensity: ActionIntensity;
   target: ActorId | null;
@@ -31,6 +42,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
     return [
       {
         desk: "SWPC / warning",
+        branch: "watch",
         kind: "intelligence",
         intensity: 1,
         target: world.playerId,
@@ -40,6 +52,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
       },
       {
         desk: `${profile.satchel} · J3`,
+        branch: "strategic",
         kind: "hold",
         intensity: 1,
         target: null,
@@ -49,6 +62,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
       },
       {
         desk: "Grid / J4",
+        branch: "civilian",
         kind: "kill",
         intensity: 2,
         target: world.playerId,
@@ -63,6 +77,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
     return [
       {
         desk: "Warning phenomenology",
+        branch: "watch",
         kind: "hold",
         intensity: 1,
         target: null,
@@ -72,6 +87,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
       },
       {
         desk: `${profile.satchel} · J2`,
+        branch: "intel",
         kind: "intelligence",
         intensity: 1,
         target: cc?.track.from ?? target,
@@ -81,6 +97,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
       },
       {
         desk: world.secondOfficer.title,
+        branch: "strategic",
         kind: "diplomacy",
         intensity: 1,
         target: cc?.track.from ?? target,
@@ -94,6 +111,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
   if (stance === "eager" || stance === "machine") {
     out.push({
       desk: world.secondOfficer.title,
+        branch: "strategic",
       kind: cc && cc.track.confidence >= 70 ? "employ" : "posture",
       intensity: cc && cc.track.minutesToImpact <= 8 && cc.track.confidence >= 75 ? 2 : 2,
       target,
@@ -107,6 +125,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
   } else if (stance === "coward" || stance === "shaken") {
     out.push({
       desk: world.secondOfficer.title,
+        branch: "strategic",
       kind: "diplomacy",
       intensity: 1,
       target,
@@ -117,6 +136,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
   } else {
     out.push({
       desk: world.secondOfficer.title,
+        branch: "strategic",
       kind: cc && cc.track.confidence < 60 ? "hold" : "intelligence",
       intensity: 1,
       target: cc ? cc.track.from : target,
@@ -133,6 +153,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
     const tight = cc.track.minutesToImpact <= 7;
     out.push({
       desk: `${profile.satchel} · warning`,
+      branch: "watch",
       kind: lowConf ? "hold" : tight ? "posture" : "intelligence",
       intensity: tight && !lowConf ? 2 : 1,
       target: cc.track.from,
@@ -148,6 +169,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
     const space = world.flashpoints.find((f) => f.id === "space")?.heat ?? 0;
     out.push({
       desk: you.warning >= 60 ? "SBIRS / BMEWS" : "National technical means",
+      branch: "watch",
       kind: space >= 70 ? "intelligence" : heat === "critical" ? "intelligence" : "hold",
       intensity: 1,
       target: space >= 70 ? (target === world.playerId ? "CN" : target) : target,
@@ -166,6 +188,7 @@ export function staffAdvice(world: World): StaffAdvice[] {
   const diplomacyTarget = target;
   out.push({
     desk: allies < 50 ? "Partners desk" : "Political",
+    branch: "diplomatic",
     kind: allies < 52 || heat === "low" ? "diplomacy" : you.alert <= 2 && heat === "high" ? "posture" : "diplomacy",
     intensity: allies < 45 ? 3 : 1,
     target: diplomacyTarget,
@@ -179,7 +202,58 @@ export function staffAdvice(world: World): StaffAdvice[] {
     tone: "talk",
   });
 
-  return out.slice(0, 3);
+  return attribute(world, out.slice(0, 3));
+}
+
+/**
+ * How to fall back when a seat has nobody of the branch a desk wants.
+ *
+ * Rosters are uneven by design -- only the US has a legal adviser, only the UK
+ * a naval one -- so a desk asking for `legal` on any other seat has to land
+ * somewhere sensible rather than nowhere. Ordered by who would actually cover
+ * that brief in the room.
+ */
+const NEAREST: Record<AdvisorBranch, AdvisorBranch[]> = {
+  watch: ["intel", "strategic", "air"],
+  intel: ["watch", "civilian", "strategic"],
+  strategic: ["ground", "air", "sea", "watch"],
+  ground: ["strategic", "air", "sea"],
+  air: ["strategic", "ground", "watch"],
+  sea: ["strategic", "ground", "air"],
+  civilian: ["diplomatic", "legal", "intel"],
+  diplomatic: ["civilian", "legal", "intel"],
+  legal: ["civilian", "diplomatic", "intel"],
+};
+
+/**
+ * Put a name and a face on each line.
+ *
+ * Deterministic and draw-free, which is not optional: `forecast()` deep-clones
+ * the world and replays this twice on every `ActionPanel` render, so a draw here
+ * would diverge the stream. Selection is a plain scan in roster order.
+ *
+ * Advisors are assigned greedily and never twice in one turn -- three lines from
+ * the same person is not a room, it is a monologue.
+ */
+function attribute(world: World, advice: StaffAdvice[]): StaffAdvice[] {
+  const roster = rosterFor(asPlayable(world.playerId));
+  if (!roster.length) return advice;
+  const taken = new Set<string>();
+  return advice.map((a) => {
+    for (const branch of [a.branch, ...NEAREST[a.branch]]) {
+      const pick = roster.find((adv) => adv.branch === branch && !taken.has(adv.id));
+      if (pick) {
+        taken.add(pick.id);
+        return { ...a, advisorId: pick.id };
+      }
+    }
+    const any = roster.find((adv) => !taken.has(adv.id));
+    if (any) {
+      taken.add(any.id);
+      return { ...a, advisorId: any.id };
+    }
+    return a;
+  });
 }
 
 export function majorityKind(advice: StaffAdvice[]): ActionKind {

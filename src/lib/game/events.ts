@@ -14,6 +14,8 @@ export const OPENING_EVENT: GameEvent = {
   actor: "KP",
   heat: "high",
   ignoreLine: "If you hold, they test. Reliability and political space both go up.",
+  background:
+    "A NOTAM is a public aviation warning telling airliners to keep clear of a stretch of sea. Filing one is a courtesy that doubles as an announcement: the same rocket stack that lifts a satellite proves a missile.",
   tags: ["korea", "test"],
 };
 
@@ -25,6 +27,8 @@ export const DECK: GameEvent[] = [
     actor: "KP",
     heat: "high",
     ignoreLine: "The law stands. Their pre-delegation flag stays on.",
+    background:
+      "Pre-delegation means the launch decision no longer waits on one man, and C2 is the command net that carries the order. States write such rules because they fear losing the leader; the writing is the deterrent.",
     tags: ["korea", "doctrine"],
   },
   {
@@ -34,6 +38,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "high",
     ignoreLine: "If you do nothing, alliance cohesion dips. If you match them, heat climbs.",
+    background:
+      "A no-notice drill skips the advance notification European agreements encourage, which is exactly what makes it useful cover. Iskander launchers take a conventional or a nuclear warhead, and no outside watcher can tell which.",
     tags: ["nato-ru"],
   },
   {
@@ -43,6 +49,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "med",
     ignoreLine: "They upload. The arms race meter moves without you.",
+    background:
+      "Upload means putting warheads back onto missiles built to carry more than a treaty allowed. Both sides kept that hedge deliberately. It is fast, reversible, and impossible to do quietly, so the mirror move follows.",
     tags: ["nato-ru", "arms"],
   },
   {
@@ -52,6 +60,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "med",
     ignoreLine: "Their opacity wins a round. Your confidence in the China file drops.",
+    background:
+      "A canister is the sealed tube a missile ships and sits in, so movement around one reads as loading. Fill a few holes out of hundreds and hide which, and every hole must be treated as real. That is the old shell game.",
     tags: ["taiwan"],
   },
   {
@@ -61,6 +71,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "high",
     ignoreLine: "Silence reads as a green light for the next rehearsal.",
+    background:
+      "Quarantine is the softer word Washington chose in 1962 because a blockade is, in law, an act of war. Drills of this kind train a fleet and also supply the cover story under which the real thing would begin.",
     tags: ["taiwan"],
   },
   {
@@ -70,6 +82,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "critical",
     ignoreLine: "The clock runs. Israel may act without you.",
+    background:
+      "National technical means is the treaty phrase for satellites and the rest of the collection a state is permitted to run. Breakout counts the weeks from decision to a bomb's worth of material, and the last step is the shortest.",
     tags: ["iran"],
   },
   {
@@ -79,6 +93,8 @@ export const DECK: GameEvent[] = [
     actor: "IL",
     heat: "critical",
     ignoreLine: "They decide without you. Probability of a unilateral strike rises.",
+    background:
+      "Israel struck a reactor in Iraq in 1981 and one in Syria in 2007, and treats the rule as doctrine. Buried, dispersed enrichment is a different problem than one building, and an ally's raid is charged to its patron anyway.",
     tags: ["iran"],
   },
   {
@@ -88,6 +104,8 @@ export const DECK: GameEvent[] = [
     actor: "PK",
     heat: "high",
     ignoreLine: "Theft and leak risk ticks up. Terror networks notice discipline failures.",
+    background:
+      "Custody, not doctrine, is the failure mode here. Arsenals rest on two-man rules and coded locks that assume the guards are loyal, and unrest inside the army is the one condition those safeguards never assumed.",
     tags: ["terror", "kashmir"],
   },
   {
@@ -97,6 +115,8 @@ export const DECK: GameEvent[] = [
     actor: "PK",
     heat: "high",
     ignoreLine: "The fire continues. Heat on Kashmir rises without a governor.",
+    background:
+      "The Line of Control is a ceasefire line rather than a border, and firing across it is routine until it is not. Nasr is short-range nuclear artillery, moved forward precisely so the other side watches it move.",
     tags: ["kashmir"],
   },
   {
@@ -106,6 +126,8 @@ export const DECK: GameEvent[] = [
     actor: "NS",
     heat: "critical",
     ignoreLine: "If this is real and you hold, the device gets a head start.",
+    background:
+      "Accountancy is the bookkeeping safeguards rest on, and small gaps are ordinary because processing leaves material in pipes and filters. Kilograms are not ordinary. Most such alarms end as arithmetic; the hunt cannot wait to learn which.",
     tags: ["terror"],
   },
   {
@@ -115,6 +137,8 @@ export const DECK: GameEvent[] = [
     actor: "NS",
     heat: "med",
     ignoreLine: "The supplier stays in business.",
+    background:
+      "Industrial isotopes come from hospitals, oil wells and sterilization plants, guarded like costly equipment rather than like weapons. A device built from them harms by contamination and fear, which makes the supplier the question.",
     tags: ["terror"],
   },
   {
@@ -124,6 +148,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "critical",
     ignoreLine: "Holding is correct here. Logging the near-miss still matters for doctrine.",
+    background:
+      "Twice in living memory the screens showed an attack that was not there: a training tape loaded by mistake in 1979, a Norwegian science rocket in 1995. A steeply lofted shot, climbing high and falling short, is easy to mistake for worse.",
     tags: ["accident"],
   },
   {
@@ -133,6 +159,8 @@ export const DECK: GameEvent[] = [
     actor: "FR",
     heat: "med",
     ignoreLine: "Allies notice the hesitation. Cohesion dips.",
+    background:
+      "Since the 1960s the American bombs held in European vaults, and the ordinary fighters wired to carry them, have worked as alliance glue — shared risk made visible. Moscow has always read the same hardware as a forward threat.",
     tags: ["nato-ru"],
   },
   {
@@ -142,6 +170,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "med",
     ignoreLine: "Without a hotline use, rumors fill the gap.",
+    background:
+      "Deterrence at sea rests on boats that are never located, and a boat that is never located is not looking hard for company either. Hulls from four navies have touched before; it stays survivable only because neither crew may call it an attack.",
     tags: ["nato-ru"],
   },
   {
@@ -151,6 +181,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "high",
     ignoreLine: "They complete the shift. Crisis stability with China gets worse.",
+    background:
+      "Riding out an attack and answering later is slow and survivable. Firing on warning, while the incoming is still in flight, is fast and hostage to the sensors. Washington and Moscow chose speed decades ago and have paid in false alarms since.",
     tags: ["taiwan"],
   },
   {
@@ -160,6 +192,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "Polarization stays high. Diplomacy and posture both cost more domestic support.",
+    background:
+      "Governments rehearse who inherits authority if the capital is gone; the drills are old, dull and necessarily secret. Secrecy plus distrust turns routine procedure into evidence, and a leadership half its country disbelieves bargains from less.",
     tags: ["domestic"],
   },
   {
@@ -169,6 +203,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "med",
     ignoreLine: "Public confidence in defense dips. Arms race pressure up.",
+    background:
+      "Interceptors work by predicting an arc, and a glide vehicle refuses to have one — boosted up, then flying low and turning. Every visible gap in defense since Sputnik has drawn money years before it drew a working answer.",
     tags: ["arms"],
   },
   {
@@ -178,6 +214,8 @@ export const DECK: GameEvent[] = [
     actor: "KP",
     heat: "high",
     ignoreLine: "The ambiguity remains. Stockpile estimates should move and will not, unless you collect.",
+    background:
+      "Underground shots are read from two things: ground shock, and the trace gases, mostly xenon, that seep up days later. A very small yield has always been arguable both ways, failure or compactness, and 2006 was argued for years.",
     tags: ["korea"],
   },
   {
@@ -187,6 +225,8 @@ export const DECK: GameEvent[] = [
     actor: "KP",
     heat: "high",
     ignoreLine: "You fly blind into a possible succession crisis.",
+    background:
+      "In a state built around one family, the live question is not who is ill but what standing orders exist for subordinates when the top of the chain goes quiet. Pyongyang health rumors have run and dissolved several times before.",
     tags: ["korea"],
   },
   {
@@ -196,6 +236,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "high",
     ignoreLine: "The probe is logged as unpunished. They may go deeper.",
+    background:
+      "Nobody needs to touch a weapon to cause a launch. It is enough to corrupt the node that merges radar and satellite feeds into the single picture briefers call fact, where a hostile fault and a bad chip look identical.",
     tags: ["cyber"],
   },
   {
@@ -205,6 +247,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "low",
     ignoreLine: "The offer dies. The race continues.",
+    background:
+      "A freeze counts deployed warheads, and deployed is not the same as owned: missiles built to carry more can be reloaded from storage. Pauses arranged over allied heads tend to be remembered as consent to a sphere of influence.",
     tags: ["nato-ru", "arms"],
   },
   {
@@ -214,6 +258,8 @@ export const DECK: GameEvent[] = [
     actor: "IN",
     heat: "med",
     ignoreLine: "The debate runs. NFU may erode without you.",
+    background:
+      "Battlefield weapons like Nasr — short-range nuclear artillery, moved forward precisely so the other side sees it move — pull the first decision down to a local commander. NATO spent forty years in Europe failing to solve that.",
     tags: ["kashmir"],
   },
   {
@@ -223,6 +269,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "The bag catches up next month. Tonight you cannot fire.",
+    background:
+      "Authority here is personal rather than positional, so the means of proving identity rides on a body instead of sitting in a room. When a president was shot in 1981, his authentication card spent part of the day loose in a hospital.",
     tags: ["c2"],
   },
   {
@@ -232,6 +280,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "The card turns up next month. Tonight the lock stays shut.",
+    background:
+      "Authentication is the one link in the chain nobody can improvise: the system proves who is speaking, not what he wants. The card has gone missing before, and the gap was measured in hours rather than minutes.",
     tags: ["c2"],
   },
   {
@@ -241,6 +291,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "med",
     ignoreLine: "You did not log the notice. The next track from that azimuth will look like a bolt from the blue.",
+    background:
+      "Test notices exist under a 1988 launch-notification agreement so that routine firings are not read as the opening of a war. Plesetsk is a northern range used for exactly that. The paper's value is that it makes anything outside the window loud.",
     tags: ["warning", "nato-ru"],
   },
   {
@@ -250,6 +302,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "low",
     ignoreLine: "Un-acknowledged tests look like attacks. That is the whole point of notices.",
+    background:
+      "Vandenberg flies unarmed Minutemen down a declared track over the Pacific, and the notice goes out so foreign radar crews are not surprised by the boost. Norway filed one in 1995; it never reached the men watching the screens.",
     tags: ["warning"],
   },
   {
@@ -259,6 +313,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "The eager faction keeps the floor. Next close call, someone may fire without you.",
+    background:
+      "This is the pre-delegation argument, decades old: whether the danger of a command post being decapitated outweighs the danger of acting on a bad screen. Every false alarm that ended quietly ended because someone on watch chose to wait.",
     tags: ["c2"],
   },
   {
@@ -268,6 +324,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "low",
     ignoreLine: "The paper is unread in the capitals that would have to believe it.",
+    background:
+      "The 1983 nuclear-winter studies and their modern revisions land on the same finding. Smoke that reaches the stratosphere is never rained out, so growing seasons fail worldwide, and most of the dying happens far from any target.",
     tags: ["winter"],
   },
   {
@@ -277,6 +335,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "critical",
     ignoreLine: "The warhead does not sit politely. Someone else can pick it up.",
+    background:
+      "Dozens of these have happened. Palomares in 1966 and Thule in 1968 both ended as long cleanups of scattered material with no nuclear yield involved. The clock in an accident is a search clock, and it runs against whoever else is looking.",
     tags: ["accident", "c2"],
   },
   {
@@ -286,6 +346,8 @@ export const DECK: GameEvent[] = [
     actor: "NS",
     heat: "critical",
     ignoreLine: "The device is in a van, a boat, or a basement. Deterrence has no target.",
+    background:
+      "Deterrence assumes a return address. A weapon in somebody else's hands removes it, which is why loose-nuke work after the Soviet collapse ate a decade of budgets. Forensics can name the owner, mostly after the fact.",
     tags: ["terror"],
   },
   {
@@ -295,6 +357,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "The error stays in the pipeline. Next month it can be a Broken Arrow.",
+    background:
+      "Below the accident tier sits the paperwork tier: custody logs, convoy routes, and the coded locks that keep a warhead inert. In 2007 warheads rode a bomber across America for thirty-six hours before anyone noticed. These lapses cluster.",
     tags: ["c2", "accident"],
   },
   {
@@ -304,6 +368,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "critical",
     ignoreLine: "The spoof stays up. The next close call, the line may lie in a human voice.",
+    background:
+      "The Washington-Moscow link was deliberately built as text, never voice, so that nothing would rest on recognizing a man by his throat. Every hotline since inherits the rule: the channel is trusted, the speaker has to be proved.",
     tags: ["warning", "cyber"],
   },
   {
@@ -313,6 +379,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "The forged window stays on the board. Close calls inside it will look 'notified.'",
+    background:
+      "Notification regimes rest on the old assumption that only a government could produce the message at all, so their security is procedural rather than cryptographic. Forgery turns a confidence-building measure into cover.",
     tags: ["warning", "cyber"],
   },
   {
@@ -322,6 +390,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "high",
     ignoreLine: "The probe is unanswered. Next time it may be the whole interconnection.",
+    background:
+      "Warning radars draw power from the same grid as the towns around them, which makes an outage ambiguous by construction. Both sides have long assumed a first strike opens by blinding the other's eyes, so darkness reads worse than it is.",
     tags: ["cyber"],
   },
   {
@@ -331,6 +401,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "high",
     ignoreLine: "The net stays dark. Intelligence and the economy take the month.",
+    background:
+      "BGP is the routing table that tells the rest of the world how to reach a country; withdraw the routes and it disappears without a wire being cut. Nuclear command was kept off commercial networks for this reason. Diplomacy was not.",
     tags: ["cyber"],
   },
   {
@@ -340,6 +412,8 @@ export const DECK: GameEvent[] = [
     actor: "SU",
     heat: "critical",
     ignoreLine: "Two authentication paths stay live. That is how a union restoration becomes a nuclear civil war.",
+    background:
+      "Kazbek is the Soviet-built network that carries release authority to the crews; Perimeter is its fallback for a decapitated leadership. The 1991 coup showed the contest is never over hardware, only over who the crews believe.",
     tags: ["union"],
   },
   {
@@ -349,6 +423,8 @@ export const DECK: GameEvent[] = [
     actor: "CU",
     heat: "critical",
     ignoreLine: "The canisters stay. SBIRS will see a boost from the island as a bolt at Florida.",
+    background:
+      "A TEL is the truck that carries and launches a missile, and dual-capable means the same truck takes a conventional or a nuclear round. Warheads based close in shave minutes off the other side's warning. That is the point of shipping them.",
     tags: ["cuba"],
   },
   {
@@ -358,6 +434,8 @@ export const DECK: GameEvent[] = [
     actor: "CR",
     heat: "critical",
     ignoreLine: "Cash is still on the table. Someone will take it.",
+    background:
+      "A plaza is a smuggling franchise: a corridor and the men who tax it. Buyers like this are what made the loose-material scares of the 1990s frightening, because deterrence needs a return address and a freight route does not supply one.",
     tags: ["cartel", "terror"],
   },
   {
@@ -367,6 +445,8 @@ export const DECK: GameEvent[] = [
     actor: "NS",
     heat: "critical",
     ignoreLine: "The engineer keeps working. Attribution after a fizzle is a press conference, not a strategy.",
+    background:
+      "The pit is a device's fissile core; the gun-type layout is the crude one the Manhattan Project trusted without a test. Material and machining are the real barriers, not the sketch, which is why a loose engineer counts for more than paper.",
     tags: ["terror"],
   },
   {
@@ -376,6 +456,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "They log it as a possible first strike rehearsal. Heat on NATO–Russia stays high.",
+    background:
+      "Voronezh radars and the EKS early-warning satellites watch procedure, not intent, and cannot tell a drill from the thing it drills. Every exercise-notification regime written since the Cold War exists because of that blind spot.",
     tags: ["nato-ru", "warning"],
   },
   {
@@ -385,6 +467,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "critical",
     ignoreLine: "The dual path stays. Pre-delegation on both sides ticks up.",
+    background:
+      "Authentication is what separates an order from a rumour: a crew is trained to verify the format, not to audit the politics behind it. When two capitals can produce a valid packet, the last check in the chain becomes one officer's judgement.",
     tags: ["union"],
   },
   {
@@ -394,6 +478,8 @@ export const DECK: GameEvent[] = [
     actor: "CU",
     heat: "high",
     ignoreLine: "The host mission stays on the table. Someone in that building will pick.",
+    background:
+      "The FAR is Cuba's regular army, and in 1962 it watched Moscow trade the missiles away over Havana's head. Host countries are not empty ground. Basing another state's warheads requires an officer corps willing to stand guard over them.",
     tags: ["cuba"],
   },
   {
@@ -403,6 +489,8 @@ export const DECK: GameEvent[] = [
     actor: "CR",
     heat: "high",
     ignoreLine: "The debt gets paid in access. Empty Quiver starts as a payday loan.",
+    background:
+      "Reliability screening at storage sites was built on the assumption that betrayal starts with belief. Debt is the older and quieter lever, and an insider with legitimate access walks past fences and sensors meant to stop outsiders.",
     tags: ["cartel"],
   },
   {
@@ -412,6 +500,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "high",
     ignoreLine: "The clock keeps running. Sanctions tighten without a device.",
+    background:
+      "Safeguards work forensically: environmental samples record what a room once held, not what it holds tonight. Unexplained particles have opened nearly every serious proliferation file since Iraq's, and the fight afterwards is always about dating.",
     tags: ["iran"],
   },
   {
@@ -421,6 +511,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "critical",
     ignoreLine: "Fordow is deep. A strike reads as war. HOLD reads as acceptance.",
+    background:
+      "A cascade is a long chain of centrifuges enriching in sequence, and Fordow sits under a mountain, which is why its capacity reads as a political fact. Sites that cannot be struck later tend to force the argument about striking early.",
     tags: ["iran"],
   },
   {
@@ -430,6 +522,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "med",
     ignoreLine: "The cascade comes back. Someone always restarts it.",
+    background:
+      "Covert sabotage of machinery is meant to be indistinguishable from bad parts, and that cuts both ways. The target starts suspecting its own engineers, while the author buys months of delay with no event anyone has to answer for.",
     tags: ["iran"],
   },
   {
@@ -439,6 +533,8 @@ export const DECK: GameEvent[] = [
     actor: "IL",
     heat: "high",
     ignoreLine: "Generation without notice is how Iran reads a bolt.",
+    background:
+      "Green Pine is Israel's missile-warning radar, but tankers are the tell, since aerial refuelling is what gives a short-range air force reach. Osirak in 1981 and Syria in 2007 both went ahead with no notice to allies.",
     tags: ["iran"],
   },
   {
@@ -448,6 +544,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "med",
     ignoreLine: "The strait stays hot. Insurance rates are the first casualty.",
+    background:
+      "Aircraft that can carry either conventional or nuclear weapons say two things at once when they move. Gray-zone actions are built to sit below the line that forces a reply, and they work until someone decides the line moved.",
     tags: ["iran", "south-china"],
   },
   {
@@ -457,6 +555,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "med",
     ignoreLine: "Proportionality is a word. The militias read your HOLD as green.",
+    background:
+      "Deniability is the product proxies exist to supply, not a side effect of using them. The pattern in Iraq has been that these exchanges stay ritual until one lands on a body, and then stop being ritual.",
     tags: ["iran"],
   },
   {
@@ -466,6 +566,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "med",
     ignoreLine: "Moscow denies. The cargo is already ashore.",
+    background:
+      "The breakout clock measures the gap between a decision and enough weapons-grade material, not between a decision and a usable weapon. Fuel and the machines that make centrifuges move that clock in opposite directions.",
     tags: ["iran", "nato-ru"],
   },
   {
@@ -475,6 +577,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "critical",
     ignoreLine: "Bluffs and real clocks look the same until the test.",
+    background:
+      "Pooling every collection stream also pools every stream's errors. With inspectors outside the room, the question has already moved from what can be verified to what will be done — the 2002 Iraq sequence in miniature.",
     tags: ["iran"],
   },
   {
@@ -484,6 +588,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "critical",
     ignoreLine: "Subcritical or not, the world reorders around the signal.",
+    background:
+      "Seismic networks can separate a blast from an earthquake in minutes; deciding what kind of blast takes weeks and sometimes never finishes. The 1979 Vela flash is still argued over, which is the whole problem.",
     tags: ["iran"],
   },
   {
@@ -493,6 +599,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "med",
     ignoreLine: "Offers expire. Hawks on both sides prefer the clock.",
+    background:
+      "Oman has carried quiet messages between Washington and Tehran for decades, and the Muscat channel is what produced the 2013 interim understanding. A freeze buys time rather than settling anything — its use and its weakness.",
     tags: ["iran"],
   },
   {
@@ -502,6 +610,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "high",
     ignoreLine: "Lights out before missiles is the nightmare read.",
+    background:
+      "Centrifuge cascades spin near the limits of their materials, so losing power can wreck hardware without anyone entering the building. Sabotage of this kind is rarely claimed and rarely denied, so accidents and attacks read alike.",
     tags: ["iran"],
   },
   {
@@ -511,6 +621,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "The miss stays in the classified file. Adversaries already assumed it.",
+    background:
+      "In the vacuum of midcourse flight a balloon and a reentry vehicle fall identically and look much the same to radar. The interceptor field was sized against a handful of missiles from a small state, never against a peer arsenal.",
     tags: ["warning", "defense"],
   },
   {
@@ -520,6 +632,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "Buses stay downloaded. The other side may upload anyway.",
+    background:
+      "Warheads pulled off missiles under treaty were stored, not destroyed; putting them back is the hedge both sides kept on purpose. Satellite verification, the basis of arms control since SALT, makes that work visible by design.",
     tags: ["arms", "follow"],
   },
   {
@@ -529,6 +643,8 @@ export const DECK: GameEvent[] = [
     actor: "PK",
     heat: "high",
     ignoreLine: "Both sides keep their reading. Kashmir heat ticks.",
+    background:
+      "One missile that splits into several independently aimed warheads multiplies targets faster than any defense adds interceptors, so the claim alone is a move. South Asian flight times run in minutes, and both capitals read fast.",
     tags: ["kashmir", "defense"],
   },
   {
@@ -538,6 +654,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "critical",
     ignoreLine: "Coverage stays thin. Close-call confidence drops. Space heat ticks.",
+    background:
+      "Early-warning satellites catch the infrared plume of a launch from orbit; without them, warning falls back to ground radar, which sees later and closer. Debris-making anti-satellite tests since 2007 have all been read as rehearsal.",
     tags: ["space", "warning"],
   },
   {
@@ -547,6 +665,8 @@ export const DECK: GameEvent[] = [
     actor: "UK",
     heat: "high",
     ignoreLine: "The boat stays dark. Continuous-at-sea deterrence is a faith until it isn't.",
+    background:
+      "A missile submarine survives by being unfindable, so silence is at once its normal condition and the first symptom of a casualty. Calling until the boat answers would undo the very thing that keeps it survivable.",
     tags: ["nato-ru", "warning"],
   },
   {
@@ -556,6 +676,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "They write you as a follower. Moscow writes a split.",
+    background:
+      "The force de frappe is France's own nuclear force, built so Paris never has to ask permission. De Gaulle's argument was that a second decision-maker in the West complicates any attacker's arithmetic; integration removes it.",
     tags: ["nato-ru"],
   },
   {
@@ -565,6 +687,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "high",
     ignoreLine: "The ridge stays occupied. Himalaya heat ticks.",
+    background:
+      "The Line of Actual Control is an unmarked border where both armies agreed long ago not to shoot, so men fight with clubs and stones. That holds until aircraft able to carry either kind of bomb are parked nearby.",
     tags: ["himalaya"],
   },
   {
@@ -574,6 +698,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "high",
     ignoreLine: "The TELs stay out. South China Sea and Taiwan heat both tick.",
+    background:
+      "A TEL is the truck that carries and launches the missile, and this one accepts a conventional or a nuclear warhead. Nobody watching can tell which is loaded, so the movement is the message and the ambiguity both.",
     tags: ["taiwan", "south-china"],
   },
   {
@@ -583,6 +709,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "med",
     ignoreLine: "The boat stays on station. They have a datum.",
+    background:
+      "Britain has kept one missile submarine hidden at sea without a break since 1969, and the whole deterrent is that single boat. A hunter submarine holding a trail is less a tactical problem than a claim the hiding has stopped working.",
     tags: ["nato-ru"],
   },
   {
@@ -592,6 +720,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "high",
     ignoreLine: "The deal stays suspended. The clock runs.",
+    background:
+      "Snapback is the clause letting one party restore UN sanctions with no veto to stop it, a lever that can only be pulled once. Breakout time measures how long enrichment needs to reach one bomb's worth; pressure has shortened it before.",
     tags: ["iran"],
   },
   {
@@ -601,6 +731,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "The bird stays in the cloud. False-track rate ticks.",
+    background:
+      "Anti-satellite tests leave gravel in orbit for decades, and the 2007 and 2021 shots are still up there. Missile-warning satellites are the eyes that let a launch read as a launch, so a blind window is remembered by everyone who knows of it.",
     tags: ["space", "warning"],
   },
   {
@@ -610,6 +742,8 @@ export const DECK: GameEvent[] = [
     actor: "IR",
     heat: "low",
     ignoreLine: "The walkout stands. Proliferation heat ticks a point.",
+    background:
+      "The treaty is a bargain: the armed states move toward disarmament, everyone else stays out. Upload, meaning stored warheads returned to missiles built to carry more, reads as the armed half walking away from its half of the deal.",
     tags: ["iran"],
   },
   {
@@ -619,6 +753,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "critical",
     ignoreLine: "The CME arrives unanswered. Cascades look like a first strike to someone else's desk.",
+    background:
+      "In 1967 a solar flare blanked early-warning radars and the first reading in the room was Soviet jamming, with bomber crews already moving. Natural events arrive down the same wires the attack indications use.",
     tags: ["space", "warning"],
   },
   {
@@ -628,6 +764,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "critical",
     ignoreLine: "No islanding. The file stays 'possible EMP.'",
+    background:
+      "Geomagnetic storms and high-altitude bursts degrade the same equipment in similar ways, which is why one gets filed as the other. Both capitals lose their senses in the same hour, and neither can see that the other has gone deaf.",
     tags: ["space", "warning"],
   },
   {
@@ -637,6 +775,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "critical",
     ignoreLine: "The object stays in low orbit. Ambiguity is the weapon.",
+    background:
+      "The Soviet original was retired under SALT II and treated as a solved problem for forty years. Its value was never yield or accuracy but arrival from an unwatched direction, a weapon aimed at the warning system rather than the target.",
     tags: ["space", "nato-ru"],
   },
   {
@@ -646,6 +786,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "The rumor stands. Opacity is a force.",
+    background:
+      "Kinetic bombardment from orbit has been studied since the 1950s and never built, because the mass and the cost never close. The bomber gap and the missile gap were both real postures built on estimates that proved wrong.",
     tags: ["space"],
   },
   {
@@ -655,6 +797,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "high",
     ignoreLine: "The heat signature stays. OST did not cover this gray.",
+    background:
+      "Starfish Prime, a 1962 high-altitude test, killed satellites for months by seeding radiation belts that wore them down, friendly ones included. At distance a reactor and a warhead look alike, and treaty law bars only one from orbit.",
     tags: ["space"],
   },
   {
@@ -664,6 +808,8 @@ export const DECK: GameEvent[] = [
     actor: "CN",
     heat: "high",
     ignoreLine: "The inspector stays on station. Coverage thins if they shove.",
+    background:
+      "SBIRS is the infrared early-warning layer — satellites that see a launch plume before any radar can. Close passes in orbit have been rehearsed for years, and from the ground a tug and a killer look identical until one of them stops.",
     tags: ["space", "warning"],
   },
   {
@@ -673,6 +819,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "The series continues. Coverage thins with each pulse.",
+    background:
+      "SWPC is the civilian space-weather desk; an X-flare is its top class, and HF is the shortwave band that aviation and the high Arctic still run on. Storms arriving in series wear systems down in a way one pulse never does.",
     tags: ["space", "warning"],
   },
   {
@@ -682,6 +830,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "The cascade continues. Economy and warning both tick down.",
+    background:
+      "A geomagnetically induced current is solar weather turning long transmission lines into unintended conductors and cooking transformers from inside. Grids have fallen this way with no enemy involved, and the first reports always read like sabotage.",
     tags: ["space", "warning"],
   },
   {
@@ -691,6 +841,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "critical",
     ignoreLine: "You treated a Miyake-class watch as weather someone else would manage.",
+    background:
+      "Miyake events are radiation spikes preserved in tree rings, evidence of solar storms far past anything the electrical age has met. A shock with no precedent gets explained by whoever explains it first, and that explanation tends to stick.",
     tags: ["space", "warning"],
   },
   {
@@ -700,6 +852,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "The sim stays in memory. Next month someone may fire on a prettier graphic.",
+    background:
+      "Exercise data on operational displays is an old failure mode. Warning systems have to be trained on, so test traffic and real traffic ride the same wires, and the tag that separates them is small and easy to lose.",
     tags: ["warning", "history", "phenomenology"],
   },
   {
@@ -709,6 +863,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "The alarm chain stays hair-trigger. Next scramble may not stop in time.",
+    background:
+      "Alarm circuits are wired to cascade so nobody has to make the same call twice, which is a virtue only while the first input is right. A perimeter sensor tied to an alert net has put armed aircraft in the air over animals before.",
     tags: ["cuba", "history", "warning"],
   },
   {
@@ -718,6 +874,8 @@ export const DECK: GameEvent[] = [
     actor: "RU",
     heat: "critical",
     ignoreLine: "The notice chain stays broken. Next science launch looks like a bolt.",
+    background:
+      "Sounding rockets — small science rockets fired to sample the upper atmosphere — are announced in advance precisely because their arc resembles a missile's. The failure is rarely the rocket. It is the notice nobody walked to the right desk.",
     tags: ["warning", "history", "nato-ru"],
   },
   {
@@ -727,6 +885,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "critical",
     ignoreLine: "Readiness stays degraded. Rumor fills the gap.",
+    background:
+      "Weapons complexes keep a vocabulary for mishaps — Broken Arrow, Bent Spear, Faded Giant — so an accident is filed as an accident. When the engineering answer is slow, rumor fills the gap, and rumor is what other capitals read.",
     tags: ["phenomenology", "warning", "uap"],
   },
   {
@@ -736,6 +896,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "med",
     ignoreLine: "Rumor owns the month. Alliance cohesion dips.",
+    background:
+      "Open hearings and classified pictures run on different clocks. A legislature airing what it cannot explain tells adversaries where the sensors are thin, and tells allies that a partner's warning coverage may be smaller than advertised.",
     tags: ["phenomenology", "misinformation"],
   },
   {
@@ -745,6 +907,8 @@ export const DECK: GameEvent[] = [
     actor: "US",
     heat: "high",
     ignoreLine: "Attribution stays open. Hawks fill the silence.",
+    background:
+      "Vela satellites carried bhangmeters, light sensors built to recognize the twin pulse a nuclear blast leaves. The 1979 South Atlantic reading was never attributed, and unattributed is the worst category: nobody to answer, nobody to deter.",
     tags: ["phenomenology", "history"],
   },
 ];
@@ -758,6 +922,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "US",
       heat: "high",
       ignoreLine: "They keep generating. Alliance cohesion on their side ticks up. Your warning desk gets noisier.",
+      background:
+        "Dual-capable aircraft carry conventional or nuclear weapons, so generating them says both things at once. MOLINK is the Washington-Moscow link. Moves like this are built to be seen; the silence around them is what gets misread.",
       tags: ["nato-ru"],
     };
   }
@@ -769,6 +935,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "US",
       heat: "high",
       ignoreLine: "The transit becomes routine in their file. Heat stays.",
+      background:
+        "The DF-21 and DF-26 are land-based missiles held for reach across the western Pacific, rolled out visibly when Beijing wants the movement counted. The Strait has been run this way before, and in 1995 the signalling nearly outran the intent.",
       tags: ["taiwan"],
     };
   }
@@ -780,6 +948,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "US",
       heat: "high",
       ignoreLine: "The exercise finishes. They logged your silence as weakness or as sense. Both readings exist in Washington.",
+      background:
+        "A NOTAM is the airspace notice filed before a launch, and it is what separates a test from an attack in everyone else's log. Large annual exercises are the standing hazard: routine at home, cover from the other side.",
       tags: ["korea"],
     };
   }
@@ -791,6 +961,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "IN",
       heat: "high",
       ignoreLine: "Nasr stays forward. Pre-delegation risk stays the design.",
+      background:
+        "Delhi's cold-start concept promises shallow armored thrusts finished before outside powers can intervene. The answer built for it was battlefield-range nuclear artillery, usable in time only if the keys sit forward with the corps.",
       tags: ["kashmir"],
     };
   }
@@ -802,6 +974,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "PK",
       heat: "high",
       ignoreLine: "The test stands. NFU debate gets louder without you.",
+      background:
+        "The DGMO channel is a standing weekly call between the two armies' operations directorates, and it has outlasted every war they have fought. No-first-use is the fragile half: a written pledge holds only while it is believed at home.",
       tags: ["kashmir"],
     };
   }
@@ -813,6 +987,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "IR",
       heat: "critical",
       ignoreLine: "The clock runs. You may still go alone later, with less surprise.",
+      background:
+        "Satellites and remote collection are what the treaties call national technical means: verification with no inspector on the ground. Osirak in 1981 and the Syrian reactor in 2007 each bought years and drove the surviving work deeper.",
       tags: ["iran"],
     };
   }
@@ -824,6 +1000,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "RU",
       heat: "high",
       ignoreLine: "Washington reads hesitation. Moscow reads a split.",
+      background:
+        "Warheads pulled off missiles to meet treaty ceilings were stored, not destroyed, and putting them back takes days and is meant to be seen. Two national deterrents inside one alliance make every move a statement about Washington.",
       tags: ["nato-ru"],
     };
   }
@@ -835,6 +1013,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "RU",
       heat: "critical",
       ignoreLine: "The dual C2 stands. Crews will eventually pick a human.",
+      background:
+        "Kazbek was built as one Soviet command network; its briefcases assume a single chain of authority, not two claimants. Succession crises turn on that gap, because holding the object has never been the same as the right to order its use.",
       tags: ["union"],
     };
   }
@@ -846,6 +1026,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "US",
       heat: "critical",
       ignoreLine: "The ship docks. You are a launch pad until you say otherwise.",
+      background:
+        "Dual-capable hardware carries either payload, so a photograph settles nothing and the argument moves to intent. Hosting another state's weapons is always the same trade: protection now, and the timing of the next crisis decided elsewhere.",
       tags: ["cuba"],
     };
   }
@@ -857,6 +1039,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "PK",
       heat: "critical",
       ignoreLine: "Someone else buys it. You compete with the terror network on price.",
+      background:
+        "Since the 1990s, loose-material cases have run on price rather than politics, with warehouse staff selling by weight. The football, the case that follows a head of state, stands for a chain that can be warned; a buyer has no such thing.",
       tags: ["cartel"],
     };
   }
@@ -868,6 +1052,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "IL",
       heat: "high",
       ignoreLine: "The clock runs. Israel and the IAEA write different files.",
+      background:
+        "Snap access comes from the Additional Protocol, which lets inspectors ask for sites a state never declared, so refusal is itself a finding. Breakout, the weeks to one bomb's worth of material, sets other capitals' calendars.",
       tags: ["iran"],
     };
   }
@@ -879,6 +1065,8 @@ export function openingFor(player: ActorId): GameEvent {
       actor: "US",
       heat: "critical",
       ignoreLine: "The garage stays dark. Breakout is a machining problem now.",
+      background:
+        "A fizzle gives a fraction of the designed yield and is still a catastrophe at city scale. The missing piece here is a return address: deterrence needs someone to threaten back, so an unattributed program draws a hunt instead.",
       tags: ["terror"],
     };
   }
