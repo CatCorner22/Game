@@ -1531,6 +1531,38 @@ export function runIntegrityChecks(): IntegrityResult {
     return `${NUCLEAR.length} nuclear bodies complete · ${total} advisors across ${PLAYABLE_IDS.length} seats`;
   });
 
+  check("the-room-is-never-empty", () => {
+    // The conference used to be an overlay whose participant grid could render
+    // zero tiles without anybody noticing -- you saw a transcript and a rung
+    // ladder and assumed the call was still assembling. It is a full screen
+    // now, with the last speaker holding a stage, so an empty room is a blank
+    // screen rather than a missing widget.
+    //
+    // The failure is reachable in principle: `participants` filters the roster
+    // by rung AND by what the current post's comms can carry, so a seat whose
+    // roster happened to put nobody at rung one, played from its most degraded
+    // post, would seat nobody at all. Checked across every seat, every post
+    // that seat can command from, and every rung.
+    let worst = { seat: "", post: "", n: Infinity };
+    for (const seat of PLAYABLE_IDS) {
+      for (const post of postsFor(seat)) {
+        const w = createWorld("standard", 11, seat, "blue");
+        w.commandPost = post.id;
+        w.relocation = null;
+        for (const rung of [1, 2, 3] as const) {
+          const n = participants(w, rung).length;
+          if (!n) throw new Error(`${seat} seats nobody at rung ${rung} from ${post.short}`);
+          if (rung === 1 && n < worst.n) worst = { seat, post: post.short, n };
+        }
+        if (participants(w, 3).length < participants(w, 1).length) {
+          throw new Error(`${seat} from ${post.short}: rung 3 is smaller than rung 1`);
+        }
+      }
+    }
+    const posts = PLAYABLE_IDS.reduce((n, s) => n + postsFor(s).length, 0);
+    return `${PLAYABLE_IDS.length} seats \u00b7 ${posts} posts \u00b7 thinnest room ${worst.n} (${worst.seat} from ${worst.post})`;
+  });
+
   check("every-seat-has-a-named-decision-body", () => {
     // Naming the body is most of the education: a player should learn that
     // Pakistan decides this in a National Command Authority whose secretariat

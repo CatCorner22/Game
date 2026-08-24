@@ -9,6 +9,7 @@ export function TutorialOverlay() {
   const step = useGame((s) => s.tutorialStep);
   const setStep = useGame((s) => s.setTutorialStep);
   const dismissTutorial = useGame((s) => s.dismissTutorial);
+  const screen = useGame((s) => s.screen);
 
   useEffect(() => {
     if (!world || world.turn !== 1) return;
@@ -16,6 +17,9 @@ export function TutorialOverlay() {
     if (!s.tutorialDone) setStep(0);
   }, [world?.turn, setStep]);
 
+  // The tutorial explains the watch. Convening the room on turn one used to
+  // put it on top of the call, teaching a screen the player had just left.
+  if (screen === "conference") return null;
   if (!shouldShowTutorial(world, loadSettings().tutorialDone, step)) return null;
 
   const current = TUTORIAL_STEPS[step];

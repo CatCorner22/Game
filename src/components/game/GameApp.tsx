@@ -10,7 +10,7 @@ import { EndScreen } from "./EndScreen";
 import { StatsScreen } from "./StatsScreen";
 import { MultiplayerScreen } from "./MultiplayerScreen";
 import { ArchiveScreen } from "./ArchiveScreen";
-import { AdvisorConference } from "./AdvisorConference";
+import { ConferenceScreen } from "./ConferenceScreen";
 import { TutorialOverlay, useKeyboardShortcuts } from "./TutorialOverlay";
 import { GameErrorBoundary } from "./GameErrorBoundary";
 import { ErrorBanner } from "./ErrorBanner";
@@ -41,7 +41,14 @@ export function GameApp() {
   const shellVariant =
     screen === "war"
       ? "war"
-      : screen === "title" || screen === "play" || screen === "end" || screen === "briefing" || screen === "stats" || screen === "multiplayer" || screen === "archive"
+      : screen === "title" ||
+          screen === "play" ||
+          screen === "conference" ||
+          screen === "end" ||
+          screen === "briefing" ||
+          screen === "stats" ||
+          screen === "multiplayer" ||
+          screen === "archive"
         ? "default"
         : "minimal";
 
@@ -53,11 +60,11 @@ export function GameApp() {
         {screen === "briefing" ? <Briefing /> : null}
         {screen === "play" ? <PlayScreen /> : null}
         {screen === "war" ? <WarScreen /> : null}
+        {screen === "conference" ? <ConferenceScreen /> : null}
         {screen === "end" ? <EndScreen /> : null}
         {screen === "stats" ? <StatsScreen /> : null}
         {screen === "multiplayer" ? <MultiplayerScreen /> : null}
         {screen === "archive" ? <ArchiveScreen /> : null}
-        <AdvisorConference />
         <TutorialOverlay />
         <HelpLayer />
       </FuturisticShell>

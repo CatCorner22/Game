@@ -286,7 +286,17 @@ export const useGame = create<GameState>((set, get) => ({
     };
   },
   setPendingRelocation: (id) => set({ pendingRelocation: id }),
-  setConferenceOpen: (open) => set({ conferenceOpen: open }),
+  // The room is a screen now, so this is navigation as well as a flag. Routing
+  // both through the one setter is what let six call sites -- the cabinet
+  // panel, the close-call prompt, the play and war rails, the command sheet --
+  // open a full screen without changing a line. Leaving recomputes the screen
+  // from the world exactly as `confirmAndExecute` does, so you land back on the
+  // watch, or on the war board if that is where the world now is.
+  setConferenceOpen: (open) => {
+    const w = get().world;
+    if (open && !w) return;
+    set({ conferenceOpen: open, screen: open ? "conference" : w ? screenForWorld(w) : "title" });
+  },
   // Same clone -> mutate -> persist -> set shape as `applyC2` and
   // `pickDoctrine`: convening is a within-turn action, not a turn commitment.
   convene: (rung) => {

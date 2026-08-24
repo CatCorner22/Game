@@ -71,7 +71,16 @@ export type OfficerStance = "professional" | "eager" | "shaken" | "loyalist" | "
 export type Phase = "peacetime" | "crisis" | "conventional" | "nuclear" | "aftermath";
 export type Difficulty = "standard" | "hard" | "extreme";
 export type Disclosure = "acknowledged" | "reported" | "suspected" | "unacknowledged";
-export type Screen = "title" | "briefing" | "play" | "war" | "end" | "stats" | "multiplayer" | "archive";
+export type Screen =
+  | "title"
+  | "briefing"
+  | "play"
+  | "war"
+  | "conference"
+  | "end"
+  | "stats"
+  | "multiplayer"
+  | "archive";
 
 export type DeliveryKind =
   | "icbm"
