@@ -917,6 +917,219 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     precedent:
       "The 2021 ODNI assessment and the Nimitz case (2004): sensors disagreeing is the normal condition, and the public gets the video first.",
   },
+
+  // Ten from the half of the corpus that had no scenario. All historical, so
+  // all carry an outcome rather than a precedent.
+  "hawaii-alert-2018": {
+    headline: "A statewide missile alert went out by mistake and is still standing.",
+    situation:
+      "An employee sent a live alert during an internal drill and the whole state read it as real. Military commands confirmed within minutes that nothing is inbound. Nothing has gone out to the public, and people are putting their children into storm drains.",
+    youAre: "You are the President of the United States, watching a state you govern take shelter from nothing.",
+    decision:
+      "Correct it now on what you have, wait for a channel that is authorised to correct it, or say nothing and let the local authority own it.",
+    stakes:
+      "The harm is not the alert, it is the gap between the alert and the correction. Every minute is spent by somebody who thinks they have ten left.",
+    facts: [
+      "At 08:07 local time on 13 January 2018 an employee at the Hawaii Emergency Management Agency sent a live statewide alert reading BALLISTIC MISSILE THREAT INBOUND TO HAWAII. SEEK IMMEDIATE SHELTER. THIS IS NOT A DRILL.",
+      "It happened during an unannounced internal drill. The employee reported hearing 'this is not a drill' but not the 'exercise, exercise, exercise' framing that five colleagues in the room heard.",
+      "Military commands confirmed there was no threat within minutes. The formal corrective alert did not go out for 38 minutes.",
+      "The flight time for a missile from North Korea to Hawaii is roughly 20 minutes. The correction took nearly twice the time people believed they had.",
+      "No one was killed by the alert itself. The injuries were from the sheltering — and the lasting damage was to whether the next alert would be believed.",
+    ],
+    whatHappened:
+      "The agency issued the correction 38 minutes later, after officials worked out who was authorised to send one. The employee was dismissed and the agency's administrator resigned.",
+    afterward:
+      "The FCC investigation found no procedure existed for cancelling a false alert. Hawaii added a two-person rule for live alerts and, more importantly, built the correction template in advance — the thing whose absence cost the 38 minutes.",
+  },
+  "damascus-titan-1980": {
+    headline: "A dropped tool has holed a fuelled missile inside one of your own silos.",
+    situation:
+      "Maintenance dropped a socket; it fell the height of the silo, struck the missile and punctured a propellant tank. The complex is filling with vapour and the crew is out. The warhead is still on top of it, and the county sheriff is asking what to tell people who live within sight of the fence.",
+    youAre: "You are the President of the United States, being briefed on your own weapon by people who disagree with each other.",
+    decision:
+      "Get a picture of the site before committing, tell the county now and accept a story you cannot yet finish, or keep the circle small while the pressure rises.",
+    stakes:
+      "The people nearest the hazard are the ones you have told the least, and the argument about what to do is being had between a crew at the gate and commanders a long way away.",
+    facts: [
+      "On the evening of 18 September 1980 an airman dropped a socket inside Launch Complex 374-7 near Damascus, Arkansas. It fell roughly 80 feet, struck the missile and punctured the first-stage fuel tank.",
+      "The propellant vented for about eight and a half hours while on-scene crews and remote commanders disagreed about how to respond.",
+      "At about 03:00 on 19 September the propellant exploded, destroying the complex, killing one airman and injuring around twenty.",
+      "The warhead was thrown roughly 100 feet outside the entry gate. Its safety features worked and there was no nuclear yield and no radioactive release.",
+      "The official posture through the night was to neither confirm nor deny that a warhead was present, in a county whose residents could see the site from their homes.",
+    ],
+    whatHappened:
+      "The Air Force maintained neither-confirm-nor-deny while local officials evacuated on their own judgement. The disagreement between the site and the command chain was never resolved before the tank failed.",
+    afterward:
+      "The Titan II force was retired over the following seven years. The accident became the standard case for why the people closest to a hazard need standing authority to act without waiting for a chain of command that cannot see the site.",
+  },
+  "kursk-2000": {
+    headline: "Your submarine is on the bottom and foreign rescue has been offered in public.",
+    situation:
+      "An explosion in the forward compartment put her down during an exercise. Your own submersibles have failed twice in poor conditions. Norway and Britain have offered help, publicly, which makes refusing a public act too. Some of the crew are alive aft and nobody can tell you for how long.",
+    youAre: "You are the President of the Russian Federation, deciding how much of your newest hull foreign divers may see.",
+    decision:
+      "Accept the offered help now, keep trying with your own equipment, or accept it quietly and late.",
+    stakes:
+      "Accepting is an admission that you cannot reach your own sailors. Refusing is an admission about what you are protecting instead.",
+    facts: [
+      "On 12 August 2000 an explosion in the forward torpedo compartment of the Kursk was followed roughly two minutes later by a much larger detonation. She sank in about 108 metres of water with 118 aboard.",
+      "The official inquiry attributed the first explosion to a leak of high-test peroxide from a practice torpedo with a faulty weld.",
+      "23 men survived in the aft ninth compartment for some hours and left written notes.",
+      "Both reactors scrammed and remained stable throughout. The nuclear risk was never the issue; the rescue was.",
+      "Russian submersibles failed repeatedly in poor conditions. Norwegian and British offers of assistance were not accepted for days; Norwegian divers opened the aft hatch on 21 August, nine days after she sank, within hours of finally being allowed to try.",
+    ],
+    whatHappened:
+      "Foreign help was accepted after several days. Norwegian divers reached the aft compartment quickly once permitted; everyone aboard had already died.",
+    afterward:
+      "The delay, not the accident, defined the event politically and became a lasting case study in how secrecy about capability trades against the lives the capability exists to protect.",
+  },
+  "sverdlovsk-1979": {
+    headline: "A release from one of your own facilities is killing people downwind.",
+    situation:
+      "District hospitals are seeing a pattern they cannot explain and it points at a military compound on the edge of the city. The treaty you signed seven years ago says the programme behind that fence does not exist. There is a story available about contaminated meat, and it will hold.",
+    youAre: "You are the leadership of the Soviet Union, choosing between the treaty and the district.",
+    decision:
+      "Admit enough to get the district treated properly, find out first what actually left the fence, or let the cover story do the work.",
+    stakes:
+      "The cover story works. That is the problem with it: it will keep working for years, and every year it works the eventual correction costs more.",
+    facts: [
+      "In early April 1979 an accidental airborne release of anthrax spores occurred at a Soviet military microbiology facility, Compound 19, in Sverdlovsk.",
+      "At least 66 people died — the deadliest inhalational anthrax outbreak on record. Roughly 77 to 96 human cases were identified; totals remain contested because the KGB confiscated hospital and autopsy records.",
+      "The Soviet Union had signed the Biological Weapons Convention in 1972. The facility's existence was inconsistent with it.",
+      "Authorities publicly blamed contaminated meat sold on the black market and maintained that account for 13 years.",
+      "The truth was acknowledged in 1992. A 1994 epidemiological study of the case locations showed they lay along a single narrow downwind plume on one afternoon — the geometry the meat story could never explain.",
+    ],
+    whatHappened:
+      "The meat story was adopted and held. Victims were treated for what the state said they had, records were confiscated, and the district was told it was a food outbreak.",
+    afterward:
+      "Russia acknowledged the release in 1992. The thirteen-year gap became the standard argument for why verification regimes need access rather than assurances, and it damaged confidence in the convention for a generation.",
+  },
+  "juarez-cobalt-1984": {
+    headline: "A medical source was sold for scrap and the metal is already in circulation.",
+    situation:
+      "A disused radiotherapy head went to a junkyard, was broken open, and went into a foundry. The steel it became has been shipping for weeks as ordinary things — reinforcing bar, table legs — and the first detection was an accident at a laboratory gate. Nobody has a list of where it went.",
+    youAre: "You are the President of the United States, holding a contamination problem that arrived through commerce.",
+    decision:
+      "Map the distribution before announcing anything, work the neighbouring government that did not cause this and will be blamed for it, or let the metal keep moving.",
+    stakes:
+      "Contamination travels through a supply chain faster than any agency can follow it, and a recall you announce before you understand is a recall of everything.",
+    facts: [
+      "A teletherapy unit bought by a private hospital in Ciudad Juárez in 1977 and never commissioned was dismantled for scrap on 6 December 1983, spilling roughly six thousand cobalt-60 pellets into the scrap stream.",
+      "Foundries melted the material into an estimated 6,000 tonnes of contaminated rebar and cast products, distributed across 17 Mexican states and exported.",
+      "It went undetected for six weeks. The discovery on 16 January 1984 was an accident: a truck carrying contaminated rebar took a wrong turn at Los Alamos and set off a portal monitor.",
+      "Estimates of exposed persons run to around 4,000, and 109 houses in Sinaloa were demolished.",
+      "No detection system was looking for this. The one that found it was pointed at something else entirely.",
+    ],
+    whatHappened:
+      "Both governments traced and recovered what they could once the portal monitor gave them the thread. Contaminated product had already been installed in buildings on both sides of the border.",
+    afterward:
+      "Radiation portal monitors were installed at scrap yards and border crossings across North America — the practice now standard worldwide — because the only reason this was caught at all was one monitor at a laboratory gate and a wrong turn.",
+  },
+  "maultsby-1962": {
+    headline: "One of your aircraft is lost deep inside Soviet airspace on the worst day of the crisis.",
+    situation:
+      "A routine air-sampling flight over the pole navigated by the stars, lost its references in an aurora, and came out somewhere it should never have been. Soviet interceptors are climbing toward him. Your own fighters are going out to meet him, carrying what everything is carrying this week. He is running out of fuel.",
+    youAre: "You are the President of the United States, on the day both sides believe the other may already have decided.",
+    decision:
+      "Tell Moscow what this is before they decide for themselves, or say nothing and let an aircraft nobody can explain fly out on its own.",
+    stakes:
+      "On a day like this your own routine operations are the likeliest cause of the next crisis, and an unexplained penetration is indistinguishable from a last look before a strike.",
+    facts: [
+      "On 27 October 1962 — Black Saturday — a US Air Force U-2 on a routine air-sampling mission lost its celestial navigation references, an intense auroral display being the reason usually given, and drifted roughly 300 miles into Soviet airspace over Chukotka.",
+      "Soviet air defence scrambled interceptors. American F-102s launched to escort him home and, under the crisis dispersal posture, were carrying nuclear-tipped air-to-air missiles.",
+      "The same day a U-2 was shot down over Cuba and a Soviet submarine crew argued about a nuclear torpedo. Three separate paths to war ran in parallel within hours of each other.",
+      "Ground controllers talked the pilot out by star reference. He landed short of fuel on the Alaskan coast with the engine out.",
+      "Kennedy's recorded reaction on being told was that there is always some son of a bitch who does not get the word.",
+    ],
+    whatHappened:
+      "Nobody fired. Controllers walked the pilot home, the interceptors never made contact, and Khrushchev raised the intrusion in writing the next day — noting that it could have been taken for a bomber and asking what would have followed.",
+    afterward:
+      "The incident is the standard illustration that in a crisis the dangerous events are not the planned ones. Routine operations continued during the crisis because nobody had the authority or the inclination to stop them.",
+  },
+  "przewodow-2022": {
+    headline: "Two people are dead on allied soil and the one confirmed fact is misleading.",
+    situation:
+      "A missile came down in a border village during a large barrage and killed two farm workers. The only confirmed detail is that it was of Russian manufacture — true, and also what the defending side flies. Wire copy citing an anonymous official already says Russia hit NATO. Trajectory analysis is hours away; the treaty consultation clock is not.",
+    youAre: "You are the President of the United States, on a video call with allies who are waiting for you to characterise this.",
+    decision:
+      "Wait for the trajectory, say publicly what you do not yet know and deflate the pressure, or answer the wire story rather than the event.",
+    stakes:
+      "Being publicly slow is a decision, and it is one you have to make within the hour. A technically true fact is doing more work here than any false one could.",
+    facts: [
+      "On 15 November 2022 a missile struck a grain facility in Przewodów, Poland, about six kilometres from the Ukrainian border, killing two people.",
+      "Polish officials confirmed only that the missile was of Russian manufacture — accurate, and misleading, because Ukraine operates Soviet-designed air defences.",
+      "Within hours US and NATO assessments based on trajectory data concluded it was most likely a Ukrainian air-defence interceptor that had gone off course.",
+      "Leaders meeting at the G20 in Bali held an emergency consultation. President Biden said publicly it was 'unlikely' to have been launched from Russia; NATO's Secretary General attributed it to Ukrainian air defence.",
+      "Poland invoked consultation rather than collective defence. Ukraine contested the assessment publicly for a period, which was part of the cost of getting it right quickly.",
+    ],
+    whatHappened:
+      "Leaders chose to be publicly slow. Early, deliberate statements that the evidence did not indicate a deliberate Russian attack deflated the pressure for treaty consultations before it could build.",
+    afterward:
+      "It is widely regarded as the model case for alliance crisis management: the decisive act was two heads of government publicly lowering the temperature on incomplete information, in the direction of de-escalation, before the analysis was finished.",
+  },
+  "balloon-2023": {
+    headline: "A foreign high-altitude balloon is crossing your country right now.",
+    situation:
+      "It came in over Alaska, transited Canada, and is over the continental United States. Beijing calls it a stray weather craft. Shooting it down over land drops a large payload onto somebody; waiting for the coast means several more days of it on television. Your own command has just worked out that earlier ones crossed undetected.",
+    youAre: "You are the President of the United States, being asked why this is still flying.",
+    decision:
+      "Learn more from it flying than from the wreckage, take it now and accept the debris, or wait for water and spend the days in public.",
+    stakes:
+      "A gap in what your sensors were tuned to see is not a gap in what was there. The uncomfortable part is not the balloon, it is what the balloon proves about the record.",
+    facts: [
+      "From 28 January to 4 February 2023 a Chinese-operated high-altitude balloon transited Alaska, Canada and the contiguous United States before being shot down over territorial waters off South Carolina on 4 February.",
+      "NORAD's commander later testified that earlier Chinese balloon transits had not been detected at the time, attributing it to 'a domain awareness gap' — radar processing had been rejecting slow, small, high-altitude returns.",
+      "After the detection parameters were adjusted, NORAD immediately began seeing objects it had not been seeing before.",
+      "Three further objects were shot down over Alaska, the Yukon and Lake Huron between 10 and 12 February. None was ever positively identified.",
+      "The payload was recovered from shallow water off South Carolina — an intelligence outcome that would not have been available from a shoot-down over land.",
+    ],
+    whatHappened:
+      "It was allowed to complete its transit and shot down over water, where the payload was recovered. The political cost of the delay was real and the intelligence gain was the argument for it.",
+    afterward:
+      "The filter change is the lasting part: adjusting what the radars were willing to report turned an empty sky into a busy one, and the three February shoot-downs that followed were the immediate consequence of looking harder.",
+  },
+  "salisbury-2018": {
+    headline: "A military-grade nerve agent has been used on your territory against two people.",
+    situation:
+      "Two people were found on a bench in a small cathedral city and the laboratory has identified a class of agent only a state programme produces. A police officer is in hospital. Moscow denies everything and demands a sample. You are certain who did this, and the evidence that makes you certain is the evidence you cannot show.",
+    youAre: "You are the Prime Minister of the United Kingdom, holding an attribution you believe and cannot fully publish.",
+    decision:
+      "Build coordinated expulsions and spend weeks doing it, act now on an attribution your allies have not yet seen, or wait for a verification process the accused sits on.",
+    stakes:
+      "Attribution you are certain of and attribution you can prove are different instruments. Acting alone is fast and cheap for the other side to dismiss.",
+    facts: [
+      "On 4 March 2018 Sergei and Yulia Skripal were found unconscious on a bench in Salisbury. A police officer, DS Nick Bailey, was also seriously affected.",
+      "Porton Down identified a Novichok-class nerve agent within days, and OPCW technical assistance independently confirmed the identification through two designated laboratories.",
+      "More than 20 countries expelled Russian diplomats in coordination — the largest collective expulsion of its kind — because the attribution had been shared with allies before it was acted on.",
+      "Four months later, on 30 June, Dawn Sturgess and Charlie Rowley were poisoned in nearby Amesbury by a discarded container disguised as a consumer product. Sturgess died on 8 July.",
+      "The Amesbury deaths are the part that had nothing to do with attribution: the agent was still in the environment months after everyone had agreed who put it there.",
+    ],
+    whatHappened:
+      "The United Kingdom shared the technical attribution with allies first and then acted, producing a coordinated expulsion by more than twenty countries rather than a unilateral gesture.",
+    afterward:
+      "The independent OPCW confirmation is what made the coalition possible; the Amesbury deaths four months later showed that response and consequence run on different clocks, and the second one is longer.",
+  },
+  "fobs-prc-2021": {
+    headline: "You flew a partial orbit and Washington is calling it a Sputnik moment.",
+    situation:
+      "The vehicle went partway round and released a glider that flew a long atmospheric course. Neither half is new; the combination has not been demonstrated before. Your ministry has described it as a routine reusable-spacecraft test. The American chairman has described it as very close to a Sputnik moment. Both statements are about the same object.",
+    youAre: "You are the Chairman, holding a capability whose entire value is that nobody can classify it quickly.",
+    decision:
+      "Explain enough to calm Washington, let both descriptions stand, or repeat the test and settle the question in their favour.",
+    stakes:
+      "A system worth having because it is ambiguous gets less valuable every time you clarify it, and more dangerous every time you do not.",
+    facts: [
+      "On 27 July 2021 China conducted a test in which a vehicle was placed into a partial orbit and released a hypersonic glide vehicle that flew a long atmospheric course before impacting some distance from its target.",
+      "Neither element was new: the Soviet Union fielded and then retired a fractional orbital bombardment system under SALT II. The combination had not been demonstrated before.",
+      "Chairman of the Joint Chiefs Gen. Mark Milley called it 'very concerning' and 'very close' to a Sputnik moment.",
+      "China's foreign ministry described the event as a routine reusable-spacecraft test. Both descriptions were issued about the same object within days of each other.",
+      "A partial-orbit approach is attractive because it can arrive from the south, where early-warning radars built to look north are thinnest — and telling it from a satellite launch takes hours of orbital determination against a warning timeline of 25 to 30 minutes.",
+    ],
+    whatHappened:
+      "Beijing let both descriptions stand, repeating the routine-test characterisation without addressing the trajectory. Washington's assessment hardened rather than softened.",
+    afterward:
+      "The test is now the standard citation in arguments about southern-approach warning coverage, and it accelerated exactly the sensor investment that reduces the ambiguity the system depended on.",
+  },
 };
 
 export function briefFor(id: ScenarioId): ScenarioBrief | null {

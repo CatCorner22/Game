@@ -1253,24 +1253,27 @@ export function runIntegrityChecks(): IntegrityResult {
     return `${SCENARIOS.length} in both lists`;
   });
 
-  check("new-scenarios-actually-set-something-up", () => {
+  check("every-scenario-sets-up-a-real-situation", () => {
     // A scenario in the list with no block in applyScenario is a menu entry
     // that starts an ordinary sandbox game -- worse than not existing.
-    const added = ["alaska-drones-2027", "airliner-down-2027", "carrier-collision-2027", "boomer-collision-2027"] as const;
-    for (const id of added) {
-      const def = SCENARIOS.find((d) => d.id === id);
-      if (!def) throw new Error(`${id} is not in the scenario list`);
+    //
+    // This used to name four ids explicitly, which meant it only ever policed
+    // the four that happened to be new when it was written. Every scenario in
+    // the list passes it today, so there is no reason to let the next one in
+    // unchecked.
+    for (const def of SCENARIOS) {
       const plain = createWorld("standard", 5, def.playerId, def.intent);
-      const w = applyScenario(createWorld("standard", 5, def.playerId, def.intent), id);
-      if (w.scenarioId !== id) throw new Error(`${id} did not record its scenario id`);
+      const w = applyScenario(createWorld("standard", 5, def.playerId, def.intent), def.id);
+      if (w.scenarioId !== def.id) throw new Error(`${def.id} did not record its scenario id`);
       const moved =
         w.defcon !== plain.defcon ||
         Math.round(w.globalRisk) !== Math.round(plain.globalRisk) ||
         w.event.id !== plain.event.id;
-      if (!moved) throw new Error(`${id} starts an ordinary sandbox game`);
-      if (!w.event.title.trim() || !w.event.body.trim()) throw new Error(`${id} has no opening event text`);
+      if (!moved) throw new Error(`${def.id} starts an ordinary sandbox game`);
+      if (!w.event.title.trim() || !w.event.body.trim()) throw new Error(`${def.id} has no opening event text`);
+      if (w.playerId !== def.playerId) throw new Error(`${def.id} seats the player as ${w.playerId}, not ${def.playerId}`);
     }
-    return `${added.length} new scenarios set up real situations`;
+    return `${SCENARIOS.length} scenarios set up real situations`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };

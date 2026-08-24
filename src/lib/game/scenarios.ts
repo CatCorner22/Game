@@ -64,7 +64,17 @@ export type ScenarioId =
   | "alaska-drones-2027"
   | "airliner-down-2027"
   | "carrier-collision-2027"
-  | "boomer-collision-2027";
+  | "boomer-collision-2027"
+  | "hawaii-alert-2018"
+  | "damascus-titan-1980"
+  | "kursk-2000"
+  | "sverdlovsk-1979"
+  | "juarez-cobalt-1984"
+  | "maultsby-1962"
+  | "przewodow-2022"
+  | "balloon-2023"
+  | "salisbury-2018"
+  | "fobs-prc-2021";
 
 export type ScenarioEra = "historical" | "2027" | "threshold";
 
@@ -722,6 +732,181 @@ export const SCENARIOS: ScenarioDef[] = [
       learningGoal: "Treat confidence and corroboration as separate variables when phenomenologies disagree.",
     }),
     defaultAI: "ensemble",
+  },
+
+  // Ten drawn from the half of the incident corpus that had no scenario. Each
+  // one is a decision under uncertainty rather than a story with a moral: the
+  // people in these files did not know how it ended either.
+  {
+    id: "hawaii-alert-2018",
+    title: "Thirty-eight minutes",
+    line: "A statewide missile alert has gone out by mistake and is still standing.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "standard",
+    era: "historical",
+    ...puzzle("information", "human", {
+      duration: "short",
+      challenge: 3,
+      variables: ["public trust", "correction latency", "alert integrity"],
+      dependencies: ["warning", "public messaging", "human veto"],
+      learningGoal: "A correction is a second message, and the gap between the two is the whole harm.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "damascus-titan-1980",
+    title: "A dropped socket",
+    line: "An accident inside one of your own silos, with a warhead on top of it.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "historical",
+    ...puzzle("crisis", "human", {
+      duration: "short",
+      challenge: 4,
+      variables: ["custody", "public trust", "alert"],
+      dependencies: ["command", "civil authorities", "disclosure"],
+      learningGoal: "The people nearest the hazard are the ones you have told the least.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "kursk-2000",
+    title: "Twenty-three men aft",
+    line: "Your submarine is on the bottom and foreign rescue has been offered.",
+    playerId: "RU",
+    intent: "blue",
+    difficulty: "hard",
+    era: "historical",
+    ...puzzle("humanitarian", "human", {
+      duration: "short",
+      challenge: 3,
+      variables: ["legitimacy", "alliance cohesion", "public trust"],
+      dependencies: ["disclosure", "rescue capability", "sovereignty"],
+      learningGoal: "Accepting help is an admission, and refusing it is also an admission.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "sverdlovsk-1979",
+    title: "The meat story",
+    line: "A release from one of your own facilities is killing people downwind.",
+    playerId: "SU",
+    intent: "blue",
+    difficulty: "hard",
+    era: "historical",
+    ...puzzle("humanitarian", "human", {
+      duration: "standard",
+      challenge: 4,
+      variables: ["legitimacy", "public trust", "treaty standing"],
+      dependencies: ["disclosure", "health response", "verification"],
+      learningGoal: "A cover story that holds costs more the longer it holds.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "juarez-cobalt-1984",
+    title: "The scrap chain",
+    line: "A medical source was sold for scrap and the metal is already in circulation.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "standard",
+    era: "historical",
+    ...puzzle("humanitarian", "human", {
+      duration: "standard",
+      challenge: 3,
+      variables: ["contamination extent", "public trust", "alliance cohesion"],
+      dependencies: ["detection", "cross-border cooperation", "recall capacity"],
+      learningGoal: "Contamination travels through commerce faster than any agency can follow it.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "maultsby-1962",
+    title: "Off course on the worst day",
+    line: "One of your aircraft is lost deep inside Soviet airspace and interceptors are up.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "extreme",
+    era: "historical",
+    ...puzzle("history", "human", {
+      duration: "short",
+      challenge: 5,
+      variables: ["alert", "corroboration", "escalation control"],
+      dependencies: ["warning", "hotline", "command"],
+      learningGoal: "On the worst day of a crisis, your own routine operations are the likeliest cause of the next one.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "przewodow-2022",
+    title: "Russian-made",
+    line: "Two dead on allied soil, and the one confirmed fact is true and misleading.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "hard",
+    era: "historical",
+    ...puzzle("crisis", "human", {
+      duration: "short",
+      challenge: 4,
+      variables: ["attribution confidence", "alliance cohesion", "escalation control"],
+      dependencies: ["trajectory analysis", "treaty threshold", "allied messaging"],
+      learningGoal: "Being publicly slow is a decision, and sometimes it is the whole answer.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "balloon-2023",
+    title: "Over land or over water",
+    line: "A foreign high-altitude balloon is crossing your country right now.",
+    playerId: "US",
+    intent: "blue",
+    difficulty: "standard",
+    era: "historical",
+    ...puzzle("information", "human", {
+      duration: "short",
+      challenge: 2,
+      variables: ["public trust", "sensor coverage", "escalation control"],
+      dependencies: ["detection", "debris footprint", "political tempo"],
+      learningGoal: "A gap in what your sensors were tuned to see is not the same as a gap in what was there.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "salisbury-2018",
+    title: "A nerve agent in a cathedral city",
+    line: "A military-grade agent has been used on your territory against two people.",
+    playerId: "UK",
+    intent: "blue",
+    difficulty: "hard",
+    era: "historical",
+    ...puzzle("humanitarian", "human", {
+      duration: "standard",
+      challenge: 3,
+      variables: ["attribution confidence", "alliance cohesion", "public trust"],
+      dependencies: ["verification", "allied expulsions", "proportionality"],
+      learningGoal: "Attribution you are certain of and attribution you can prove are different instruments.",
+    }),
+    defaultAI: "human",
+  },
+  {
+    id: "fobs-prc-2021",
+    title: "The long way round",
+    line: "You flew a partial orbit and Washington is calling it a Sputnik moment.",
+    playerId: "CN",
+    intent: "red",
+    difficulty: "hard",
+    era: "historical",
+    briefing: "The same test as the ambiguity watch, read from the chair that ordered it.",
+    ...puzzle("crisis", "human", {
+      duration: "standard",
+      challenge: 4,
+      variables: ["signature", "escalation control", "treaty standing"],
+      dependencies: ["orbital determination", "public explanation", "test tempo"],
+      learningGoal: "A capability whose value is ambiguity gets more dangerous every time you explain it.",
+    }),
+    defaultAI: "human",
   },
 ];
 
@@ -1390,6 +1575,227 @@ export function applyScenario(world: World, id: ScenarioId): World {
     );
   }
 
+  // --- Ten watches from the unplayed half of the corpus ---------------------
+  //
+  // Each sets real state before the first turn. A scenario that only changes
+  // the menu entry starts an ordinary sandbox game, which is worse than not
+  // existing, and `new-scenarios-actually-set-something-up` fails it.
+
+  if (id === "hawaii-alert-2018") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "standard";
+    w.year = 2018;
+    w.month = 1;
+    w.defcon = 4;
+    w.globalRisk = 34;
+    w.actors.US.legitimacy = clamp(w.actors.US.legitimacy - 12, 0, 100);
+    setEvent(
+      w,
+      def,
+      "KP",
+      "A statewide missile alert went out by mistake and is still standing",
+      "An employee sent a live alert during an internal drill: BALLISTIC MISSILE THREAT INBOUND. SEEK IMMEDIATE SHELTER. THIS IS NOT A DRILL. Military commands confirmed within minutes that nothing is inbound. Nothing has gone out to the public. People are putting children into storm drains.",
+      "DIPLOMACY is the correction and every minute it waits is spent by somebody. HOLD lets the confusion set into the record as though it were the event.",
+      "high",
+      ["information", "public"],
+    );
+  }
+
+  if (id === "damascus-titan-1980") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    w.year = 1980;
+    w.month = 9;
+    w.defcon = 3;
+    w.globalRisk = 48;
+    w.actors.US.legitimacy = clamp(w.actors.US.legitimacy - 6, 0, 100);
+    setEvent(
+      w,
+      def,
+      "US",
+      "An accident inside one of your own silos, with a warhead on top of it",
+      "A tool dropped during routine maintenance has holed a pressurised tank. The complex is filling with vapour, the crew is out, and the warhead is still where it was. The county sheriff is asking what to tell people who live within sight of the fence, and nobody has authorised him to say anything at all.",
+      "INTELLIGENCE buys you a picture of the site before you commit. DIPLOMACY tells the county now and accepts the story you cannot yet complete. HOLD keeps the circle small while the pressure keeps rising.",
+      "critical",
+      ["custody", "public"],
+    );
+  }
+
+  if (id === "kursk-2000") {
+    w.playerId = "RU";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    w.year = 2000;
+    w.month = 8;
+    w.defcon = 4;
+    w.globalRisk = 40;
+    w.actors.RU.legitimacy = clamp(w.actors.RU.legitimacy - 14, 0, 100);
+    w.allianceCohesion = clamp(w.allianceCohesion - 6, 0, 100);
+    setEvent(
+      w,
+      def,
+      "RU",
+      "Your submarine is on the bottom and foreign rescue has been offered",
+      "An explosion in the forward compartment put her down during an exercise. Your own submersibles have failed twice in poor conditions. Norway and Britain have offered help, publicly, which means refusing is also a public act. Some of the crew are alive aft and nobody can tell you for how long.",
+      "DIPLOMACY accepts the offer and lets foreign vessels over your newest hull. HOLD keeps trying with what you have, and the men aft keep waiting.",
+      "critical",
+      ["humanitarian", "legitimacy"],
+    );
+  }
+
+  if (id === "sverdlovsk-1979") {
+    w.playerId = "SU";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    w.year = 1979;
+    w.month = 4;
+    w.defcon = 4;
+    w.globalRisk = 44;
+    w.actors.SU.legitimacy = clamp(w.actors.SU.legitimacy - 10, 0, 100);
+    setEvent(
+      w,
+      def,
+      "SU",
+      "A release from one of your own facilities is killing people downwind",
+      "The hospitals in the district are seeing a pattern they cannot explain and the pattern points at a military compound on the edge of the city. The treaty you signed seven years ago says the programme behind that fence does not exist. There is a story available about contaminated meat on the black market, and it will hold.",
+      "DIPLOMACY admits enough to get the district treated properly. INTELLIGENCE finds out what actually left the fence before you say anything. HOLD lets the meat story do the work, and it will, for years.",
+      "high",
+      ["humanitarian", "treaty"],
+    );
+  }
+
+  if (id === "juarez-cobalt-1984") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "standard";
+    w.year = 1984;
+    w.month = 1;
+    w.defcon = 4;
+    w.globalRisk = 32;
+    w.actors.US.legitimacy = clamp(w.actors.US.legitimacy - 5, 0, 100);
+    setEvent(
+      w,
+      def,
+      "US",
+      "A medical source was sold for scrap and the metal is already in circulation",
+      "A disused radiotherapy head went to a junkyard across the border, was broken open, and went into a foundry. The steel it became has been shipping for months — reinforcing bar, table legs, ordinary things — and the first detection was an accident at a laboratory gate. Nobody has a list of where it went.",
+      "INTELLIGENCE maps the distribution before you announce anything. DIPLOMACY works the neighbouring government, which did not cause this and will be blamed for it. HOLD lets the metal keep moving.",
+      "high",
+      ["humanitarian", "contamination"],
+    );
+  }
+
+  if (id === "maultsby-1962") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "extreme";
+    w.year = 1962;
+    w.month = 10;
+    w.defcon = 2;
+    w.globalRisk = 74;
+    const cuba = w.flashpoints.find((f) => f.id === "cuba");
+    if (cuba) cuba.heat = 82;
+    setEvent(
+      w,
+      def,
+      "SU",
+      "One of your aircraft is lost deep inside Soviet airspace",
+      "A routine air-sampling flight over the pole navigated by the stars into an aurora and came out somewhere it should never have been. Soviet interceptors are climbing toward him. Your own fighters are going out to meet him and they are carrying what everything is carrying this week. He is running out of fuel, and it is the worst day of the crisis.",
+      "DIPLOMACY tells Moscow what this is before they decide for themselves. HOLD says nothing and lets an aircraft nobody can explain fly out of their airspace on its own.",
+      "critical",
+      ["history", "escalation"],
+    );
+  }
+
+  if (id === "przewodow-2022") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    w.year = 2022;
+    w.month = 11;
+    w.defcon = 3;
+    w.globalRisk = 62;
+    const nato = w.flashpoints.find((f) => f.id === "nato-ru");
+    if (nato) nato.heat = 72;
+    w.allianceCohesion = clamp(w.allianceCohesion - 8, 0, 100);
+    setEvent(
+      w,
+      def,
+      "RU",
+      "Two dead on allied soil, and the one confirmed fact is misleading",
+      "A missile came down in a border village during a large barrage and killed two farm workers. The only thing anyone has confirmed is that it was of Russian manufacture — which is true, and which is also what the defending side flies. Wire copy citing an anonymous official already says Russia hit NATO. Trajectory analysis is hours away and the treaty consultation clock is not.",
+      "INTELLIGENCE waits for the trajectory and spends the hours. DIPLOMACY says publicly what you do not yet know, early, and deflates the pressure. PRESSURE answers the wire story instead of the event.",
+      "critical",
+      ["alliance", "attribution"],
+    );
+  }
+
+  if (id === "balloon-2023") {
+    w.playerId = "US";
+    w.intent = "blue";
+    w.difficulty = "standard";
+    w.year = 2023;
+    w.month = 2;
+    w.defcon = 4;
+    w.globalRisk = 36;
+    w.actors.US.warning = clamp(w.actors.US.warning - 6, 5, 100);
+    setEvent(
+      w,
+      def,
+      "CN",
+      "A foreign high-altitude balloon is crossing your country right now",
+      "It came in over Alaska, transited Canada, and is over the continental United States. Beijing calls it a stray weather craft. Shooting it down over land drops a large payload onto somebody, and waiting until it reaches the coast means several more days of it on television. Your own command has just worked out that earlier ones crossed undetected because the radar filters were discarding slow, small, high returns.",
+      "INTELLIGENCE learns more from it flying than from the wreckage. POSTURE takes it now and accepts the debris. HOLD waits for water and spends the days in public.",
+      "high",
+      ["information", "sovereignty"],
+    );
+  }
+
+  if (id === "salisbury-2018") {
+    w.playerId = "UK";
+    w.intent = "blue";
+    w.difficulty = "hard";
+    w.year = 2018;
+    w.month = 3;
+    w.defcon = 4;
+    w.globalRisk = 46;
+    const nato = w.flashpoints.find((f) => f.id === "nato-ru");
+    if (nato) nato.heat = 58;
+    setEvent(
+      w,
+      def,
+      "RU",
+      "A military-grade nerve agent has been used on your territory",
+      "Two people were found on a bench in a small cathedral city and the laboratory has identified a class of agent only a state programme produces. A police officer is in hospital. Moscow denies everything and demands a sample. You are certain who did this and the evidence that makes you certain is the evidence you cannot show.",
+      "DIPLOMACY builds the coordinated expulsions and spends weeks doing it. PRESSURE acts now on an attribution your allies have not yet seen. HOLD waits for a verification process the accused sits on.",
+      "high",
+      ["attribution", "alliance"],
+    );
+  }
+
+  if (id === "fobs-prc-2021") {
+    w.playerId = "CN";
+    w.intent = "red";
+    w.difficulty = "hard";
+    w.year = 2021;
+    w.month = 7;
+    w.defcon = 4;
+    w.globalRisk = 44;
+    const space = w.flashpoints.find((f) => f.id === "space");
+    if (space) space.heat = 52;
+    setEvent(
+      w,
+      def,
+      "US",
+      "You flew a partial orbit and Washington is calling it a Sputnik moment",
+      "The vehicle went partway round and released a glider that flew a long atmospheric course. Neither half is new; the combination has not been demonstrated before. Your ministry has described it as a routine reusable-spacecraft test. The American chairman has described it as very close to a Sputnik moment. Both statements are about the same object, and the gap between them is the capability.",
+      "DIPLOMACY explains enough to calm Washington and spends the ambiguity that makes the system worth having. HOLD lets both descriptions stand. POSTURE repeats it and settles the question in their favour.",
+      "high",
+      ["space", "signature"],
+    );
+  }
 
   if (id === "signal-window") {
     w.defcon = 3;
