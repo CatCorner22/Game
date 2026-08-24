@@ -7,6 +7,7 @@ import { isWin, letterGrade } from "@/lib/game/stats";
 import { defeatOf, victoryOf } from "@/lib/game/mandate";
 import { encodeReplay } from "@/lib/game/replay";
 import { GlassPanel, HudButton, HudChip, HudLabel, HudPanel, HudRow } from "./ui/Hud";
+import { AfterAction } from "./AfterAction";
 
 export function EndScreen() {
   const world = useGame((s) => s.world);
@@ -63,6 +64,8 @@ export function EndScreen() {
           ) : null}
         </dl>
       </GlassPanel>
+
+      <AfterAction world={world} />
 
       <HudPanel className="mt-8">
         <HudLabel>Timeline</HudLabel>

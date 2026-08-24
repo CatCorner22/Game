@@ -59,7 +59,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "Shooting down Russian aircraft over your territory is legally clean and politically enormous. Letting them fly tells Moscow exactly what your response time is, which is very likely what they came to measure.",
     facts: [
       "From 28 January to 4 February 2023 a Chinese high-altitude balloon crossed Alaska, Canada and the continental United States before being shot down off South Carolina.",
-      "NORAD's commander later testified that earlier balloon transits had gone undetected because radar processing was rejecting slow, small, high-altitude returns -- 'a domain awareness gap.' Once the filters were changed, the tracks appeared immediately.",
+      "NORAD's commander later testified that earlier balloon transits had gone undetected because radar processing was rejecting slow, small, high-altitude returns — 'a domain awareness gap.' Once the filters were changed, the tracks appeared immediately.",
       "Beginning 6 December 2023, unmanned aircraft operated over Joint Base Langley-Eustis on roughly 17 separate nights. No operator was ever identified, and some F-22s were moved to another base.",
       "NORAD's counter-drone remit was written for an 'attack of national consequence'; NORTHCOM had no authority to act, and base commanders owned the problem inside the fence and nothing outside it.",
       "In the New Jersey drone flap of November and December 2024, thousands of reports were jointly assessed by four federal agencies as lawful commercial, hobbyist and police aircraft plus misidentified manned planes.",
@@ -190,7 +190,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     facts: [
       "In late October 2022 Russia's defence minister told his American, British, French and Turkish counterparts that Ukraine was preparing to detonate a radiological device on its own soil as a provocation.",
       "Ukraine denied it and invited inspectors in. The IAEA visited three Ukrainian facilities and reported on 3 November 2022 that it had found no indication of undeclared nuclear material or activity.",
-      "Western governments read the allegation as a possible pretext rather than a warning -- an accusation constructed in advance to justify something later.",
+      "Western governments read the allegation as a possible pretext rather than a warning — an accusation constructed in advance to justify something later.",
       "Public American assessments through late 2022 held that no decision to use a nuclear weapon had been taken, while treating preparation indicators as a standing collection priority. Both halves of that sentence were doing work.",
     ],
     precedent:
@@ -240,7 +240,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "The whole value of the programme is that other capitals cannot be certain what you can do. Proving it buys respect and spends the doubt that has been keeping you alive.",
     facts: [
       "North Korea has filed maritime and aviation notices before several satellite attempts, including the failed launch of 31 May 2023, which caused Seoul to issue and then retract an evacuation alert within about twenty minutes.",
-      "A lofted trajectory -- flown steeply so the missile lands in nearby water -- demonstrates energy without demonstrating range. The tests of July 2017 and November 2022 were both flown that way.",
+      "A lofted trajectory — flown steeply so the missile lands in nearby water — demonstrates energy without demonstrating range. The tests of July 2017 and November 2022 were both flown that way.",
       "North Korea conducted six nuclear tests between 2006 and 2017 and none since. The pause is itself a form of message.",
       "In 2017 state media declared a high-altitude electromagnetic pulse capability. No independent assessment has confirmed it, and its value depends entirely on not being tested.",
     ],
@@ -259,7 +259,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "Pakistan first tested the Nasr short-range system in April 2011, with a declared range of about 60 km. A weapon at that range has to be moved close to the border to mean anything at all.",
       "India's declared doctrine since January 2003 is no first use, with a stated exception for a major attack using biological or chemical weapons.",
       "The two capitals are roughly 700 km apart and the flight time across the disputed border is short enough that neither side can verify a launch before it lands.",
-      "Since 1992 the two states have exchanged lists of their nuclear installations every 1 January under an agreement not to attack them. Neither has ever missed a year -- not during the 1999 Kargil fighting, not in 2019, not in any of the crises since.",
+      "Since 1992 the two states have exchanged lists of their nuclear installations every 1 January under an agreement not to attack them. Neither has ever missed a year — not during the 1999 Kargil fighting, not in 2019, not in any of the crises since.",
     ],
     precedent:
       "Kargil (1999) and the 2019 exchange: two nuclear neighbours with almost no decision time and a doctrine that has never had to survive a bad night.",
@@ -275,7 +275,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     facts: [
       "The 2015 agreement capped Iranian enrichment at 3.67% and the stockpile at 300 kg. After the United States withdrew in 2018 Iran exceeded both, and by 2021 was enriching to 60%.",
       "Weapons-usable material is conventionally around 90%, but most of the separative work is done long before that. This is why 60% is treated as the alarming number and 90% is treated as arithmetic.",
-      "The IAEA's leverage is access. When monitoring cameras were removed in June 2022 the agency said it had lost continuity of knowledge -- a gap that cannot be filled in retrospectively.",
+      "The IAEA's leverage is access. When monitoring cameras were removed in June 2022 the agency said it had lost continuity of knowledge — a gap that cannot be filled in retrospectively.",
       "Israel struck Iraq's Osirak reactor on 7 June 1981 and a suspected reactor at Al-Kibar in Syria on 6 September 2007. Neither strike was preceded by a public warning to anyone.",
     ],
     precedent:
@@ -293,7 +293,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "Israel destroyed Iraq's Osirak reactor on 7 June 1981 using eight aircraft. The strike was condemned by the UN Security Council, with the United States voting for the resolution.",
       "The September 2007 strike on the Al-Kibar site in Syria went unacknowledged by Israel for over a decade, and Syria never admitted the site existed. Neither government wanted a war, so both said nothing and there was none.",
       "Osirak did not end Iraq's programme. Post-1991 assessments found the effort was reorganised afterwards, moved underground, and given more money.",
-      "Central Iran is roughly 1,600 km from Israel, which makes any strike package dependent on aerial refuelling -- and tanker movements are visible to satellites days in advance.",
+      "Central Iran is roughly 1,600 km from Israel, which makes any strike package dependent on aerial refuelling — and tanker movements are visible to satellites days in advance.",
     ],
     precedent:
       "Osirak (1981), Al-Kibar (2007), and what happened in Iraq afterwards: pre-emption buys time, and the record disagrees sharply about how much.",
@@ -307,7 +307,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     stakes:
       "Say it loudly and every adversary knows exactly when your attention was elsewhere. Say it quietly and the story breaks on someone else's terms.",
     facts: [
-      "On 24 January 1961 a B-52 broke up over Goldsboro, North Carolina and released two thermonuclear bombs. One came down intact under a parachute; the other broke apart in a swamp, and its secondary stage was never recovered -- the Air Force bought rights to the ground rather than keep digging.",
+      "On 24 January 1961 a B-52 broke up over Goldsboro, North Carolina and released two thermonuclear bombs. One came down intact under a parachute; the other broke apart in a swamp, and its secondary stage was never recovered — the Air Force bought rights to the ground rather than keep digging.",
       "A 1969 Sandia review of that weapon, declassified in 2013, concluded the design 'did not possess adequate safety for the airborne alert role in the B-52.' The public statement at the time had been that there was no danger.",
       "On 17 January 1966 a B-52 collided with a tanker over Palomares, Spain. Two of four bombs had their conventional explosive detonate on impact, scattering plutonium over roughly 2 km2 of farmland; about 1,750 tons of soil were shipped to South Carolina.",
       "The fourth Palomares weapon was found because a local fisherman gave a bearing on where it had entered the water. It was recovered on 7 April, 80 days after the crash, from around 2,700 feet.",
@@ -326,7 +326,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "A device in the hands of people with no return address breaks deterrence entirely — there is nobody to retaliate against. Recovery is the only outcome that counts.",
     facts: [
       "On 29 and 30 August 2007 six cruise missiles with live warheads were mistakenly loaded onto a B-52 at Minot Air Force Base and flown to Barksdale. Nobody reported them missing; they sat on the aircraft without the required security for roughly 36 hours and were found by a ground crew at the destination.",
-      "For those 36 hours the accounting system said the warheads were in a bunker. The failure was not the flight -- it was learning that the inventory did not inventory anything.",
+      "For those 36 hours the accounting system said the warheads were in a bunker. The failure was not the flight — it was learning that the inventory did not inventory anything.",
       "Four commanders were relieved and many personnel decertified. Restoring confidence and stripping out experience turned out to be the same action.",
       "On 5 December 1965 an aircraft carrying a nuclear bomb rolled off the deck of USS Ticonderoga into roughly 16,000 feet of water. The loss was concealed for years, and when the location's proximity to Japan became clear in 1989 it produced a far larger crisis than an early admission would have.",
       "Between 1992 and 1994 three separate insider thefts of weapon-usable material surfaced in Russia. All the material was recovered, and every thief was an amateur who stole first and went looking for a buyer afterwards.",
@@ -394,7 +394,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     stakes:
       "Generating is visible to everyone and cannot be walked back quickly. Waiting is exactly what 1983 did, and 1983 is why this file exists.",
     facts: [
-      "The United Kingdom has kept at least one armed ballistic missile submarine at sea continuously since April 1969 -- more than fifty years without a gap.",
+      "The United Kingdom has kept at least one armed ballistic missile submarine at sea continuously since April 1969 — more than fifty years without a gap.",
       "Every patrol carries a handwritten letter from the Prime Minister with instructions for what to do if national command no longer exists. The letters are destroyed unopened when a Prime Minister leaves office, so nobody has ever read one.",
       "On 24 November 1961 every communications link between SAC headquarters, NORAD and the three early-warning radars failed at once. Because the links were deliberately routed independently, their simultaneous failure was itself read as evidence of attack and bombers were readied.",
       "The 1961 cause was a single relay station in Colorado through which the supposedly independent routes all happened to pass.",
@@ -414,7 +414,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     facts: [
       "France tested its first weapon on 13 February 1960 and withdrew from NATO's integrated military command in 1966, keeping the deterrent under sole national authority. It rejoined the integrated command in 2009 and has never placed the deterrent under it.",
       "French doctrine reserves a single demonstrative use as a final warning that vital interests are at stake. By design that is a national judgement, and it cannot be delegated to a committee of allies.",
-      "Employment rests with the President alone. There is no second signature in the French chain -- a different design choice from the American two-person rule, made deliberately and never revisited.",
+      "Employment rests with the President alone. There is no second signature in the French chain — a different design choice from the American two-person rule, made deliberately and never revisited.",
       "NATO's nuclear planning group has existed since 1966. France has never joined it.",
     ],
     precedent:
@@ -446,7 +446,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     stakes:
       "Calling it an attack when it was debris starts something over a broken component. Calling it a failure when it was deliberate means the next thing arrives unseen.",
     facts: [
-      "On 11 January 2007 China destroyed one of its own weather satellites, producing more than 3,000 trackable fragments -- still the largest single debris event on record.",
+      "On 11 January 2007 China destroyed one of its own weather satellites, producing more than 3,000 trackable fragments — still the largest single debris event on record.",
       "On 15 November 2021 a Russian test destroyed a defunct satellite and produced roughly 1,500 trackable pieces. The crew of the International Space Station sheltered in their return capsules as the cloud passed.",
       "A satellite failing on its own looks identical from the ground to a satellite being attacked, for hours. The catalogue tells you an object stopped reporting, never why.",
       "Starfish Prime in 1962 killed satellites indiscriminately over the following months: Transit 4B stopped transmitting on 2 August 1962, TRAAC on 14 August, and Britain's Ariel 1 was crippled within days. None were targets; all were casualties of a belt of trapped electrons that lasted years.",
@@ -498,7 +498,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     stakes:
       "The southern gap in your coverage is not a secret. A system built to use it would look exactly like this, and so would an ordinary satellite.",
     facts: [
-      "On 27 July 2021 China tested a vehicle that entered a partial orbit and released a hypersonic glide vehicle which then flew a long atmospheric course. Neither element was new -- the Soviet Union fielded and retired a fractional orbital system under SALT II -- but the combination had not been demonstrated.",
+      "On 27 July 2021 China tested a vehicle that entered a partial orbit and released a hypersonic glide vehicle which then flew a long atmospheric course. Neither element was new — the Soviet Union fielded and retired a fractional orbital system under SALT II — but the combination had not been demonstrated.",
       "The Chairman of the Joint Chiefs called it 'very close' to a Sputnik moment. China's foreign ministry described it as a routine reusable-spacecraft test. Both statements were made about the same object.",
       "A partial-orbit approach is attractive precisely because it can arrive from the south, where early-warning radars built to look north are thinnest.",
       "Telling a satellite insertion from a partial-orbit weapon takes hours of orbital determination, against a warning timeline of 25 to 30 minutes for an ordinary intercontinental trajectory. The boost phase looks the same either way, and the hours are the problem.",
@@ -516,7 +516,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "Blinding an adversary's early warning is, to them, indistinguishable from preparing to strike. There is no way to inspect a warning satellite that looks harmless from the other side.",
     facts: [
       "In 2015 a Russian satellite manoeuvred between two commercial communications satellites and held station there for months. The operator complained publicly and nothing else happened.",
-      "In early 2020 a pair of Russian satellites shadowed an American reconnaissance satellite closely enough that the head of the US Space Force described the behaviour publicly as unusual -- an unusual step in itself.",
+      "In early 2020 a pair of Russian satellites shadowed an American reconnaissance satellite closely enough that the head of the US Space Force described the behaviour publicly as unusual — an unusual step in itself.",
       "An inspection pass and an attack run share a trajectory until the last moments. There is no approach that reassures the owner, because the reassuring version looks the same from their console.",
       "Blinding early warning is one of the classic indicators of preparation for a first strike. That makes a close approach to a warning satellite an announcement of intent whatever the intent actually is.",
     ],
@@ -549,7 +549,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     stakes:
       "Acting alone is faster and costs you the coalition you will need next month. Waiting for consensus is legitimate and may be slower than events.",
     facts: [
-      "On 15 November 2022 a missile killed two people in the Polish village of Przewodow, about six kilometres from the Ukrainian border. Poland confirmed only that it was of Russian manufacture -- true, and misleading, because Ukraine flies Soviet-designed air defences.",
+      "On 15 November 2022 a missile killed two people in the Polish village of Przewodow, about six kilometres from the Ukrainian border. Poland confirmed only that it was of Russian manufacture — true, and misleading, because Ukraine flies Soviet-designed air defences.",
       "Within hours the American president said publicly it was 'unlikely' to have been launched from Russia and NATO's Secretary General attributed it to Ukrainian air defence. The decision was to be publicly slow, and it deflated the pressure for treaty consultations.",
       "Ukraine contested that assessment in public for weeks. An ally disagreeing loudly is part of the price of getting it right quickly.",
       "Article 4 is consultation and Article 5 is collective defence. The distance between them is where an alliance decides how large something is going to be.",
@@ -587,7 +587,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "On 13 January 2018 one employee sent a live statewide missile alert in Hawaii during an internal drill. Five colleagues in the room heard the exercise framing; he did not. The correction took 38 minutes.",
       "Authentication exists for exactly this case. The point of a code is that it answers 'is this really them' without anyone having to judge whether a voice sounds right.",
       "Synthetic audio convincing enough to fool close colleagues has been demonstrated since 2019, including in fraud cases where executives authorised transfers on the strength of a cloned voice on a familiar line.",
-      "The Washington-Moscow link has never been a telephone. It was teleprinter, then fax, then secure computer -- text throughout, deliberately, so that what arrives can be verified rather than merely recognised.",
+      "The Washington-Moscow link has never been a telephone. It was teleprinter, then fax, then secure computer — text throughout, deliberately, so that what arrives can be verified rather than merely recognised.",
     ],
     precedent:
       "The design of the Washington-Moscow link: it was never a red telephone, and this scenario is the reason why.",
@@ -603,7 +603,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     facts: [
       "In Bhopal on the night of 2-3 December 1984 roughly 40 tonnes of methyl isocyanate escaped over a sleeping city with no working alarm and no public warning plan. Official immediate deaths were about 3,800; independent estimates of deaths within weeks run from 8,000 to 16,000.",
       "At Graniteville, South Carolina, at 2:39 a.m. on 6 January 2005, a breached tank car released about 60 tons of chlorine in minutes. Nine people died, over 550 sought medical care, and roughly 5,400 residents inside a one-mile radius were evacuated for about two weeks.",
-      "In Surat in September 1994 an estimated quarter of the city's population fled within days of a reported plague outbreak -- several hundred thousand people, including a large share of its doctors and administrators.",
+      "In Surat in September 1994 an estimated quarter of the city's population fled within days of a reported plague outbreak — several hundred thousand people, including a large share of its doctors and administrators.",
       "Emergency reserves are sized against a planning scenario, never against the day. Every allocation is defensible in advance and indefensible afterwards, in public, with names attached.",
     ],
     precedent:
@@ -652,7 +652,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     stakes:
       "When reports arrive out of order, a calm situation can look like an escalating one. Rumour fills the gap faster than repair crews do.",
     facts: [
-      "Undersea cables carry over 95% of intercontinental data traffic, and roughly 150 to 200 faults occur worldwide every year -- overwhelmingly from fishing gear and anchors.",
+      "Undersea cables carry over 95% of intercontinental data traffic, and roughly 150 to 200 faults occur worldwide every year — overwhelmingly from fishing gear and anchors.",
       "In October 2023 a gas pipeline and two telecom cables were damaged in the Gulf of Finland. Investigators concluded a ship's anchor had been dragged across the seabed; establishing whether it was deliberate took months and stayed contested.",
       "Cables break constantly. A cable breaking during a crisis is the same physical event with a different meaning attached, and nothing in the evidence separates them quickly.",
       "When traffic reroutes, reports arrive out of sequence. A calm situation reconstructed from out-of-order reports reads as an escalating one, and the correction always lags the alarm.",
@@ -671,7 +671,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     facts: [
       "On 9 November 1979 a training tape simulating a Soviet attack was loaded into the live NORAD system. Interceptors were scrambled and the airborne command post launched before the display was called false.",
       "In June 1980 a failed 46-cent integrated circuit in a communications multiplexer produced two separate false attack displays three days apart, showing changing and implausible missile counts. The hardware was confident and the numbers were nonsense.",
-      "The ballistic missile defence test record since 1999 turns repeatedly on discrimination -- telling a warhead from a decoy -- under conditions the tester controls. A scored success is not a forecast.",
+      "The ballistic missile defence test record since 1999 turns repeatedly on discrimination — telling a warhead from a decoy — under conditions the tester controls. A scored success is not a forecast.",
       "Three systems agreeing on their confidence while disagreeing on the answer is a measurement of the confidence, not of the answer.",
     ],
     precedent:
@@ -687,7 +687,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "Standing it down removes the deterrent it exists to provide. Leaving it armed while it is confused is how ambiguity becomes automatic.",
     facts: [
       "The Soviet Union built a semi-automatic retaliation system in the mid-1980s, generally reported as Perimeter, to guarantee a response if national leadership were destroyed. Its deterrent value comes from being known to exist, not from ever operating.",
-      "Published accounts describe human beings at the final rung -- officers in a hardened facility who would still have to act. Guaranteed retaliation and human judgement are in tension by design, and the design chose both.",
+      "Published accounts describe human beings at the final rung — officers in a hardened facility who would still have to act. Guaranteed retaliation and human judgement are in tension by design, and the design chose both.",
       "The system exists because of the fear of decapitation, which is the same fear that pushes leaders to delegate release authority in advance. Every remedy for one of those problems worsens the other.",
       "On 26 September 1983 the Soviet officer who declined to pass a satellite warning up the chain received no commendation, and retired the following year. Being the human in the loop has never been a career.",
     ],
@@ -721,7 +721,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "Nuclear authority depends on there being exactly one answer to who holds it. Two lawful claims is not a constitutional puzzle, it is a targeting problem.",
     facts: [
       "The American presidential line of succession runs 18 deep by statute. It was written for orderly vacancy, not for a communications failure that leaves two people each believing in good faith that they hold the office.",
-      "The 25th Amendment, ratified in 1967, provides for transfer of power but requires written declarations delivered to named officers -- a procedure that quietly assumes the communications are working.",
+      "The 25th Amendment, ratified in 1967, provides for transfer of power but requires written declarations delivered to named officers — a procedure that quietly assumes the communications are working.",
       "On 30 March 1981, with the President in surgery and the Vice President airborne, the Secretary of State told the press 'I am in control here.' He was constitutionally wrong, and the moment is remembered because the confusion behind it was real.",
       "Nuclear authority depends on there being exactly one answer to who holds it. Two lawful-looking answers is not a legal puzzle; it is an instruction problem at every command post simultaneously.",
     ],
@@ -755,7 +755,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "Punishing a violation you cannot verify may be punishing a fabrication. Absorbing real violations teaches the other side what the pause is worth.",
     facts: [
       "The OPCW's 2018 Douma investigation produced a public report and a public dissent from members of the inspection team. The disagreement was about method, and every party used it as proof of whatever they already believed.",
-      "Verification is slower than the news cycle by construction. The Douma inspection team reached Damascus on 14 April 2018 and could not access the site until 21 April -- a week in which a disputed violation only had to be asserted once.",
+      "Verification is slower than the news cycle by construction. The Douma inspection team reached Damascus on 14 April 2018 and could not access the site until 21 April — a week in which a disputed violation only had to be asserted once.",
       "A monitoring channel is the first thing both sides attack once it starts producing findings either of them dislikes. Protecting it costs more than using it.",
       "Punishing an unverified violation may be punishing a fabrication, and fabrications are cheap. The side that wants the pause to collapse only needs to be believed once.",
     ],
@@ -774,7 +774,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "25 January 1995. A four-stage Black Brant XII sounding rocket launched from And\u00f8ya, Norway, to study the aurora.",
       "Olenegorsk radar on the Kola Peninsula saw a large multi-stage vehicle rising from the Norwegian Sea; stage separation produced multiple radar objects.",
       "Norway had notified some 30 states, Russia among them, through diplomatic channels weeks in advance. The notice never reached the operators who mattered.",
-      "The track was assessed as non-threatening in about 8 minutes, once it was clearly heading away from Russian territory -- inside the roughly 10-minute window a close-in submarine launch would have allowed.",
+      "The track was assessed as non-threatening in about 8 minutes, once it was clearly heading away from Russian territory — inside the roughly 10-minute window a close-in submarine launch would have allowed.",
       "A single object is more alarming than many: one high-altitude detonation could blind radars immediately before a mass strike, so a lone track reads as the opening move.",
     ],
     whatHappened:
@@ -890,7 +890,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
       "Something over the weapons storage areas is either hostile collection or a failure of your own security reporting. Both are serious and they need opposite responses.",
     facts: [
       "Late October to November 1975. Multiple US and Canadian bases in the northern tier reported unidentified objects over weapons storage and missile areas.",
-      "Loring, Wurtsmith, Malmstrom, Minot and Canadian Forces Station Falconbridge -- 5 installations across the northern tier -- filed reports over roughly 3 weeks.",
+      "Loring, Wurtsmith, Malmstrom, Minot and Canadian Forces Station Falconbridge — 5 installations across the northern tier — filed reports over roughly 3 weeks.",
       "Security police reported visual sightings; some sites reported radar returns. Interceptors were launched and made no identifications.",
       "The reports were documented in NORAD and Air Force message traffic later released under freedom-of-information requests.",
       "No cause was ever established. The candidate explanations \u2014 helicopters, misidentification, deliberate reconnaissance \u2014 were never resolved either way.",
@@ -909,7 +909,7 @@ export const SCENARIO_BRIEFS: Record<ScenarioId, ScenarioBrief> = {
     stakes:
       "The standard is two independent sensor types agreeing, and you have two that do not. Saying nothing hands the explanation to whoever is loudest.",
     facts: [
-      "The ODNI assessment of 25 June 2021 examined 144 US government reports and resolved exactly one -- a large deflating balloon -- leaving 143 unresolved. It stated plainly that the limiting factor was insufficient and inconsistent data, not exotic performance.",
+      "The ODNI assessment of 25 June 2021 examined 144 US government reports and resolved exactly one — a large deflating balloon — leaving 143 unresolved. It stated plainly that the limiting factor was insufficient and inconsistent data, not exotic performance.",
       "In the Nimitz encounter of 14 November 2004, shipboard radar, aircrew eyewitness accounts and infrared targeting-pod video all recorded something, and the sensors did not agree with each other about what.",
       "The doctrinal standard for a launch warning is dual phenomenology: two independent sensor types, working on different physics, agreeing. It exists because one sensor type has been wrong before, repeatedly, in exactly this way.",
       "Public belief moves faster than analysis and does not wait for it. The New Jersey drone flap of late 2024 generated thousands of reports which four federal agencies jointly assessed as ordinary aircraft.",

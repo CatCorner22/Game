@@ -1131,6 +1131,45 @@ export function runIntegrityChecks(): IntegrityResult {
     return `${SCENARIOS.length} scenarios, all briefed`;
   });
 
+  check("after-action-reveals-only-what-it-should", () => {
+    // The briefing screen must never carry the ending. A player told "Petrov
+    // reported it as a malfunction" before they sit down has not been given a
+    // decision, they have been given an answer -- so the ending fields live in
+    // the brief from the start and only AfterAction renders them.
+    //
+    // The two shapes are exclusive: a historical scenario has an outcome and
+    // what it changed; an invented one has no outcome to reveal and instead
+    // names the real incident it borrows from.
+    let historical = 0;
+    for (const def of SCENARIOS) {
+      const brief = briefFor(def.id);
+      if (!brief) throw new Error(`${def.id} has no brief`);
+      if (def.era === "historical") {
+        if (!brief.whatHappened) throw new Error(`${def.id} is historical with no whatHappened`);
+        if (!brief.afterward) throw new Error(`${def.id} is historical with no afterward`);
+        historical += 1;
+      } else {
+        if (brief.whatHappened) throw new Error(`${def.id} is not historical but claims an outcome`);
+        if (!brief.precedent) throw new Error(`${def.id} is invented with no precedent`);
+      }
+    }
+    return `${historical} historical with outcomes, ${SCENARIOS.length - historical} invented with precedents`;
+  });
+
+  check("ending-keeps-the-scenario-it-came-from", () => {
+    // AfterAction looks the brief up by world.scenarioId. If a turn, a save or a
+    // replay drops it, the panel silently renders nothing at the exact moment
+    // the game finally has something to say.
+    let w = applyScenario(createWorld("standard", 31, "US", "blue"), "petrov-1983");
+    if (w.scenarioId !== "petrov-1983") throw new Error("applyScenario did not record the id");
+    w = runTurns(w, 6);
+    if (w.scenarioId !== "petrov-1983") throw new Error(`lost across turns: ${w.scenarioId}`);
+    const run = replayFromCode(encodeReplay(w));
+    if (!run) throw new Error("replay decode failed");
+    if (run.world.scenarioId !== "petrov-1983") throw new Error(`replay lost it: ${run.world.scenarioId}`);
+    return `petrov-1983 survives ${w.turn} turns and a replay`;
+  });
+
   check("briefs-cover-exactly-the-scenario-list", () => {
     // A brief for a scenario that no longer exists, or a scenario with no brief,
     // both mean the two lists have drifted apart.
