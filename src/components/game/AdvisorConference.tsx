@@ -58,6 +58,7 @@ export function AdvisorConference() {
   // on the network to be usable.
   const [voiced, setVoiced] = useState<Record<string, string>>({});
   const [modelOn, setModelOn] = useState(false);
+  const attemptedRef = useRef<Set<string>>(new Set());
   const railRef = useRef<HTMLDivElement>(null);
 
   const rung = (world?.conferenceRung ?? 0) as 0 | 1 | 2 | 3;
@@ -102,19 +103,41 @@ export function AdvisorConference() {
     railRef.current?.scrollTo({ top: railRef.current.scrollHeight });
   }, [transcript.length]);
 
+  // Reset the local transcript whenever the call itself changes.
+  //
+  // Declared BEFORE the elaboration effect on purpose: effects run in
+  // declaration order, so with this second it cleared `attemptedRef` on the
+  // very render the elaboration effect had just populated it, and every line
+  // was requested twice. Ordering is the fix, not a guard.
+  useEffect(() => {
+    setSaid([]);
+    setDraft("");
+    setVoiced({});
+    attemptedRef.current = new Set();
+  }, [clockKey, rung]);
+
   // Hand each new advisor line to the server to be re-voiced. Failure, a
   // timeout, and "no key configured" all resolve to the scripted line, so this
   // can only ever change wording -- never what is offered or what happens.
+  //
+  // Attempts are tracked in a ref rather than derived from `voiced`, for two
+  // reasons. Keying off `voiced` would have put it in this effect's deps, so
+  // every successful reply tore down the in-flight loop and restarted it --
+  // O(n^2) provider calls for n lines, which a rate-limited provider would
+  // refuse. And a line the model declined to answer never lands in `voiced`,
+  // so it would have been retried on every subsequent run forever. One attempt
+  // per line, win or lose.
   useEffect(() => {
     if (!world || !open) return;
     if (modelKnownUnavailable()) return;
-    const pending = [...openings, ...said].filter((t) => !t.mine && !voiced[t.key]);
+    const pending = [...openings, ...said].filter((t) => !t.mine && !attemptedRef.current.has(t.key));
     if (!pending.length) return;
     let live = true;
     void (async () => {
       for (const turn of pending.slice(0, 12)) {
         const advisor = room.find((a) => a.id === turn.advisorId);
         if (!advisor) continue;
+        attemptedRef.current.add(turn.key);
         const reply = await elaborate(world, advisor, turn);
         if (!live) return;
         if (reply.mode === "model") {
@@ -128,14 +151,7 @@ export function AdvisorConference() {
     return () => {
       live = false;
     };
-  }, [world, open, openings, said, room, voiced]);
-
-  // Reset the local transcript whenever the call itself changes.
-  useEffect(() => {
-    setSaid([]);
-    setDraft("");
-    setVoiced({});
-  }, [clockKey, rung]);
+  }, [world, open, openings, said, room]);
 
   if (!world || !open) return null;
 
