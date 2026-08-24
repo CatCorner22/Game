@@ -257,14 +257,30 @@ export function roomConsensus(world: World, rung: ConferenceRung): { optionId: s
  * the same shape as `applyC2` and `pickDoctrine` — because the ladder is a
  * within-turn action, not a turn commitment.
  */
+/** Signature the ladder has already cost this turn, at a given rung. */
+export function signatureSpent(rung: number): number {
+  return RUNGS.filter((r) => r.rung <= rung).reduce((n, r) => n + r.signature, 0);
+}
+
 export function convene(world: World, rung: ConferenceRung): void {
   const at = world.conferenceRung ?? 0;
   if (rung <= at) return;
   const spec = RUNGS.find((r) => r.rung === rung);
   if (!spec) return;
   world.conferenceRung = rung;
-  if (spec.signature > 0) {
-    world.postureSignature = clamp((world.postureSignature ?? 0) + spec.signature, 0, 100);
+  // Charge every rung crossed, not just the one landed on.
+  //
+  // `clockSpent` has always billed the ladder cumulatively while this billed
+  // only the rung being set. The two disagreed from the beginning and it never
+  // showed, because nothing could skip a rung: the gate offered rung one and
+  // the in-room ladder only ever offered rung + 1, so the sum of the steps was
+  // the same either way. Opening the gate to all three rungs made the
+  // inconsistency reachable and turned it into an exploit -- jumping straight
+  // to a Missile Attack Conference cost 22 signature where climbing to it cost
+  // 32, so the loudest possible move was also the cheapest way to get there.
+  const cost = signatureSpent(rung) - signatureSpent(at);
+  if (cost > 0) {
+    world.postureSignature = clamp((world.postureSignature ?? 0) + cost, 0, 100);
   }
   log(
     world,

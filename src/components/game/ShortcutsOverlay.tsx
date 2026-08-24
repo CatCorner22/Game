@@ -44,10 +44,25 @@ export function HelpLayer() {
         setOpen((v) => !v);
         e.preventDefault();
       }
-      if (e.key === "Escape") setOpen(false);
+      // Escape closes this overlay AND NOTHING ELSE. Both this and the
+      // conference screen listen on `window`, so without claiming the key one
+      // press dismissed the shortcuts card and walked the player out of the
+      // call underneath it -- losing the transcript to a keystroke that was
+      // aimed at a modal. `preventDefault` is what the conference checks.
+      if (e.key === "Escape" && open) {
+        setOpen(false);
+        e.preventDefault();
+      }
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    // Capture phase, deliberately. Both this and the conference screen listen on
+    // `window` in the bubble phase, and `GameApp` renders ConferenceScreen
+    // before HelpLayer -- so ConferenceScreen's effect registers first and its
+    // handler would run first, seeing `defaultPrevented === false` no matter
+    // what this one intends to do. A capture listener on `window` runs before
+    // every bubble listener regardless of registration order, which is the only
+    // ordering guarantee available here.
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [open]);
   return <ShortcutsOverlay open={open} onClose={() => setOpen(false)} />;
 }

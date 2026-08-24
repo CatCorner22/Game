@@ -13,6 +13,7 @@ import { seatObjectives } from "./objectives";
 import { encodeReplay, decodeReplay, recordTurn } from "./replay";
 import { ACTIONS } from "./actions";
 import { bodyFor } from "./advisors/bodies";
+import { clockSpent, signatureSpent } from "./advisors/conference";
 import { ACTOR_IDS, PLAYABLE_IDS } from "./types";
 import type { ActorId, PlayerAction, World } from "./types";
 import { applyNuclearUse } from "./nuclear";
@@ -1531,6 +1532,38 @@ export function runIntegrityChecks(): IntegrityResult {
     return `${NUCLEAR.length} nuclear bodies complete · ${total} advisors across ${PLAYABLE_IDS.length} seats`;
   });
 
+  check("the-ladder-costs-the-same-either-way", () => {
+    // `convene` charged only the signature of the rung being set, while
+    // `clockSpent` billed every rung at or below it. The two disagreed from the
+    // start and it never showed, because nothing could skip a rung: the gate
+    // offered rung one and the in-room ladder only ever offered rung + 1.
+    //
+    // Opening the gate to all three rungs made the disagreement reachable and
+    // turned it into an exploit -- convening national leadership directly cost
+    // 22 where climbing to it cost 32, so the loudest move in the game was also
+    // the cheapest way to arrive at it.
+    const climb = worldWithCard(31);
+    const base = climb.postureSignature ?? 0;
+    convene(climb, 1);
+    convene(climb, 2);
+    convene(climb, 3);
+
+    const jump = worldWithCard(31);
+    convene(jump, 3);
+
+    if ((climb.postureSignature ?? 0) !== (jump.postureSignature ?? 0)) {
+      throw new Error(
+        `climbing cost ${(climb.postureSignature ?? 0) - base}, jumping cost ${(jump.postureSignature ?? 0) - base}`,
+      );
+    }
+    if ((jump.postureSignature ?? 0) <= base) throw new Error("reaching rung 3 cost nothing");
+    // And the price the gate quotes has to be the price actually charged.
+    if (signatureSpent(3) !== (jump.postureSignature ?? 0) - base) {
+      throw new Error(`gate quotes ${signatureSpent(3)}, ladder charged ${(jump.postureSignature ?? 0) - base}`);
+    }
+    return `rung 3 costs ${signatureSpent(3)} signature by either path \u00b7 ${clockSpent(jump)}s of clock`;
+  });
+
   check("the-room-is-never-empty", () => {
     // The conference used to be an overlay whose participant grid could render
     // zero tiles without anybody noticing -- you saw a transcript and a rung
@@ -1544,6 +1577,7 @@ export function runIntegrityChecks(): IntegrityResult {
     // post, would seat nobody at all. Checked across every seat, every post
     // that seat can command from, and every rung.
     let worst = { seat: "", post: "", n: Infinity };
+    let plateaus = 0;
     for (const seat of PLAYABLE_IDS) {
       for (const post of postsFor(seat)) {
         const w = createWorld("standard", 11, seat, "blue");
@@ -1552,15 +1586,37 @@ export function runIntegrityChecks(): IntegrityResult {
         for (const rung of [1, 2, 3] as const) {
           const n = participants(w, rung).length;
           if (!n) throw new Error(`${seat} seats nobody at rung ${rung} from ${post.short}`);
-          if (rung === 1 && n < worst.n) worst = { seat, post: post.short, n };
+          if (n < worst.n) worst = { seat, post: post.short, n };
         }
-        if (participants(w, 3).length < participants(w, 1).length) {
-          throw new Error(`${seat} from ${post.short}: rung 3 is smaller than rung 1`);
+        // The assertion that used to sit here -- rung 3 is not smaller than
+        // rung 1 -- could never fire. `participants` filters on
+        // `a.rung <= rung && reachable(world, a)`, and `reachable` does not
+        // take the rung, so the rung-3 set is a superset of the rung-1 set by
+        // predicate implication. It read like a guarantee and asserted a
+        // tautology.
+        //
+        // What is actually worth asserting is that climbing the ladder is worth
+        // the price: each rung must seat somebody the rung below it did not, or
+        // the player pays signature for an identical room.
+        const at = [1, 2, 3].map((r) => participants(w, r as 1 | 2 | 3).length);
+        for (const rung of [2, 3]) {
+          if (at[rung - 1] > at[rung - 2]) continue;
+          // A rung that adds nobody is legitimate ONLY when the post is the
+          // reason. The E-4B is the designed case: it survives almost anything
+          // and cannot hold the whole cabinet, so above rung one it plateaus.
+          // A plateau from a post with full comms would mean a hole in the
+          // roster, which is the failure worth catching.
+          if (postEffects(w).comms >= 80) {
+            throw new Error(
+              `${seat} from ${post.short} (comms ${postEffects(w).comms}): rung ${rung} seats ${at[rung - 1]}, same as rung ${rung - 1} -- the roster has a hole`,
+            );
+          }
+          plateaus += 1;
         }
       }
     }
     const posts = PLAYABLE_IDS.reduce((n, s) => n + postsFor(s).length, 0);
-    return `${PLAYABLE_IDS.length} seats \u00b7 ${posts} posts \u00b7 thinnest room ${worst.n} (${worst.seat} from ${worst.post})`;
+    return `${PLAYABLE_IDS.length} seats \u00b7 ${posts} posts \u00b7 thinnest room ${worst.n} (${worst.seat} from ${worst.post}) \u00b7 ${plateaus} comms-limited plateaus`;
   });
 
   check("every-seat-has-a-named-decision-body", () => {

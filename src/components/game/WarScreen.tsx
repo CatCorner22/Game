@@ -96,9 +96,9 @@ export function WarScreen() {
         subtitle={`${dateLabel(world)} · ${world.phase}`}
         right={
           <>
-            {/* The conference matters most from here, not least. The overlay is
-                mounted at the GameApp level so it renders over the war screen
-                too -- only the way in was missing. */}
+            {/* The conference matters most from here, not least. Leaving the
+                room recomputes the screen from the world, so convening from the
+                war board returns you to the war board. */}
             <HudButton
               variant="ghost"
               className="px-2 py-1 text-micro"

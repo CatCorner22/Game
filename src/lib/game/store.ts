@@ -16,6 +16,8 @@ import { createWorld } from "./world";
 import { defaultAction } from "./actions";
 import { forecast, resolveTurn } from "./sim";
 import { clearSave, loadWorld, saveWorld, migrateWorld } from "./save";
+import { resetTrackClocks } from "@/components/game/useTrackClock";
+import { resetCallMemory } from "@/components/game/callMemory";
 import { unlockAudio, tone, updateAtmosphere, stinger, defconTone } from "./audio";
 import { recordTurn } from "./replay";
 import { applyScenario, scenarioById, type ScenarioId } from "./scenarios";
@@ -148,6 +150,13 @@ export const useGame = create<GameState>((set, get) => ({
       const scenario = scenarioById(scenarioId);
       const aiMode = strategicAI ?? (terminator ? "skynet" : scenario?.defaultAI ?? "human");
       const deadhandMode = deadhand ?? scenario?.defaultDeadhand ?? "off";
+      // Track countdown anchors live in a module map so they survive the
+      // unmount/remount of walking into the conference and back. That lifetime
+      // is longer than a run, so a new run has to clear them: a replayed seed
+      // can produce an identical track key, and inheriting its anchor would
+      // hand the player a clock that had already run out.
+      resetTrackClocks();
+      resetCallMemory();
       let world = createWorld(difficulty, seed ?? (Date.now() | 0), playerId, intent, aiMode === "skynet" || Boolean(terminator));
       if (leaderArchetype) world.leaderArchetype = leaderArchetype;
       if (dailyKey) world.dailyKey = dailyKey;
@@ -183,6 +192,8 @@ export const useGame = create<GameState>((set, get) => ({
   resume: () => {
     const world = loadWorld();
     if (!world || world.ended) return false;
+    resetTrackClocks();
+    resetCallMemory();
     ensureStrategicSystems(world);
     set({
       screen: screenForWorld(world),
@@ -423,6 +434,8 @@ export function currentForecast() {
 }
 
 export function resetToTitle() {
+  resetTrackClocks();
+  resetCallMemory();
   useGame.setState({
     screen: "title",
     world: null,
