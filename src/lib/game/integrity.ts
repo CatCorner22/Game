@@ -1,6 +1,7 @@
 import { createWorld } from "./world";
 import { resolveTurn, forecast } from "./sim";
 import { applyScenario, SCENARIOS } from "./scenarios";
+import { SCENARIO_BRIEFS, briefFor } from "./scenarioBriefs";
 import { makeActors } from "./actors";
 import { seatObjectives } from "./objectives";
 import { encodeReplay, decodeReplay, recordTurn } from "./replay";
@@ -1094,6 +1095,68 @@ export function runIntegrityChecks(): IntegrityResult {
     }
     const summary = [...kinds.entries()].map(([k, n]) => `${k}×${n}`).join(", ");
     return `no timer endings across 14 seeds (${summary}); 3-year watch continues`;
+  });
+
+  check("every-scenario-has-a-real-brief", () => {
+    // The old lines told a player nothing unless they already knew the domain,
+    // and a cluster of them named a category of crisis rather than an event.
+    // These assertions are what stops that creeping back in.
+    const JARGON = /\b(NOTAM|CASD|SPD|NFU|FOBS|SBIRS|dual-capable|Nasr|Jericho|Hatf|circulariz)/i;
+    for (const def of SCENARIOS) {
+      const brief = briefFor(def.id);
+      if (!brief) throw new Error(`${def.id} has no brief`);
+      for (const [field, value] of Object.entries(brief)) {
+        if (!value.trim()) throw new Error(`${def.id}.${field} is empty`);
+        if (value.includes("undefined")) throw new Error(`${def.id}.${field} has an unrendered value`);
+      }
+      // A headline is a sentence about something that happened, not a label.
+      if (!/[.!?]$/.test(brief.headline)) throw new Error(`${def.id} headline is not a sentence: "${brief.headline}"`);
+      // Crude on purpose. What this is really catching is the label-style
+      // fragment the old lines were full of -- "Partners split", "Hazard
+      // corridor", "Empty Quiver" -- not short sentences, which are fine:
+      // "A warhead has been stolen." is five words and does the whole job.
+      if (brief.headline.split(/\s+/).length < 5) throw new Error(`${def.id} headline is a fragment: "${brief.headline}"`);
+      if (JARGON.test(brief.headline)) throw new Error(`${def.id} headline leads with unglossed jargon: "${brief.headline}"`);
+      // The situation has to actually situate.
+      if (brief.situation.split(/[.!?]\s/).length < 2) throw new Error(`${def.id} situation is one sentence`);
+      if (!/^You are\b/.test(brief.youAre)) throw new Error(`${def.id} does not say who the player is`);
+    }
+    const headlines = new Set(SCENARIOS.map((d) => briefFor(d.id)?.headline));
+    if (headlines.size !== SCENARIOS.length) throw new Error("two scenarios share a headline");
+    return `${SCENARIOS.length} scenarios, all briefed`;
+  });
+
+  check("briefs-cover-exactly-the-scenario-list", () => {
+    // A brief for a scenario that no longer exists, or a scenario with no brief,
+    // both mean the two lists have drifted apart.
+    const ids = new Set(SCENARIOS.map((d) => d.id));
+    for (const id of Object.keys(SCENARIO_BRIEFS)) {
+      if (!ids.has(id as (typeof SCENARIOS)[number]["id"])) throw new Error(`brief for unknown scenario "${id}"`);
+    }
+    if (Object.keys(SCENARIO_BRIEFS).length !== SCENARIOS.length) {
+      throw new Error(`${Object.keys(SCENARIO_BRIEFS).length} briefs vs ${SCENARIOS.length} scenarios`);
+    }
+    return `${SCENARIOS.length} in both lists`;
+  });
+
+  check("new-scenarios-actually-set-something-up", () => {
+    // A scenario in the list with no block in applyScenario is a menu entry
+    // that starts an ordinary sandbox game -- worse than not existing.
+    const added = ["alaska-drones-2027", "airliner-down-2027", "carrier-collision-2027", "boomer-collision-2027"] as const;
+    for (const id of added) {
+      const def = SCENARIOS.find((d) => d.id === id);
+      if (!def) throw new Error(`${id} is not in the scenario list`);
+      const plain = createWorld("standard", 5, def.playerId, def.intent);
+      const w = applyScenario(createWorld("standard", 5, def.playerId, def.intent), id);
+      if (w.scenarioId !== id) throw new Error(`${id} did not record its scenario id`);
+      const moved =
+        w.defcon !== plain.defcon ||
+        Math.round(w.globalRisk) !== Math.round(plain.globalRisk) ||
+        w.event.id !== plain.event.id;
+      if (!moved) throw new Error(`${id} starts an ordinary sandbox game`);
+      if (!w.event.title.trim() || !w.event.body.trim()) throw new Error(`${id} has no opening event text`);
+    }
+    return `${added.length} new scenarios set up real situations`;
   });
 
   return { ok: checks.every((c) => c.ok), checks };

@@ -9,6 +9,7 @@ import { useMemo, useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import { GlassPanel, HudButton, HudChip, HudLabel, ScenarioCard } from "./ui/Hud";
 import { DEFAULT_LEADER, LEADERS, leaderById } from "@/lib/game/leaders";
+import { briefFor } from "@/lib/game/scenarioBriefs";
 
 const DIFFS: { id: Difficulty; label: string; line: string }[] = [
   { id: "standard", label: "STANDARD", line: "Readable files. Hostile world." },
@@ -52,7 +53,12 @@ export function TitleScreen() {
       if (categoryFilter !== "all" && s.category !== categoryFilter) return false;
       if (seatOnly && country && s.playerId !== country) return false;
       if (!q) return true;
-      return `${s.title} ${s.line} ${s.playerId} ${s.id} ${s.category}`.toLowerCase().includes(q);
+      // Search the headline too: it is the text the player can actually see on
+      // the card, so it is what they will type at.
+      const brief = briefFor(s.id);
+      return `${s.title} ${s.line} ${brief?.headline ?? ""} ${s.playerId} ${s.id} ${s.category}`
+        .toLowerCase()
+        .includes(q);
     });
   }, [eraFilter, categoryFilter, query, seatOnly, country]);
 
@@ -162,7 +168,25 @@ export function TitleScreen() {
                 ))}
               </select>
             </label>
-            {selectedDef ? <p className="mt-2 text-sm text-fg">{selectedDef.title}</p> : null}
+            {selectedDef ? (
+              <div className="mt-2">
+                {/* The scenario's name, then what happened. The name matters
+                    because it is how you refer to the thing you just picked;
+                    the headline is what makes you want to pick it. */}
+                <p className="font-mono text-micro tracking-wider text-subtle uppercase">{selectedDef.title}</p>
+                <p className="mt-0.5 text-sm leading-snug text-fg">
+                  {briefFor(selectedDef.id)?.headline ?? selectedDef.title}
+                </p>
+                {briefFor(selectedDef.id) ? (
+                  <dl className="mt-2 space-y-1.5">
+                    <BriefRow label="Situation" value={briefFor(selectedDef.id)!.situation} />
+                    <BriefRow label="You are" value={briefFor(selectedDef.id)!.youAre} />
+                    <BriefRow label="You decide" value={briefFor(selectedDef.id)!.decision} />
+                    <BriefRow label="If you get it wrong" value={briefFor(selectedDef.id)!.stakes} />
+                  </dl>
+                ) : null}
+              </div>
+            ) : null}
 
             {/* Deliberately AFTER the scenario select: the mobile smoke reaches
                 the scenario picker as `select` nth(1), so a new control must not
@@ -448,6 +472,7 @@ export function TitleScreen() {
                 />
                 {filteredScenarios.map((s) => (
                   <ScenarioCard
+                    headline={briefFor(s.id)?.headline}
                     key={s.id}
                     title={s.title}
                     line={s.line}
@@ -486,6 +511,16 @@ export function TitleScreen() {
         <footer className="mt-8 font-mono text-micro tracking-wider text-subtle uppercase">
           FAS / SIPRI 2026 estimates · Football = aide briefcase · Terminator = rogue C2
         </footer>
+    </div>
+  );
+}
+
+/** One labelled line of a scenario brief. */
+function BriefRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="font-mono text-micro tracking-wider text-subtle uppercase">{label}</dt>
+      <dd className="mt-0.5 text-xs leading-relaxed text-muted">{value}</dd>
     </div>
   );
 }
